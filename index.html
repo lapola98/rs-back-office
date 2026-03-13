@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RS Back Office — Gestión Empresarial Inteligente</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #0d1117;
+    --ink-soft: #1e2530;
+    --gold: #c9a84c;
+    --gold-light: #e8c97a;
+    --gold-pale: #f5e9c8;
+    --cream: #faf8f3;
+    --white: #ffffff;
+    --gray-100: #f2f0eb;
+    --gray-300: #c8c4bc;
+    --gray-500: #7a776f;
+    --gray-700: #3d3a35;
+    --accent: #1a3a5c;
+    --accent-soft: #2a5080;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    overflow-x: hidden;
+  }
+
+  /* ─── NAV ─── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.25rem 5%;
+    background: rgba(250,248,243,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(201,168,76,0.2);
+    transition: box-shadow 0.3s;
+  }
+  nav.scrolled { box-shadow: 0 2px 24px rgba(13,17,23,0.08); }
+
+  .logo {
+    display: flex; align-items: center; gap: 0.75rem; text-decoration: none;
+  }
+  .logo-mark {
+    width: 38px; height: 38px;
+    background: var(--ink);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem; font-weight: 600;
+    color: var(--gold);
+    letter-spacing: 0.02em;
+  }
+  .logo-text { display: flex; flex-direction: column; line-height: 1.1; }
+  .logo-text strong {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600; font-size: 0.95rem;
+    color: var(--ink); letter-spacing: 0.04em;
+  }
+  .logo-text span {
+    font-size: 0.65rem; color: var(--gray-500);
+    letter-spacing: 0.12em; text-transform: uppercase;
+  }
+
+  .nav-links { display: flex; align-items: center; gap: 2.5rem; }
+  .nav-links a {
+    text-decoration: none; font-size: 0.85rem;
+    color: var(--gray-700); letter-spacing: 0.04em;
+    font-weight: 400; transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--gold); }
+
+  .btn-nav {
+    padding: 0.6rem 1.4rem;
+    background: var(--ink);
+    color: var(--gold-light) !important;
+    border-radius: 6px;
+    font-weight: 500 !important;
+    font-size: 0.82rem !important;
+    letter-spacing: 0.06em !important;
+    transition: background 0.2s, transform 0.15s !important;
+  }
+  .btn-nav:hover { background: var(--accent) !important; transform: translateY(-1px); }
+
+  /* ─── HERO ─── */
+  .hero {
+    min-height: 100vh;
+    display: grid; grid-template-columns: 1fr 1fr;
+    align-items: center;
+    padding: 8rem 5% 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 80% at 70% 50%, rgba(201,168,76,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 40% at 20% 80%, rgba(26,58,92,0.05) 0%, transparent 60%);
+  }
+
+  .hero-grid-bg {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(201,168,76,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(201,168,76,0.06) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 80% 80% at 65% 50%, black 30%, transparent 80%);
+  }
+
+  .hero-content { position: relative; z-index: 1; }
+
+  .hero-tag {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.4rem 0.9rem;
+    border: 1px solid rgba(201,168,76,0.4);
+    border-radius: 100px;
+    font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 2rem;
+    background: rgba(201,168,76,0.06);
+    animation: fadeUp 0.8s ease both;
+  }
+  .hero-tag::before {
+    content: ''; width: 6px; height: 6px;
+    background: var(--gold); border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.7); }
+  }
+
+  .hero h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.8rem, 5vw, 4.2rem);
+    font-weight: 300; line-height: 1.15;
+    color: var(--ink); margin-bottom: 1.5rem;
+    animation: fadeUp 0.8s 0.1s ease both;
+  }
+  .hero h1 em {
+    font-style: italic; color: var(--gold);
+    display: block;
+  }
+
+  .hero p {
+    font-size: 1rem; line-height: 1.75;
+    color: var(--gray-500); max-width: 480px;
+    margin-bottom: 2.5rem;
+    animation: fadeUp 0.8s 0.2s ease both;
+  }
+
+  .hero-actions {
+    display: flex; gap: 1rem; flex-wrap: wrap;
+    animation: fadeUp 0.8s 0.3s ease both;
+  }
+
+  .btn-primary {
+    padding: 0.85rem 2rem;
+    background: var(--ink); color: var(--gold-light);
+    border: none; border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem; font-weight: 500;
+    letter-spacing: 0.04em; cursor: pointer;
+    text-decoration: none; display: inline-block;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 4px 20px rgba(13,17,23,0.15);
+  }
+  .btn-primary:hover {
+    background: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(13,17,23,0.2);
+  }
+
+  .btn-secondary {
+    padding: 0.85rem 2rem;
+    background: transparent; color: var(--ink);
+    border: 1px solid rgba(13,17,23,0.2);
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem; font-weight: 500;
+    letter-spacing: 0.04em; cursor: pointer;
+    text-decoration: none; display: inline-block;
+    transition: border-color 0.2s, color 0.2s, transform 0.15s;
+  }
+  .btn-secondary:hover {
+    border-color: var(--gold); color: var(--gold);
+    transform: translateY(-2px);
+  }
+
+  .hero-stats {
+    display: flex; gap: 2.5rem; margin-top: 3.5rem;
+    padding-top: 2.5rem;
+    border-top: 1px solid var(--gray-100);
+    animation: fadeUp 0.8s 0.4s ease both;
+  }
+  .stat-item { }
+  .stat-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2rem; font-weight: 600; color: var(--ink);
+    display: block; line-height: 1;
+  }
+  .stat-label {
+    font-size: 0.72rem; color: var(--gray-500);
+    letter-spacing: 0.08em; text-transform: uppercase;
+    display: block; margin-top: 0.3rem;
+  }
+
+  /* Hero Visual */
+  .hero-visual {
+    position: relative; z-index: 1;
+    display: flex; justify-content: center; align-items: center;
+    padding-left: 3rem;
+    animation: fadeIn 1s 0.3s ease both;
+  }
+
+  .dashboard-card {
+    background: var(--white);
+    border-radius: 20px;
+    box-shadow: 0 30px 80px rgba(13,17,23,0.12), 0 1px 0 rgba(255,255,255,0.8) inset;
+    padding: 1.5rem;
+    width: 380px;
+    border: 1px solid rgba(201,168,76,0.15);
+    transform: perspective(1000px) rotateY(-6deg) rotateX(2deg);
+    transition: transform 0.4s;
+  }
+  .dashboard-card:hover {
+    transform: perspective(1000px) rotateY(-2deg) rotateX(1deg);
+  }
+
+  .dc-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--gray-100);
+  }
+  .dc-title { font-size: 0.78rem; font-weight: 600; color: var(--gray-700); letter-spacing: 0.04em; }
+  .dc-badge {
+    font-size: 0.65rem; padding: 0.2rem 0.6rem;
+    background: rgba(201,168,76,0.12); color: var(--gold);
+    border-radius: 100px; font-weight: 500; letter-spacing: 0.04em;
+  }
+
+  .dc-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.2rem; }
+  .dc-metric {
+    background: var(--gray-100); border-radius: 10px; padding: 0.85rem;
+  }
+  .dc-metric-val { font-size: 1.1rem; font-weight: 600; color: var(--ink); display: block; }
+  .dc-metric-key { font-size: 0.62rem; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.15rem; display: block; }
+  .dc-metric-up { font-size: 0.65rem; color: #22a66a; margin-top: 0.2rem; display: block; font-weight: 500; }
+
+  .dc-chart { height: 70px; position: relative; overflow: hidden; margin-bottom: 1rem; }
+  .dc-chart svg { width: 100%; height: 100%; }
+
+  .dc-list { }
+  .dc-item {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--gray-100);
+    font-size: 0.72rem;
+  }
+  .dc-item:last-child { border-bottom: none; }
+  .dc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dc-item-name { flex: 1; color: var(--gray-700); }
+  .dc-item-val { color: var(--ink); font-weight: 500; }
+  .dc-item-status {
+    font-size: 0.6rem; padding: 0.15rem 0.45rem;
+    border-radius: 100px; font-weight: 500;
+  }
+  .status-ok { background: rgba(34,166,106,0.1); color: #22a66a; }
+  .status-pend { background: rgba(201,168,76,0.12); color: var(--gold); }
+
+  /* Floating cards */
+  .float-card {
+    position: absolute;
+    background: var(--white);
+    border-radius: 14px;
+    box-shadow: 0 12px 36px rgba(13,17,23,0.1);
+    padding: 0.9rem 1.1rem;
+    border: 1px solid rgba(201,168,76,0.12);
+    font-size: 0.72rem;
+    animation: float 3s ease-in-out infinite;
+  }
+  .float-card-1 {
+    top: -20px; right: -30px;
+    animation-delay: 0s;
+  }
+  .float-card-2 {
+    bottom: 20px; left: -40px;
+    animation-delay: 1.5s;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  .fc-label { font-size: 0.62rem; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.3rem; }
+  .fc-val { font-size: 1rem; font-weight: 600; color: var(--ink); }
+  .fc-sub { font-size: 0.65rem; color: #22a66a; margin-top: 0.15rem; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateX(24px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  /* ─── SECTION BASE ─── */
+  section { padding: 6rem 5%; }
+
+  .section-tag {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 1rem;
+  }
+  .section-tag::before {
+    content: ''; width: 24px; height: 1px; background: var(--gold);
+  }
+
+  .section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem, 3.5vw, 2.8rem);
+    font-weight: 300; color: var(--ink); line-height: 1.2;
+    margin-bottom: 1rem;
+  }
+  .section-title em { font-style: italic; color: var(--gold); }
+  .section-sub { font-size: 0.95rem; color: var(--gray-500); line-height: 1.7; max-width: 520px; }
+
+  /* ─── SERVICES ─── */
+  #servicios { background: var(--white); }
+
+  .services-header { text-align: center; margin-bottom: 4rem; }
+  .services-header .section-sub { margin: 0 auto; }
+
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .service-card {
+    background: var(--cream);
+    border: 1px solid var(--gray-100);
+    border-radius: 16px; padding: 2rem;
+    position: relative; overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+    cursor: default;
+  }
+  .service-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--gold), var(--gold-light));
+    transform: scaleX(0); transform-origin: left;
+    transition: transform 0.4s;
+  }
+  .service-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 50px rgba(13,17,23,0.08);
+    border-color: rgba(201,168,76,0.25);
+  }
+  .service-card:hover::before { transform: scaleX(1); }
+
+  .service-icon {
+    width: 50px; height: 50px;
+    background: var(--ink); border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 1.5rem;
+    font-size: 1.3rem;
+  }
+  .service-card h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.35rem; font-weight: 600;
+    color: var(--ink); margin-bottom: 0.75rem;
+  }
+  .service-card p {
+    font-size: 0.875rem; color: var(--gray-500); line-height: 1.7;
+    margin-bottom: 1.5rem;
+  }
+  .service-features { list-style: none; }
+  .service-features li {
+    font-size: 0.78rem; color: var(--gray-700);
+    padding: 0.3rem 0;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .service-features li::before {
+    content: ''; width: 4px; height: 4px;
+    background: var(--gold); border-radius: 50%; flex-shrink: 0;
+  }
+
+  .service-num {
+    position: absolute; top: 1.5rem; right: 1.5rem;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 3rem; font-weight: 300;
+    color: rgba(201,168,76,0.12); line-height: 1;
+    user-select: none;
+  }
+
+  /* ─── HOW IT WORKS ─── */
+  #como-funciona { background: var(--ink); color: var(--white); }
+
+  #como-funciona .section-title { color: var(--white); }
+  #como-funciona .section-sub { color: rgba(255,255,255,0.5); }
+
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 2rem; margin-top: 4rem; }
+
+  .step {
+    position: relative; padding-top: 1rem;
+  }
+  .step::before {
+    content: '';
+    position: absolute; top: 2rem; left: 3.5rem; right: -2rem; height: 1px;
+    background: linear-gradient(90deg, var(--gold) 0%, rgba(201,168,76,0.1) 100%);
+  }
+  .step:last-child::before { display: none; }
+
+  .step-num {
+    width: 48px; height: 48px;
+    border: 1px solid rgba(201,168,76,0.3);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.3rem; font-weight: 600; color: var(--gold);
+    margin-bottom: 1.5rem; position: relative; z-index: 1;
+    background: var(--ink);
+  }
+  .step h4 { font-size: 1rem; font-weight: 600; color: var(--white); margin-bottom: 0.6rem; }
+  .step p { font-size: 0.82rem; color: rgba(255,255,255,0.45); line-height: 1.65; }
+
+  /* ─── PORTAL / LOGIN ─── */
+  #portal {
+    background: var(--cream);
+    display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: center;
+  }
+
+  .portal-visual {
+    position: relative;
+  }
+
+  .login-card {
+    background: var(--white);
+    border-radius: 20px;
+    padding: 2.5rem;
+    box-shadow: 0 30px 70px rgba(13,17,23,0.1);
+    border: 1px solid var(--gray-100);
+    max-width: 380px;
+    margin: 0 auto;
+  }
+
+  .login-logo {
+    display: flex; align-items: center; gap: 0.6rem;
+    margin-bottom: 2rem;
+  }
+  .login-logo-mark {
+    width: 32px; height: 32px;
+    background: var(--ink); border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.95rem; font-weight: 600; color: var(--gold);
+  }
+  .login-logo span { font-size: 0.82rem; font-weight: 600; color: var(--ink); letter-spacing: 0.04em; }
+
+  .login-card h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem; font-weight: 400; margin-bottom: 0.4rem;
+    color: var(--ink);
+  }
+  .login-card > p { font-size: 0.8rem; color: var(--gray-500); margin-bottom: 1.8rem; }
+
+  .form-field { margin-bottom: 1rem; }
+  .form-field label { display: block; font-size: 0.72rem; font-weight: 500; color: var(--gray-700); margin-bottom: 0.4rem; letter-spacing: 0.04em; text-transform: uppercase; }
+  .form-field input {
+    width: 100%; padding: 0.75rem 1rem;
+    border: 1px solid var(--gray-300); border-radius: 8px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem;
+    color: var(--ink); background: var(--cream);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  .form-field input:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
+    background: var(--white);
+  }
+  .form-field input::placeholder { color: var(--gray-300); }
+
+  .form-options {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+  .form-check { display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: var(--gray-500); cursor: pointer; }
+  .form-check input { width: auto; }
+  .form-link { font-size: 0.75rem; color: var(--gold); text-decoration: none; }
+  .form-link:hover { text-decoration: underline; }
+
+  .btn-login {
+    width: 100%; padding: 0.9rem;
+    background: var(--ink); color: var(--gold-light);
+    border: none; border-radius: 8px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500;
+    letter-spacing: 0.04em; cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+  }
+  .btn-login:hover { background: var(--accent); transform: translateY(-1px); }
+
+  .login-footer { text-align: center; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--gray-100); }
+  .login-footer p { font-size: 0.75rem; color: var(--gray-500); }
+  .login-footer a { color: var(--gold); text-decoration: none; font-weight: 500; }
+
+  /* Dashboard modules preview */
+  .modules-preview {
+    position: absolute; right: -40px; top: 50%;
+    transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 0.6rem;
+  }
+  .module-chip {
+    background: var(--white); border: 1px solid var(--gray-100);
+    border-radius: 8px; padding: 0.5rem 0.9rem;
+    font-size: 0.7rem; color: var(--gray-700);
+    display: flex; align-items: center; gap: 0.5rem;
+    box-shadow: 0 4px 14px rgba(13,17,23,0.06);
+    white-space: nowrap;
+    animation: float 3s ease-in-out infinite;
+  }
+  .module-chip:nth-child(2) { animation-delay: 0.5s; margin-left: 10px; }
+  .module-chip:nth-child(3) { animation-delay: 1s; }
+  .module-chip:nth-child(4) { animation-delay: 1.5s; margin-left: 10px; }
+  .module-chip .chip-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
+
+  /* ─── FEATURES ─── */
+  #caracteristicas { background: var(--white); }
+
+  .features-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 1rem; margin-top: 4rem;
+  }
+
+  .feature-item {
+    padding: 1.75rem; border-radius: 14px;
+    border: 1px solid var(--gray-100);
+    display: flex; gap: 1.25rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .feature-item:hover {
+    border-color: rgba(201,168,76,0.3);
+    box-shadow: 0 8px 24px rgba(13,17,23,0.05);
+  }
+  .feature-icon {
+    width: 44px; height: 44px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--ink) 0%, var(--accent) 100%);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+  }
+  .feature-item h4 { font-size: 0.95rem; font-weight: 600; color: var(--ink); margin-bottom: 0.4rem; }
+  .feature-item p { font-size: 0.8rem; color: var(--gray-500); line-height: 1.65; }
+
+  /* ─── CTA ─── */
+  #contacto {
+    background: var(--ink);
+    text-align: center; padding: 7rem 5%;
+  }
+  #contacto .section-tag { justify-content: center; color: var(--gold); }
+  #contacto .section-tag::before { background: var(--gold); }
+  #contacto .section-title { color: var(--white); margin-bottom: 1.2rem; }
+  #contacto .section-title em { color: var(--gold); }
+  #contacto .section-sub { color: rgba(255,255,255,0.5); margin: 0 auto 3rem; }
+
+  .cta-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+
+  /* ─── FOOTER ─── */
+  footer {
+    background: #080c10; padding: 3rem 5% 2rem;
+    border-top: 1px solid rgba(201,168,76,0.1);
+  }
+  .footer-inner {
+    display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 3rem;
+    margin-bottom: 2.5rem;
+    padding-bottom: 2.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .footer-brand p { font-size: 0.8rem; color: rgba(255,255,255,0.35); line-height: 1.7; margin-top: 1rem; max-width: 280px; }
+  .footer-col h5 { font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.5); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1.2rem; }
+  .footer-col a { display: block; font-size: 0.8rem; color: rgba(255,255,255,0.3); text-decoration: none; margin-bottom: 0.6rem; transition: color 0.2s; }
+  .footer-col a:hover { color: var(--gold); }
+  .footer-bottom { display: flex; justify-content: space-between; align-items: center; }
+  .footer-bottom p { font-size: 0.72rem; color: rgba(255,255,255,0.2); }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: 1fr; padding-top: 6rem; }
+    .hero-visual { display: none; }
+    #portal { grid-template-columns: 1fr; }
+    .portal-visual { order: -1; }
+    .modules-preview { display: none; }
+    .features-grid { grid-template-columns: 1fr; }
+    .footer-inner { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 600px) {
+    .nav-links { display: none; }
+    .hero-stats { gap: 1.5rem; }
+    .footer-inner { grid-template-columns: 1fr; }
+    .footer-bottom { flex-direction: column; gap: 0.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="navbar">
+  <a href="#" class="logo">
+    <div class="logo-mark">RS</div>
+    <div class="logo-text">
+      <strong>RS Back Office</strong>
+      <span>Gestión Empresarial</span>
+    </div>
+  </a>
+  <div class="nav-links">
+    <a href="#servicios">Servicios</a>
+    <a href="#como-funciona">Cómo funciona</a>
+    <a href="#caracteristicas">Plataforma</a>
+    <a href="#contacto">Contacto</a>
+    <a href="pages/login.html" class="btn-nav">Acceder al Portal</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="inicio">
+  <div class="hero-content">
+    <div class="hero-tag">Gestión empresarial profesional</div>
+    <h1>
+      Su negocio, <em>organizado<br>con precisión.</em>
+    </h1>
+    <p>Soluciones integrales de back office para empresas que exigen excelencia. Contabilidad, tesorería, facturación, cartera y gestión de personal, todo en una sola plataforma.</p>
+    <div class="hero-actions">
+      <a href="pages/login.html" class="btn-primary">Acceder al Portal →</a>
+      <a href="#servicios" class="btn-secondary">Ver Servicios</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <span class="stat-num">+120</span>
+        <span class="stat-label">Empresas activas</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num">8+</span>
+        <span class="stat-label">Años de experiencia</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num">99%</span>
+        <span class="stat-label">Satisfacción clientes</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-visual">
+    <div style="position:relative;">
+      <!-- Main dashboard card -->
+      <div class="dashboard-card">
+        <div class="dc-header">
+          <span class="dc-title">DASHBOARD CLIENTE</span>
+          <span class="dc-badge">● En vivo</span>
+        </div>
+        <div class="dc-metrics">
+          <div class="dc-metric">
+            <span class="dc-metric-val">$84.2M</span>
+            <span class="dc-metric-key">Facturación</span>
+            <span class="dc-metric-up">↑ 12.4%</span>
+          </div>
+          <div class="dc-metric">
+            <span class="dc-metric-val">$21.7M</span>
+            <span class="dc-metric-key">Cartera</span>
+            <span class="dc-metric-up">↑ 8.1%</span>
+          </div>
+          <div class="dc-metric">
+            <span class="dc-metric-val">97.3%</span>
+            <span class="dc-metric-key">Tesorería</span>
+            <span class="dc-metric-up">↑ 3.2%</span>
+          </div>
+          <div class="dc-metric">
+            <span class="dc-metric-val">48</span>
+            <span class="dc-metric-key">Personal</span>
+            <span class="dc-metric-up">Activos</span>
+          </div>
+        </div>
+        <!-- Mini chart -->
+        <div class="dc-chart">
+          <svg viewBox="0 0 340 70" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#c9a84c" stop-opacity="0.25"/>
+                <stop offset="100%" stop-color="#c9a84c" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <path d="M0,55 L28,48 L56,52 L85,38 L113,42 L141,28 L170,32 L198,18 L226,22 L255,12 L283,16 L340,8 L340,70 L0,70 Z" fill="url(#chartGrad)"/>
+            <path d="M0,55 L28,48 L56,52 L85,38 L113,42 L141,28 L170,32 L198,18 L226,22 L255,12 L283,16 L340,8" fill="none" stroke="#c9a84c" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="dc-list">
+          <div class="dc-item">
+            <div class="dc-dot" style="background:#c9a84c"></div>
+            <span class="dc-item-name">Facturas del mes</span>
+            <span class="dc-item-val">142</span>
+            <span class="dc-item-status status-ok">Al día</span>
+          </div>
+          <div class="dc-item">
+            <div class="dc-dot" style="background:#1a3a5c"></div>
+            <span class="dc-item-name">Nómina procesada</span>
+            <span class="dc-item-val">Jun 2025</span>
+            <span class="dc-item-status status-ok">✓</span>
+          </div>
+          <div class="dc-item">
+            <div class="dc-dot" style="background:#e8c97a"></div>
+            <span class="dc-item-name">Obligaciones fiscales</span>
+            <span class="dc-item-val">2 pend.</span>
+            <span class="dc-item-status status-pend">Revisar</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Floating cards -->
+      <div class="float-card float-card-1">
+        <div class="fc-label">Saldo disponible</div>
+        <div class="fc-val">$12.4M</div>
+        <div class="fc-sub">↑ COP +2.1% este mes</div>
+      </div>
+      <div class="float-card float-card-2">
+        <div class="fc-label">Próximo cierre</div>
+        <div class="fc-val">30 Jun</div>
+        <div class="fc-sub">● 4 días restantes</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-grid-bg"></div>
+</section>
+
+<!-- SERVICIOS -->
+<section id="servicios">
+  <div class="services-header">
+    <div class="section-tag">Lo que ofrecemos</div>
+    <h2 class="section-title">Servicios <em>especializados</em></h2>
+    <p class="section-sub">Cubrimos todas las áreas administrativas y financieras de su empresa con equipos expertos y tecnología de punta.</p>
+  </div>
+
+  <div class="services-grid">
+
+    <div class="service-card">
+      <span class="service-num">01</span>
+      <div class="service-icon">📊</div>
+      <h3>Contabilidad</h3>
+      <p>Gestión contable integral bajo NIIF y normativa colombiana vigente. Información financiera precisa y oportuna para la toma de decisiones.</p>
+      <ul class="service-features">
+        <li>Registro y causación de movimientos</li>
+        <li>Estados financieros mensuales</li>
+        <li>Conciliaciones bancarias</li>
+        <li>Declaraciones tributarias (IVA, Renta, ICA)</li>
+        <li>Libros oficiales y auxiliares</li>
+      </ul>
+    </div>
+
+    <div class="service-card">
+      <span class="service-num">02</span>
+      <div class="service-icon">🏦</div>
+      <h3>Tesorería</h3>
+      <p>Control del flujo de caja, pagos y recaudos con visibilidad en tiempo real. Optimizamos la liquidez de su empresa.</p>
+      <ul class="service-features">
+        <li>Programación y ejecución de pagos</li>
+        <li>Flujo de caja proyectado</li>
+        <li>Gestión de cuentas bancarias</li>
+        <li>Conciliación de extractos</li>
+        <li>Reportes de tesorería en línea</li>
+      </ul>
+    </div>
+
+    <div class="service-card">
+      <span class="service-num">03</span>
+      <div class="service-icon">🧾</div>
+      <h3>Facturación</h3>
+      <p>Emisión y gestión de factura electrónica conforme a los requisitos de la DIAN. Procesos ágiles y sin errores.</p>
+      <ul class="service-features">
+        <li>Factura electrónica DIAN (habilitación)</li>
+        <li>Notas crédito y débito</li>
+        <li>Documentos soporte</li>
+        <li>Facturación masiva y programada</li>
+        <li>Portal de autogestión de facturas</li>
+      </ul>
+    </div>
+
+    <div class="service-card">
+      <span class="service-num">04</span>
+      <div class="service-icon">💼</div>
+      <h3>Cartera</h3>
+      <p>Administración de cuentas por cobrar y pagar. Reducimos la cartera vencida y mejoramos el ciclo de efectivo.</p>
+      <ul class="service-features">
+        <li>Gestión de cobro preventivo y activo</li>
+        <li>Ageing de cartera (antigüedad)</li>
+        <li>Conciliación con clientes y proveedores</li>
+        <li>Provisión de cartera</li>
+        <li>Informes de recaudo</li>
+      </ul>
+    </div>
+
+    <div class="service-card">
+      <span class="service-num">05</span>
+      <div class="service-icon">👥</div>
+      <h3>Gestión de Personal</h3>
+      <p>Nómina, seguridad social y bienestar laboral. Cumplimos con toda la normativa laboral colombiana de manera eficiente.</p>
+      <ul class="service-features">
+        <li>Liquidación de nómina y prestaciones</li>
+        <li>Gestión de seguridad social (PILA)</li>
+        <li>Contratos, novedades y vacaciones</li>
+        <li>Informes laborales y de retención</li>
+        <li>Liquidaciones y certificados laborales</li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<!-- CÓMO FUNCIONA -->
+<section id="como-funciona">
+  <div class="section-tag">Proceso</div>
+  <h2 class="section-title">Así trabajamos <em>con usted</em></h2>
+  <p class="section-sub">Un proceso transparente y estructurado desde el primer día.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <h4>Diagnóstico inicial</h4>
+      <p>Analizamos el estado actual de su empresa, sus necesidades específicas y definimos el alcance del servicio.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <h4>Configuración del portal</h4>
+      <p>Creamos su portal personalizado con acceso seguro para todos los usuarios autorizados de su organización.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <h4>Operación continua</h4>
+      <p>Nuestros equipos especializados gestionan cada área con reportes y entregables definidos mes a mes.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <h4>Reporte y seguimiento</h4>
+      <p>Usted consulta su información en tiempo real desde el dashboard y recibe informes ejecutivos periódicos.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PORTAL DE ACCESO -->
+<section id="portal">
+  <div class="portal-visual">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="login-logo-mark">RS</div>
+        <span>RS Back Office</span>
+      </div>
+      <h3>Bienvenido de vuelta</h3>
+      <p>Ingrese a su portal empresarial</p>
+
+      <div class="form-field">
+        <label>Correo electrónico</label>
+        <input type="email" placeholder="empresa@correo.com">
+      </div>
+      <div class="form-field">
+        <label>Contraseña</label>
+        <input type="password" placeholder="••••••••">
+      </div>
+      <div class="form-options">
+        <label class="form-check">
+          <input type="checkbox"> Recordarme
+        </label>
+        <a href="#" class="form-link">¿Olvidó su contraseña?</a>
+      </div>
+      <button class="btn-login">Ingresar al Portal →</button>
+      <div class="login-footer">
+        <p>¿No tiene cuenta? <a href="#">Solicite acceso</a></p>
+      </div>
+    </div>
+
+    <div class="modules-preview">
+      <div class="module-chip"><span class="chip-dot"></span> Dashboard general</div>
+      <div class="module-chip"><span class="chip-dot"></span> Mis facturas</div>
+      <div class="module-chip"><span class="chip-dot"></span> Estado de nómina</div>
+      <div class="module-chip"><span class="chip-dot"></span> Cartera y cobros</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-tag">Portal del cliente</div>
+    <h2 class="section-title">Todo su negocio<br>en <em>un solo lugar</em></h2>
+    <p class="section-sub">Acceda a su información financiera y administrativa desde cualquier dispositivo, en tiempo real y con total seguridad.</p>
+
+    <div style="margin-top: 2.5rem; display: flex; flex-direction: column; gap: 1rem;">
+      <div class="feature-item" style="background:var(--white);">
+        <div class="feature-icon">📈</div>
+        <div>
+          <h4>Dashboard en tiempo real</h4>
+          <p>Indicadores clave de su empresa actualizados al instante: flujo de caja, cartera, nómina y más.</p>
+        </div>
+      </div>
+      <div class="feature-item" style="background:var(--white);">
+        <div class="feature-icon">🔒</div>
+        <div>
+          <h4>Acceso seguro por roles</h4>
+          <p>Administre los permisos de su equipo. Cada usuario ve solo la información que le corresponde.</p>
+        </div>
+      </div>
+      <div class="feature-item" style="background:var(--white);">
+        <div class="feature-icon">📥</div>
+        <div>
+          <h4>Descarga de documentos</h4>
+          <p>Facturas, comprobantes, informes y certificados disponibles para descarga en cualquier momento.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CARACTERÍSTICAS -->
+<section id="caracteristicas">
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items:start;">
+    <div>
+      <div class="section-tag">Plataforma</div>
+      <h2 class="section-title">Tecnología al<br>servicio de su <em>empresa</em></h2>
+      <p class="section-sub">Nuestra plataforma está diseñada para empresas que no pueden permitirse errores ni retrasos en su información.</p>
+    </div>
+    <div></div>
+  </div>
+
+  <div class="features-grid">
+    <div class="feature-item">
+      <div class="feature-icon">⚡</div>
+      <div>
+        <h4>Información actualizada al instante</h4>
+        <p>Los datos de su empresa se reflejan en el portal en tiempo real. Sin esperas, sin versiones desactualizadas.</p>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🛡️</div>
+      <div>
+        <h4>Seguridad de nivel bancario</h4>
+        <p>Cifrado SSL, autenticación de dos factores y copias de seguridad automáticas diarias.</p>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">📱</div>
+      <div>
+        <h4>Acceso desde cualquier dispositivo</h4>
+        <p>Portal responsivo optimizado para computador, tableta y móvil. Su información siempre disponible.</p>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🔗</div>
+      <div>
+        <h4>Integración con su ERP</h4>
+        <p>Conectamos con los principales sistemas contables y ERP del mercado colombiano sin fricciones.</p>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">📋</div>
+      <div>
+        <h4>Reportes personalizados</h4>
+        <p>Genere informes a la medida de su empresa: por período, área, proyecto o centro de costos.</p>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🎯</div>
+      <div>
+        <h4>Soporte dedicado</h4>
+        <p>Un equipo especializado asignado a su empresa, con tiempos de respuesta garantizados por SLA.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="contacto">
+  <div class="section-tag">Comience hoy</div>
+  <h2 class="section-title">¿Listo para ordenar<br>el back office de <em>su empresa?</em></h2>
+  <p class="section-sub">Contáctenos y en menos de 48 horas tendrá una propuesta personalizada para su negocio.</p>
+  <div class="cta-actions">
+    <a href="mailto:info@rsbackoffice.com" class="btn-primary">Solicitar propuesta →</a>
+    <a href="tel:+576012345678" class="btn-secondary" style="color:rgba(255,255,255,0.7); border-color:rgba(255,255,255,0.2);">📞 Llamar ahora</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <a href="#" class="logo">
+        <div class="logo-mark">RS</div>
+        <div class="logo-text">
+          <strong style="color:white">RS Back Office</strong>
+          <span>Gestión Empresarial</span>
+        </div>
+      </a>
+      <p>Soluciones integrales de back office para empresas colombianas. Confianza, precisión y tecnología al servicio de su crecimiento.</p>
+    </div>
+    <div class="footer-col">
+      <h5>Servicios</h5>
+      <a href="#">Contabilidad</a>
+      <a href="#">Tesorería</a>
+      <a href="#">Facturación</a>
+      <a href="#">Cartera</a>
+      <a href="#">Gestión de Personal</a>
+    </div>
+    <div class="footer-col">
+      <h5>Portal</h5>
+      <a href="#">Acceder</a>
+      <a href="#">Solicitar acceso</a>
+      <a href="#">Soporte técnico</a>
+      <a href="#">Manual de usuario</a>
+    </div>
+    <div class="footer-col">
+      <h5>Empresa</h5>
+      <a href="#">Nosotros</a>
+      <a href="#">Equipo</a>
+      <a href="#">Contacto</a>
+      <a href="#">Política de privacidad</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2025 RS Back Office. Todos los derechos reservados.</p>
+    <p>Bogotá, Colombia · info@rsbackoffice.com</p>
+  </div>
+</footer>
+
+<script>
+  // Navbar scroll effect
+  const nav = document.getElementById('navbar');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 20);
+  });
+
+  // Smooth reveal on scroll
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.style.opacity = '1';
+        e.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.service-card, .feature-item, .step').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(20px)';
+    el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+    observer.observe(el);
+  });
+
+  // Login form interaction
+  document.querySelector('.btn-login').addEventListener('click', () => {
+    const btn = document.querySelector('.btn-login');
+    btn.textContent = 'Verificando...';
+    setTimeout(() => { btn.textContent = 'Ingresar al Portal →'; }, 1500);
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard | RS Back Office</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/portal.css">
+  <style>
+    .dashboard-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 270px 1fr;
+    }
+
+    .sidebar {
+      background: #f4efe6;
+      border-right: 1px solid var(--line);
+      padding: 28px 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .sidebar-top .brand {
+      margin-bottom: 26px;
+    }
+
+    .company-box {
+      padding: 16px;
+      background: rgba(255,255,255,0.66);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      margin-bottom: 22px;
+    }
+
+    .company-box small,
+    .service-box small {
+      display: block;
+      color: var(--text-soft);
+      margin-bottom: 5px;
+      font-size: 0.86rem;
+    }
+
+    .company-box strong,
+    .service-box strong {
+      font-size: 0.95rem;
+    }
+
+    .nav-links {
+      display: grid;
+      gap: 8px;
+    }
+
+    .nav-links a {
+      display: block;
+      padding: 13px 14px;
+      border-radius: 14px;
+      color: var(--text);
+      border: 1px solid transparent;
+      transition: 0.2s ease;
+    }
+
+    .nav-links a:hover,
+    .nav-links a.active {
+      background: var(--surface);
+      border-color: var(--line);
+    }
+
+    .service-box {
+      padding: 16px;
+      background: #fffdf9;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+    }
+
+    .main {
+      padding: 28px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .topbar h1 {
+      font-size: 2.2rem;
+      letter-spacing: -0.05em;
+      margin-bottom: 8px;
+    }
+
+    .topbar p {
+      color: var(--text-soft);
+      line-height: 1.7;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .kpi-grid,
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .kpi-card,
+    .status-card {
+      padding: 20px;
+    }
+
+    .split-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .task-card,
+    .support-card,
+    .docs-card {
+      padding: 22px;
+    }
+
+    .block-title {
+      font-size: 1.35rem;
+      letter-spacing: -0.04em;
+      margin-bottom: 6px;
+    }
+
+    .block-subtitle {
+      color: var(--text-soft);
+      font-size: 0.92rem;
+      margin-bottom: 18px;
+    }
+
+    .task-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: #fffdf9;
+    }
+
+    .task-item span {
+      font-size: 0.94rem;
+    }
+
+    .task-item input {
+      accent-color: #111;
+      width: 16px;
+      height: 16px;
+    }
+
+    .advisor {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 14px 0;
+    }
+
+    .advisor-avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: var(--accent-dark);
+      color: var(--gold);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+    }
+
+    .advisor small {
+      display: block;
+      color: var(--text-soft);
+      margin-top: 4px;
+    }
+
+    .support-card p {
+      color: var(--text-soft);
+      line-height: 1.8;
+      margin-bottom: 18px;
+      font-size: 0.94rem;
+    }
+
+    @media (max-width: 1180px) {
+      .kpi-grid,
+      .status-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .split-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .dashboard-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        border-right: none;
+        border-bottom: 1px solid var(--line);
+        gap: 22px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .main {
+        padding: 18px;
+      }
+
+      .kpi-grid,
+      .status-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar h1 {
+        font-size: 1.8rem;
+      }
+    }
+  </style>
+</head>
+<body class="portal-shell">
+  <div class="dashboard-shell">
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="brand">
+          <div class="brand-mark">RS</div>
+          <div class="brand-text">
+            <strong>RS Back Office</strong>
+            <span>Portal de clientes</span>
+          </div>
+        </div>
+
+        <div class="company-box">
+          <small>Empresa cliente</small>
+          <strong>Grupo Empresarial Demo S.A.S.</strong>
+        </div>
+
+        <nav class="nav-links">
+          <a href="#" class="active">Dashboard</a>
+          <a href="#">Finanzas</a>
+          <a href="#">Documentos</a>
+          <a href="#">Tareas</a>
+          <a href="#">Soporte</a>
+        </nav>
+      </div>
+
+      <div class="service-box">
+        <small>Estado del servicio</small>
+        <strong>Servicio activo</strong>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div>
+          <h1>Hola, Paola</h1>
+          <p>Aquí tienes el estado general de tu operación administrativa y financiera.</p>
+        </div>
+
+        <div class="top-actions">
+          <a href="#" class="btn btn-primary">Subir documentos</a>
+          <a href="#" class="btn btn-secondary">Contactar asesor</a>
+        </div>
+      </div>
+
+      <section class="kpi-grid">
+        <article class="portal-card kpi-card">
+          <div class="kpi-label">Caja disponible</div>
+          <div class="kpi-value">$48,500</div>
+          <div class="kpi-meta">Actualizado hoy</div>
+        </article>
+
+        <article class="portal-card kpi-card">
+          <div class="kpi-label">Cuentas por cobrar</div>
+          <div class="kpi-value">$12,300</div>
+          <div class="kpi-meta">3 facturas pendientes</div>
+        </article>
+
+        <article class="portal-card kpi-card">
+          <div class="kpi-label">Pagos programados</div>
+          <div class="kpi-value">$8,900</div>
+          <div class="kpi-meta">Próximos 7 días</div>
+        </article>
+
+        <article class="portal-card kpi-card">
+          <div class="kpi-label">Obligaciones del mes</div>
+          <div class="kpi-value">$6,200</div>
+          <div class="kpi-meta">Pendiente de validación</div>
+        </article>
+      </section>
+
+      <section class="status-grid">
+        <article class="portal-card status-card">
+          <div class="kpi-label">Contabilidad</div>
+          <div class="block-title">Estado operativo</div>
+          <span class="status-pill status-ok">Al día</span>
+        </article>
+
+        <article class="portal-card status-card">
+          <div class="kpi-label">Impuestos</div>
+          <div class="block-title">Estado fiscal</div>
+          <span class="status-pill status-warn">Próximo vencimiento</span>
+        </article>
+
+        <article class="portal-card status-card">
+          <div class="kpi-label">Nómina</div>
+          <div class="block-title">Estado de proceso</div>
+          <span class="status-pill status-ok">Procesada</span>
+        </article>
+
+        <article class="portal-card status-card">
+          <div class="kpi-label">Tesorería</div>
+          <div class="block-title">Seguimiento</div>
+          <span class="status-pill status-neutral">En monitoreo</span>
+        </article>
+      </section>
+
+      <section class="split-grid">
+        <article class="portal-card task-card">
+          <h2 class="block-title">Tareas pendientes</h2>
+          <p class="block-subtitle">Acciones recomendadas para esta semana</p>
+
+          <div class="task-list">
+            <label class="task-item">
+              <input type="checkbox">
+              <span>Subir extracto bancario de marzo</span>
+            </label>
+
+            <label class="task-item">
+              <input type="checkbox">
+              <span>Aprobar nómina del mes</span>
+            </label>
+
+            <label class="task-item">
+              <input type="checkbox">
+              <span>Confirmar pago a proveedor estratégico</span>
+            </label>
+
+            <label class="task-item">
+              <input type="checkbox">
+              <span>Revisar reporte financiero mensual</span>
+            </label>
+          </div>
+        </article>
+
+        <article class="portal-card support-card">
+          <h2 class="block-title">Asesor asignado</h2>
+
+          <div class="advisor">
+            <div class="advisor-avatar">ML</div>
+            <div>
+              <strong>Mariana López</strong>
+              <small>Account Manager</small>
+            </div>
+          </div>
+
+          <p>
+            Tu equipo RS está monitoreando tu operación y dando seguimiento
+            a tus prioridades administrativas y financieras.
+          </p>
+
+          <a href="#" class="btn btn-primary">Solicitar ayuda</a>
+        </article>
+      </section>
+
+      <section class="portal-card docs-card">
+        <h2 class="block-title">Documentos recientes</h2>
+        <p class="block-subtitle">Últimos archivos y reportes disponibles</p>
+
+        <table class="table-clean">
+          <thead>
+            <tr>
+              <th>Documento</th>
+              <th>Fecha</th>
+              <th>Estado</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Estado financiero febrero</td>
+              <td>02 Mar 2026</td>
+              <td><span class="status-pill status-ok">Disponible</span></td>
+              <td><a href="#" class="action-link">Ver</a></td>
+            </tr>
+            <tr>
+              <td>Reporte de nómina</td>
+              <td>05 Mar 2026</td>
+              <td><span class="status-pill status-ok">Disponible</span></td>
+              <td><a href="#" class="action-link">Descargar</a></td>
+            </tr>
+            <tr>
+              <td>Declaración fiscal</td>
+              <td>08 Mar 2026</td>
+              <td><span class="status-pill status-warn">En revisión</span></td>
+              <td><a href="#" class="action-link">Ver estado</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
