@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Dashboard Admin — RS Back Office</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!-- Supabase JS SDK v2 -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --bg:#0d1117; --bg2:#131920; --bg3:#1a2230; --bg4:#212c3d;
+  --panel:#16202e; --panel2:#1c2a3a;
+  --border:rgba(255,255,255,.07); --border2:rgba(255,255,255,.04);
+  --gold:#c9a84c; --gold-l:#e8c97a; --gold-pale:rgba(201,168,76,.12);
+  --white:#fff; --txt:rgba(255,255,255,.88); --txt2:rgba(255,255,255,.5);
+  --txt3:rgba(255,255,255,.25);
+  --ok:#22a66a; --ok-bg:rgba(34,166,106,.12);
+  --warn:#e8a020; --warn-bg:rgba(232,160,32,.12);
+  --err:#e05c4b; --err-bg:rgba(224,92,75,.12);
+  --info:#4a9fd4; --info-bg:rgba(74,159,212,.12);
+  --fd:'Cormorant Garamond',Georgia,serif; --fu:'DM Sans',sans-serif;
+  --sbw:248px; --tbh:60px; --r:10px; --r-lg:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;background:var(--bg);color:var(--txt);-webkit-font-smoothing:antialiased}
+.app{display:flex;height:100vh;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sb{width:var(--sbw);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;height:100vh;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;position:relative}
+.sb::-webkit-scrollbar{display:none}
+.sb::before{content:'';position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(201,168,76,.03)1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.03)1px,transparent 1px);background-size:32px 32px}
+.sb-logo{padding:1.2rem 1.1rem;display:flex;align-items:center;gap:.7rem;text-decoration:none;border-bottom:1px solid var(--border);position:relative;z-index:1}
+.sb-mark{width:38px;height:38px;flex-shrink:0;background:linear-gradient(135deg,var(--gold),var(--gold-l));border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:1.05rem;font-weight:600;color:var(--bg);box-shadow:0 4px 16px rgba(201,168,76,.3)}
+.sb-wm strong{display:block;font-size:.82rem;font-weight:600;color:var(--white);letter-spacing:.04em;line-height:1.2}
+.sb-wm span{font-size:.58rem;color:var(--txt3);letter-spacing:.13em;text-transform:uppercase}
+.admin-pill{display:inline-flex;align-items:center;font-size:.55rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);background:var(--gold-pale);border:1px solid rgba(201,168,76,.2);border-radius:100px;padding:.15rem .5rem;margin-left:auto;flex-shrink:0}
+.sb-nav{flex:1;padding:.65rem 0;position:relative;z-index:1}
+.sb-lbl{font-size:.58rem;font-weight:600;color:var(--txt3);letter-spacing:.14em;text-transform:uppercase;padding:.85rem 1.1rem .3rem}
+.sb-link{display:flex;align-items:center;gap:.65rem;padding:.6rem 1.1rem;text-decoration:none;color:var(--txt2);font-size:.79rem;font-weight:400;transition:all .18s;border-left:2px solid transparent}
+.sb-link:hover{color:var(--txt);background:rgba(255,255,255,.04)}
+.sb-link.active{color:var(--gold-l);background:var(--gold-pale);border-left-color:var(--gold);font-weight:500}
+.sb-icon{font-size:.9rem;width:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sb-count{margin-left:auto;font-size:.62rem;color:var(--txt3);background:var(--bg4);padding:.1rem .38rem;border-radius:100px;min-width:20px;text-align:center}
+.sb-badge-n{margin-left:auto;background:var(--err);color:#fff;font-size:.54rem;font-weight:700;padding:.1rem .38rem;border-radius:100px;min-width:16px;text-align:center;display:none}
+.sb-div{height:1px;background:var(--border2);margin:.45rem 1rem}
+.sb-foot{padding:.88rem 1.1rem;border-top:1px solid var(--border);position:relative;z-index:1}
+.u-pill{display:flex;align-items:center;gap:.65rem;padding:.58rem .78rem;background:rgba(255,255,255,.04);border-radius:var(--r);border:1px solid var(--border);cursor:pointer;transition:all .18s}
+.u-pill:hover{border-color:rgba(201,168,76,.3)}
+.u-av{width:32px;height:32px;background:linear-gradient(135deg,var(--gold),var(--gold-l));border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:.75rem;font-weight:600;color:var(--bg);flex-shrink:0}
+.u-name{font-size:.73rem;font-weight:500;color:var(--txt);display:block;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.u-role{font-size:.6rem;color:var(--gold);display:block}
+.u-out{background:none;border:none;cursor:pointer;color:var(--txt3);font-size:.82rem;padding:.2rem;transition:color .18s;margin-left:auto;flex-shrink:0}
+.u-out:hover{color:var(--err)}
+
+/* ── TOPBAR ── */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;height:100vh;overflow:hidden}
+.topbar{height:var(--tbh);background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 1.6rem;gap:1rem;flex-shrink:0}
+.tb-bc{font-size:.62rem;color:var(--txt3);letter-spacing:.04em}
+.tb-bc span{color:var(--gold);font-weight:500}
+.tb-title{font-family:var(--fd);font-size:1.22rem;font-weight:600;color:var(--white);line-height:1.2}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:.6rem}
+.tb-date{font-size:.7rem;color:var(--txt3);padding:.36rem .72rem;background:var(--bg3);border-radius:6px;border:1px solid var(--border);white-space:nowrap}
+.conn-pill{display:flex;align-items:center;gap:.38rem;font-size:.68rem;color:var(--txt3);padding:.36rem .72rem;background:var(--bg3);border-radius:6px;border:1px solid var(--border);transition:all .3s}
+.conn-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:background .3s}
+.c-ok{background:var(--ok);animation:pd 2.5s infinite}
+.c-loading{background:var(--warn)}
+.c-err{background:var(--err)}
+@keyframes pd{0%,100%{opacity:1}50%{opacity:.35}}
+.tb-ico{width:34px;height:34px;border-radius:var(--r);background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.88rem;cursor:pointer;transition:all .18s;color:var(--txt2);flex-shrink:0}
+.tb-ico:hover{background:var(--bg4);border-color:rgba(201,168,76,.25)}
+.tb-av{width:34px;height:34px;background:linear-gradient(135deg,var(--gold),var(--gold-l));border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:.78rem;font-weight:600;color:var(--bg);cursor:pointer;flex-shrink:0}
+
+/* ── PAGE ── */
+.content{flex:1;overflow:hidden}
+.page{height:100%;overflow-y:auto;padding:1.5rem 1.6rem;background:var(--bg);scrollbar-width:thin;scrollbar-color:var(--bg4) transparent}
+.page::-webkit-scrollbar{width:4px}
+.page::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:4px}
+
+/* ── SKELETON ── */
+.sk{background:linear-gradient(90deg,var(--bg3) 25%,var(--bg4) 50%,var(--bg3) 75%);background-size:200% 100%;animation:shim 1.5s infinite;border-radius:6px}
+@keyframes shim{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ── ALERTS ── */
+.err-bar{display:none;align-items:center;gap:.75rem;background:var(--err-bg);border:1px solid rgba(224,92,75,.22);border-left:3px solid var(--err);border-radius:var(--r);padding:.82rem 1.1rem;margin-bottom:1.2rem;font-size:.8rem}
+.err-bar.on{display:flex}
+.err-bar p{color:var(--txt2);flex:1} .err-bar strong{color:var(--err)}
+.err-bar button{background:none;border:1px solid var(--border);color:var(--txt2);border-radius:6px;padding:.28rem .7rem;font-size:.7rem;cursor:pointer;font-family:var(--fu);transition:all .18s;white-space:nowrap}
+.err-bar button:hover{background:var(--err);color:#fff;border-color:var(--err)}
+
+.alert-w{display:none;align-items:center;gap:.75rem;background:rgba(232,160,32,.06);border:1px solid rgba(232,160,32,.14);border-left:3px solid var(--warn);border-radius:var(--r);padding:.82rem 1.1rem;margin-bottom:1.2rem}
+.alert-w.on{display:flex}
+.alert-w p{font-size:.8rem;color:var(--txt2);flex:1} .alert-w strong{color:var(--warn)}
+.alert-w a{font-size:.73rem;color:var(--gold);text-decoration:none;font-weight:500;white-space:nowrap;margin-right:.5rem}
+.alert-w button{background:none;border:none;cursor:pointer;color:var(--txt3);font-size:.9rem;padding:0}
+
+/* ── STAG ── */
+.stag{display:inline-flex;align-items:center;gap:.5rem;font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem}
+.stag::before{content:'';width:16px;height:1px;background:var(--gold)}
+
+/* ── STAT CARDS ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:.9rem;margin-bottom:1.15rem}
+.stat-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.15rem;display:flex;flex-direction:column;gap:.5rem;position:relative;overflow:hidden;transition:transform .2s,border-color .2s}
+.stat-card:hover{transform:translateY(-2px);border-color:rgba(201,168,76,.2)}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:var(--kc,var(--gold));opacity:.45}
+.s-top{display:flex;align-items:center;justify-content:space-between}
+.s-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;background:var(--kic,var(--gold-pale));flex-shrink:0}
+.s-lbl{font-size:.61rem;font-weight:600;color:var(--txt3);letter-spacing:.08em;text-transform:uppercase}
+.s-val{font-family:var(--fd);font-size:2rem;font-weight:600;color:var(--white);line-height:1}
+.s-sub{font-size:.67rem;color:var(--txt3)}
+.s-sub .hi{color:var(--err);font-weight:500} .s-sub .ok{color:var(--ok);font-weight:500}
+.sparkline{display:flex;align-items:flex-end;gap:3px;height:28px}
+.sp{width:4px;border-radius:2px 2px 0 0;background:var(--gold);opacity:.4}
+.sp.hi{opacity:1}
+
+/* ── CARD ── */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.25rem;margin-bottom:1.1rem;position:relative;overflow:hidden;transition:border-color .2s}
+.card:hover{border-color:rgba(201,168,76,.15)}
+.card::after{content:'';position:absolute;top:0;left:1rem;right:1rem;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0;transform:scaleX(0);transition:all .4s}
+.card:hover::after{opacity:.3;transform:scaleX(1)}
+.card-hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem}
+.card-title{font-family:var(--fd);font-size:1.05rem;font-weight:600;color:var(--white);line-height:1.25}
+.card-sub{font-size:.68rem;color:var(--txt3);margin-top:.12rem}
+.card-lnk{font-size:.72rem;color:var(--gold);text-decoration:none;font-weight:500;transition:color .18s;white-space:nowrap;cursor:pointer;background:none;border:none;font-family:var(--fu)}
+.card-lnk:hover{color:var(--white)}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:.2rem;padding:.18rem .52rem;border-radius:100px;font-size:.62rem;font-weight:600;white-space:nowrap}
+.badge::before{content:'●';font-size:.44rem}
+.b-ok{background:var(--ok-bg);color:var(--ok)} .b-warn{background:var(--warn-bg);color:var(--warn)}
+.b-err{background:var(--err-bg);color:var(--err)} .b-info{background:var(--info-bg);color:var(--info)}
+.b-gold{background:var(--gold-pale);color:var(--gold)} .b-n{background:rgba(255,255,255,.06);color:var(--txt2)}
+
+/* ── TABLE ── */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:.6rem;font-weight:600;color:var(--txt3);letter-spacing:.09em;text-transform:uppercase;padding:0 .68rem .66rem;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+.tbl th:last-child{text-align:right}
+.tbl td{padding:.62rem .68rem;font-size:.78rem;border-bottom:1px solid var(--border2);color:var(--txt2);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:rgba(255,255,255,.02)}
+.tbl td:last-child{text-align:right}
+.td-w{font-weight:500;color:var(--txt)!important}
+.td-m{font-size:.7rem!important;color:var(--txt3)!important}
+.mod-dots{display:flex;gap:.24rem}
+.mod-dot{width:6px;height:6px;border-radius:50%;background:var(--border)}
+.mod-dot.on{background:var(--gold)}
+.act-btn{background:none;border:none;cursor:pointer;color:var(--txt3);font-size:.84rem;padding:.2rem .28rem;border-radius:4px;transition:all .18s}
+.act-btn:hover{color:var(--txt);background:var(--bg4)}
+
+/* ── TASKS ── */
+.task-item{display:flex;align-items:flex-start;gap:.75rem;padding:.7rem 0;border-bottom:1px solid var(--border2);transition:background .15s}
+.task-item:last-child{border-bottom:none}
+.task-item:hover{background:rgba(255,255,255,.02);margin:0 -.5rem;padding-left:.5rem;padding-right:.5rem;border-radius:8px}
+.t-chk{width:17px;height:17px;border-radius:4px;border:1.5px solid var(--border);flex-shrink:0;margin-top:.15rem;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.6rem;background:transparent;transition:all .18s}
+.t-chk.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.t-body{flex:1;min-width:0}
+.t-title{font-size:.79rem;font-weight:400;color:var(--txt);line-height:1.45;margin-bottom:.2rem;word-break:break-word}
+.task-item.done .t-title{text-decoration:line-through;color:var(--txt3)}
+.t-meta{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;font-size:.66rem;color:var(--txt3)}
+.p-hi{font-size:.58rem;font-weight:600;padding:.1rem .38rem;border-radius:100px;background:var(--err-bg);color:var(--err)}
+.p-med{font-size:.58rem;font-weight:600;padding:.1rem .38rem;border-radius:100px;background:var(--warn-bg);color:var(--warn)}
+.p-lo{font-size:.58rem;font-weight:600;padding:.1rem .38rem;border-radius:100px;background:var(--info-bg);color:var(--info)}
+
+/* ── DOCS ── */
+.doc-item{display:flex;align-items:center;gap:.75rem;padding:.65rem 0;border-bottom:1px solid var(--border2);cursor:pointer;transition:background .15s}
+.doc-item:last-child{border-bottom:none}
+.doc-item:hover{background:rgba(255,255,255,.02);margin:0 -.5rem;padding-left:.5rem;padding-right:.5rem;border-radius:8px}
+.doc-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;background:rgba(201,168,76,.1)}
+
+/* ── MOD BARS ── */
+.mod-bar{display:flex;flex-direction:column;gap:.65rem}
+.mb-row{display:flex;align-items:center;gap:.75rem}
+.mb-lbl{font-size:.72rem;color:var(--txt2);width:145px;flex-shrink:0}
+.mb-track{flex:1;height:5px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.mb-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--gold),var(--gold-l));transition:width 1s ease}
+.mb-pct{font-size:.67rem;color:var(--txt3);width:28px;text-align:right;flex-shrink:0}
+
+/* ── MINI KPIS ── */
+.mini-kpis{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)}
+.mk{text-align:center;padding:.65rem;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border)}
+.mk-lbl{font-size:.58rem;font-weight:600;color:var(--txt3);letter-spacing:.09em;text-transform:uppercase;margin-bottom:.3rem}
+.mk-val{font-family:var(--fd);font-size:1.4rem;font-weight:600;line-height:1}
+
+/* ── BTN ── */
+.btn-g{display:inline-flex;align-items:center;gap:.35rem;padding:.32rem .76rem;border-radius:6px;border:1px solid var(--border);background:var(--bg3);font-family:var(--fu);font-size:.7rem;color:var(--txt2);cursor:pointer;white-space:nowrap;transition:all .2s}
+.btn-g:hover{background:var(--gold-pale);color:var(--gold);border-color:rgba(201,168,76,.3)}
+
+/* ── LOADING ── */
+.loading-ov{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;gap:1.2rem;transition:opacity .4s}
+.loading-ov.gone{opacity:0;pointer-events:none}
+.l-mark{width:52px;height:52px;background:linear-gradient(135deg,var(--gold),var(--gold-l));border-radius:13px;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:1.4rem;font-weight:600;color:var(--bg);animation:lp 2s infinite}
+@keyframes lp{0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,.4)}70%{box-shadow:0 0 0 14px rgba(201,168,76,0)}}
+.l-txt{font-size:.78rem;color:var(--txt3);letter-spacing:.06em}
+.l-bar{width:160px;height:2px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.l-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-l));animation:lb 1.8s ease-in-out infinite}
+@keyframes lb{0%{width:0;margin-left:0}50%{width:100%;margin-left:0}100%{width:0;margin-left:100%}}
+
+/* ── GRID ── */
+.col-60-40{display:grid;grid-template-columns:1.5fr 1fr;gap:1rem}
+.col-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+
+@media(max-width:1100px){.stats-row,.col-60-40,.col-2{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:768px){.sb{display:none}.stats-row{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-ov" id="lo">
+  <div class="l-mark">RS</div>
+  <div class="l-bar"><div class="l-fill"></div></div>
+  <div class="l-txt" id="lTxt">Iniciando sesión…</div>
+</div>
+
+<div class="app">
+
+<!-- ── SIDEBAR ── -->
+<aside class="sb">
+  <a href="admin-dashboard.html" class="sb-logo">
+    <div class="sb-mark">RS</div>
+    <div class="sb-wm"><strong>RS Back Office</strong><span>Panel admin</span></div>
+    <span class="admin-pill">⚙ Admin</span>
+  </a>
+  <nav class="sb-nav">
+    <div class="sb-lbl">Principal</div>
+    <a href="admin-dashboard.html" class="sb-link active"><span class="sb-icon">🏠</span> Dashboard</a>
+    <a href="admin-companies.html" class="sb-link"><span class="sb-icon">🏢</span> Empresas<span class="sb-count" id="sb-co">—</span></a>
+    <a href="admin-tasks.html"     class="sb-link"><span class="sb-icon">✅</span> Tareas<span class="sb-badge-n" id="sb-tn">!</span></a>
+    <a href="admin-documents.html" class="sb-link"><span class="sb-icon">📁</span> Documentos<span class="sb-count" id="sb-dc">—</span></a>
+    <a href="admin-dashboards.html" class="sb-link"><span class="sb-icon">📊</span> Dashboards BI<span class="sb-count" id="sb-dh">—</span></a>
+    <div class="sb-div"></div>
+    <div class="sb-lbl">Módulos</div>
+    <a href="#" class="sb-link"><span class="sb-icon">🧾</span> Facturación y Cartera</a>
+    <a href="#" class="sb-link"><span class="sb-icon">📋</span> Contabilidad</a>
+    <a href="#" class="sb-link"><span class="sb-icon">🏦</span> Tesorería</a>
+    <a href="#" class="sb-link"><span class="sb-icon">👥</span> Gestión de Personal</a>
+    <div class="sb-div"></div>
+    <div class="sb-lbl">Sistema</div>
+    <a href="#" class="sb-link"><span class="sb-icon">👤</span> Usuarios</a>
+    <a href="#" class="sb-link"><span class="sb-icon">⚙️</span> Configuración</a>
+    <a href="../index.html" class="sb-link"><span class="sb-icon">🌐</span> Ver sitio web</a>
+  </nav>
+  <div class="sb-foot">
+    <div class="u-pill">
+      <div class="u-av" id="uAv">—</div>
+      <div style="flex:1;min-width:0">
+        <span class="u-name" id="uName">Cargando…</span>
+        <span class="u-role">Administrador RS</span>
+      </div>
+      <button class="u-out" onclick="signOut()" title="Cerrar sesión">⎋</button>
+    </div>
+  </div>
+</aside>
+
+<!-- ── MAIN ── -->
+<div class="main">
+  <header class="topbar">
+    <div>
+      <div class="tb-bc">Admin / <span>Dashboard</span></div>
+      <div class="tb-title" id="greeting">Vista general</div>
+    </div>
+    <div class="tb-right">
+      <div class="conn-pill">
+        <span class="conn-dot c-loading" id="cDot"></span>
+        <span id="cTxt">Conectando…</span>
+      </div>
+      <div class="tb-date" id="tbDate">—</div>
+      <button class="tb-ico" onclick="loadAll()" title="Actualizar datos">🔄</button>
+      <div class="tb-av" id="tbAv">—</div>
+    </div>
+  </header>
+
+  <div class="content">
+    <div class="page">
+
+      <!-- ERROR BANNER -->
+      <div class="err-bar" id="errBar">
+        <span style="font-size:1rem;flex-shrink:0">⚠️</span>
+        <p><strong>Error:</strong> <span id="errMsg">No se pudo conectar.</span></p>
+        <button onclick="loadAll()">Reintentar</button>
+        <button onclick="this.closest('.err-bar').classList.remove('on')" style="margin-left:.3rem">✕</button>
+      </div>
+
+      <!-- ALERTA TAREAS VENCIDAS -->
+      <div class="alert-w" id="ovAlert">
+        <span style="font-size:1rem;flex-shrink:0">⚠️</span>
+        <p><strong id="ovTxt">0 tareas vencidas</strong> requieren atención inmediata.</p>
+        <a href="admin-tasks.html">Revisar →</a>
+        <button onclick="this.closest('.alert-w').classList.remove('on')">✕</button>
+      </div>
+
+      <!-- STATS ROW -->
+      <div class="stats-row" id="statsRow">
+        <div class="sk" style="height:110px;border-radius:14px"></div>
+        <div class="sk" style="height:110px;border-radius:14px"></div>
+        <div class="sk" style="height:110px;border-radius:14px"></div>
+        <div class="sk" style="height:110px;border-radius:14px"></div>
+      </div>
+
+      <!-- FILA 1: Empresas + Tareas -->
+      <div class="col-60-40">
+        <div class="card">
+          <div class="card-hd">
+            <div>
+              <div class="stag">Supabase · companies</div>
+              <div class="card-title">Empresas clientes</div>
+              <div class="card-sub" id="coSub">Cargando…</div>
+            </div>
+            <div style="display:flex;gap:.4rem;align-items:center">
+              <button class="btn-g" onclick="loadAll()">🔄</button>
+              <a href="admin-companies.html" class="card-lnk">Ver todas →</a>
+            </div>
+          </div>
+          <div id="coEl"><div class="sk" style="height:16px;border-radius:4px;margin-bottom:.55rem"></div><div class="sk" style="height:16px;border-radius:4px;width:72%;margin-bottom:.55rem"></div><div class="sk" style="height:16px;border-radius:4px;width:52%"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div>
+              <div class="stag">Supabase · tasks</div>
+              <div class="card-title">Tareas urgentes</div>
+              <div class="card-sub" id="taskSub">Cargando…</div>
+            </div>
+            <a href="admin-tasks.html" class="card-lnk">Ver todas →</a>
+          </div>
+          <div id="taskEl"><div class="sk" style="height:16px;border-radius:4px;margin-bottom:.55rem"></div><div class="sk" style="height:16px;border-radius:4px;width:68%;margin-bottom:.55rem"></div><div class="sk" style="height:16px;border-radius:4px;width:48%"></div></div>
+        </div>
+      </div>
+
+      <!-- FILA 2: Documentos + Módulos -->
+      <div class="col-2">
+        <div class="card">
+          <div class="card-hd">
+            <div>
+              <div class="stag">Supabase · documents</div>
+              <div class="card-title">Documentos recientes</div>
+              <div class="card-sub" id="docSub">Cargando…</div>
+            </div>
+            <a href="admin-documents.html" class="card-lnk">Ver todos →</a>
+          </div>
+          <div id="docEl"><div class="sk" style="height:16px;border-radius:4px;margin-bottom:.55rem"></div><div class="sk" style="height:16px;border-radius:4px;width:68%;margin-bottom:.55rem"></div><div class="sk" style="height:16px;border-radius:4px;width:48%"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div>
+              <div class="stag">Cobertura de servicios</div>
+              <div class="card-title">Módulos contratados</div>
+              <div class="card-sub" id="modSub">Cargando…</div>
+            </div>
+          </div>
+          <div id="modEl"><div class="sk" style="height:12px;border-radius:4px;margin-bottom:.7rem"></div><div class="sk" style="height:12px;border-radius:4px;width:70%;margin-bottom:.7rem"></div><div class="sk" style="height:12px;border-radius:4px;width:55%;margin-bottom:.7rem"></div><div class="sk" style="height:12px;border-radius:4px;width:40%"></div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+
+
+/* ═══ ESTADO ═══ */
+let S = { companies:[], tasks:[], documents:[], dashboards:[], profiles:[] }
+
+/* ═══ INIT ═══ */
+async function init() {
+  setDate(); setGreeting()
+  try {
+    ltxt('Verificando sesión…')
+    const { data:{ session } } = await db.auth.getSession()
+    if (!session) { window.location.href = 'login.html'; return }
+    renderUser(session.user)
+    ltxt('Cargando datos…')
+    await loadAll()
+  } catch(e) {
+    conn('err'); showErr(e.message)
+    console.error('[RS] init:', e)
+  } finally { hideLoader() }
+}
+
+/* ═══ CARGA PARALELA ═══
+   Una sola ronda de fetch para companies, tasks, documents,
+   embedded_dashboards y profiles usando Promise.all.
+═══════════════════════ */
+async function loadAll() {
+  conn('loading')
+  try {
+    const [r1, r2, r3, r4, r5] = await Promise.all([
+
+      /* companies — todos los campos del schema */
+      db.from('companies')
+        .select('id, name, status, billing_module, accounting_module, treasury_module, hr_module, created_at')
+        .order('created_at', { ascending: false }),
+
+      /* tasks — con join a companies para mostrar el nombre */
+      db.from('tasks')
+        .select('id, title, status, due_date, company_id, companies(name)')
+        .order('due_date', { ascending: true })
+        .limit(60),
+
+      /* documents — con join a companies */
+      db.from('documents')
+        .select('id, title, category, status, created_at, company_id, companies(name)')
+        .order('created_at', { ascending: false })
+        .limit(20),
+
+      /* embedded_dashboards — solo activos */
+      db.from('embedded_dashboards')
+        .select('id, title, tool, active, company_id, companies(name)')
+        .eq('active', true),
+
+      /* profiles — para contar usuarios del portal */
+      db.from('profiles')
+        .select('id, full_name, role, company_id'),
+    ])
+
+    /* Lanzar error si alguna query falla individualmente */
+    if (r1.error) throw new Error('companies: ' + r1.error.message)
+    if (r2.error) throw new Error('tasks: '     + r2.error.message)
+    if (r3.error) throw new Error('documents: ' + r3.error.message)
+    if (r4.error) throw new Error('embedded_dashboards: ' + r4.error.message)
+    if (r5.error) throw new Error('profiles: '  + r5.error.message)
+
+    S = {
+      companies:  r1.data || [],
+      tasks:      r2.data || [],
+      documents:  r3.data || [],
+      dashboards: r4.data || [],
+      profiles:   r5.data || [],
+    }
+
+    /* Renderizar secciones */
+    renderStats()
+    renderCompanies()
+    renderTasks()
+    renderDocs()
+    renderMods()
+    renderOverdueAlert()
+    updateSbCounts()
+    conn('ok')
+    hideErr()
+
+  } catch(e) {
+    conn('err')
+    showErr(e.message)
+    console.error('[RS] loadAll:', e)
+  }
+}
+
+/* ═══ STATS ═══ */
+function renderStats() {
+  const c = S.companies, t = S.tasks, d = S.documents, dh = S.dashboards
+  const active  = c.filter(x => x.status === 'active').length
+  const total   = c.length
+  const pending = t.filter(x => x.status === 'pending').length
+  const overdue = t.filter(x => isOverdue(x)).length
+  const kcs = overdue > 0 ? 'var(--err)'    : 'var(--ok)'
+  const kic = overdue > 0 ? 'var(--err-bg)' : 'var(--ok-bg)'
+
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card" style="--kc:var(--gold);--kic:var(--gold-pale)">
+      <div class="s-top"><div class="s-icon">🏢</div><div class="sparkline">${sp([total-3,total-2,total-1,total,total])}</div></div>
+      <div class="s-lbl">Empresas activas</div>
+      <div class="s-val">${active}</div>
+      <div class="s-sub">${total} total en Supabase</div>
+    </div>
+    <div class="stat-card" style="--kc:${kcs};--kic:${kic}">
+      <div class="s-top"><div class="s-icon">✅</div><div class="sparkline">${sp([10,8,12,pending,pending])}</div></div>
+      <div class="s-lbl">Tareas pendientes</div>
+      <div class="s-val">${pending}</div>
+      <div class="s-sub">${overdue > 0 ? `<span class="hi">${overdue} vencida${overdue!==1?'s':''}</span>` : '<span class="ok">Al día ✓</span>'}</div>
+    </div>
+    <div class="stat-card" style="--kc:var(--info);--kic:var(--info-bg)">
+      <div class="s-top"><div class="s-icon">📁</div><div class="sparkline">${sp([d.length-4,d.length-2,d.length-1,d.length,d.length])}</div></div>
+      <div class="s-lbl">Documentos</div>
+      <div class="s-val">${d.length}</div>
+      <div class="s-sub">Últimos 20 registros</div>
+    </div>
+    <div class="stat-card" style="--kc:var(--ok);--kic:var(--ok-bg)">
+      <div class="s-top"><div class="s-icon">📊</div><div class="sparkline">${sp([dh.length,dh.length,dh.length,dh.length,dh.length])}</div></div>
+      <div class="s-lbl">Dashboards BI activos</div>
+      <div class="s-val">${dh.length}</div>
+      <div class="s-sub"><span class="ok">${dh.length} publicado${dh.length!==1?'s':''}</span></div>
+    </div>`
+}
+
+function sp(vals) {
+  const max = Math.max(...vals, 1)
+  return vals.map((v,i) =>
+    `<div class="sp ${i===vals.length-1?'hi':''}" style="height:${Math.max(4,Math.round((v/max)*28))}px"></div>`
+  ).join('')
+}
+
+/* ═══ EMPRESAS ═══ */
+function renderCompanies() {
+  const cos = S.companies.slice(0, 8)
+  const tot = S.companies.length
+  const act = S.companies.filter(c => c.status === 'active').length
+  document.getElementById('coSub').textContent = `${tot} empresa${tot!==1?'s':''} · ${act} activa${act!==1?'s':''}`
+
+  if (!cos.length) {
+    document.getElementById('coEl').innerHTML = emptyState('🏢', 'Sin empresas', 'Aún no hay registros en la tabla companies.')
+    return
+  }
+  document.getElementById('coEl').innerHTML = `
+    <table class="tbl">
+      <thead><tr><th>Empresa</th><th>Módulos</th><th>Estado</th><th>Creada</th><th></th></tr></thead>
+      <tbody>${cos.map(c => `
+        <tr>
+          <td><div class="td-w">${esc(c.name)}</div></td>
+          <td>
+            <div class="mod-dots">
+              <div class="mod-dot ${c.billing_module    ? 'on':''}" title="Facturación"></div>
+              <div class="mod-dot ${c.accounting_module ? 'on':''}" title="Contabilidad"></div>
+              <div class="mod-dot ${c.treasury_module   ? 'on':''}" title="Tesorería"></div>
+              <div class="mod-dot ${c.hr_module         ? 'on':''}" title="Personal"></div>
+            </div>
+          </td>
+          <td>${statusBadge(c.status)}</td>
+          <td class="td-m">${fmtDate(c.created_at)}</td>
+          <td><button class="act-btn" onclick="window.location='admin-companies.html'">👁</button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`
+}
+
+/* ═══ TAREAS ═══ */
+function renderTasks() {
+  /* Orden: vencidas primero, luego próximas por due_date */
+  const ov  = S.tasks.filter(t => isOverdue(t) && t.status === 'pending')
+  const up  = S.tasks.filter(t => !isOverdue(t) && t.status === 'pending')
+  const top = [...ov, ...up].slice(0, 7)
+  const pend = S.tasks.filter(t => t.status === 'pending').length
+
+  document.getElementById('taskSub').textContent =
+    `${pend} pendiente${pend!==1?'s':''} · ${ov.length} vencida${ov.length!==1?'s':''}`
+
+  if (!top.length) {
+    document.getElementById('taskEl').innerHTML = `
+      <div style="text-align:center;padding:2rem;color:var(--ok)">
+        <div style="font-size:1.8rem;margin-bottom:.5rem">✅</div>
+        <div style="font-size:.8rem;color:var(--txt2);font-weight:500">Todo al día</div>
+        <div style="font-size:.72rem;color:var(--txt3);margin-top:.2rem">Sin tareas pendientes</div>
+      </div>`
+    return
+  }
+  document.getElementById('taskEl').innerHTML = top.map(t => `
+    <div class="task-item" id="ti-${t.id}">
+      <div class="t-chk" onclick="completeTask('${t.id}', this)"></div>
+      <div class="t-body">
+        <div class="t-title">${esc(t.title)}</div>
+        <div class="t-meta">
+          ${prioBadge(t)}
+          ${t.due_date ? `<span>📅 ${fmtDate(t.due_date)}</span>` : ''}
+          ${t.companies ? `<span>🏢 ${esc(t.companies.name)}</span>` : ''}
+        </div>
+      </div>
+    </div>`).join('')
+}
+
+/* Marca tarea como completada en Supabase y actualiza UI */
+async function completeTask(id, el) {
+  el.classList.add('on'); el.textContent = '✓'
+  const row = el.closest('.task-item'); row.classList.add('done')
+
+  const { error } = await db.from('tasks').update({ status: 'completed' }).eq('id', id)
+  if (error) {
+    el.classList.remove('on'); el.textContent = ''; row.classList.remove('done')
+    showErr('No se pudo actualizar la tarea: ' + error.message)
+  } else {
+    const t = S.tasks.find(x => x.id === id); if (t) t.status = 'completed'
+    updateSbCounts(); renderOverdueAlert()
+  }
+}
+
+/* ═══ DOCUMENTOS ═══ */
+function renderDocs() {
+  const docs = S.documents.slice(0, 8)
+  const tot  = S.documents.length
+  document.getElementById('docSub').textContent = `${tot} documento${tot!==1?'s':''} cargados`
+
+  const catIcon = { invoice:'📕', report:'📗', contract:'📘', payroll:'📙' }
+
+  if (!docs.length) {
+    document.getElementById('docEl').innerHTML = emptyState('📁', 'Sin documentos', 'Aún no hay documentos en la tabla documents.')
+    return
+  }
+  document.getElementById('docEl').innerHTML = docs.map(d => `
+    <div class="doc-item" onclick="window.location='admin-documents.html'">
+      <div class="doc-icon">${catIcon[d.category] || '📄'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.79rem;font-weight:500;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(d.title)}</div>
+        <div style="font-size:.65rem;color:var(--txt3);margin-top:.1rem">${d.companies ? esc(d.companies.name) : '—'} · ${esc(d.category || 'General')}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;flex-shrink:0">
+        ${docBadge(d.status)}
+        <span style="font-size:.62rem;color:var(--txt3)">${fmtDate(d.created_at)}</span>
+      </div>
+    </div>`).join('')
+}
+
+/* ═══ MÓDULOS ═══ */
+function renderMods() {
+  const cos   = S.companies
+  const total = Math.max(cos.length, 1)
+  const pct   = f => Math.round((cos.filter(c => c[f]).length / total) * 100)
+  const cnt   = f => cos.filter(c => c[f]).length
+
+  document.getElementById('modSub').textContent =
+    `${total} empresa${total!==1?'s':''} · cobertura actual`
+
+  document.getElementById('modEl').innerHTML = `
+    <div class="mod-bar">
+      <div class="mb-row">
+        <div class="mb-lbl">🧾 Facturación</div>
+        <div class="mb-track"><div class="mb-fill" style="width:${pct('billing_module')}%"></div></div>
+        <div class="mb-pct">${pct('billing_module')}%</div>
+      </div>
+      <div class="mb-row">
+        <div class="mb-lbl">📋 Contabilidad</div>
+        <div class="mb-track"><div class="mb-fill" style="width:${pct('accounting_module')}%;background:linear-gradient(90deg,var(--info),#6dc4f0)"></div></div>
+        <div class="mb-pct">${pct('accounting_module')}%</div>
+      </div>
+      <div class="mb-row">
+        <div class="mb-lbl">🏦 Tesorería</div>
+        <div class="mb-track"><div class="mb-fill" style="width:${pct('treasury_module')}%;background:linear-gradient(90deg,var(--ok),#50d090)"></div></div>
+        <div class="mb-pct">${pct('treasury_module')}%</div>
+      </div>
+      <div class="mb-row">
+        <div class="mb-lbl">👥 Personal</div>
+        <div class="mb-track"><div class="mb-fill" style="width:${pct('hr_module')}%;background:linear-gradient(90deg,var(--warn),#f0c040)"></div></div>
+        <div class="mb-pct">${pct('hr_module')}%</div>
+      </div>
+    </div>
+    <div class="mini-kpis">
+      <div class="mk">
+        <div class="mk-lbl">Dashboards BI</div>
+        <div class="mk-val" style="color:var(--gold)">${S.dashboards.length}</div>
+      </div>
+      <div class="mk">
+        <div class="mk-lbl">Usuarios portal</div>
+        <div class="mk-val" style="color:var(--info)">${S.profiles.length}</div>
+      </div>
+    </div>`
+}
+
+/* ═══ ALERTA VENCIDOS ═══ */
+function renderOverdueAlert() {
+  const ov = S.tasks.filter(t => isOverdue(t) && t.status === 'pending')
+  const el = document.getElementById('ovAlert')
+  if (ov.length > 0) {
+    document.getElementById('ovTxt').textContent =
+      `${ov.length} tarea${ov.length!==1?'s':''} vencida${ov.length!==1?'s':''}`
+    el.classList.add('on')
+  } else {
+    el.classList.remove('on')
+  }
+}
+
+/* ═══ SIDEBAR COUNTS ═══ */
+function updateSbCounts() {
+  const pend   = S.tasks.filter(t => t.status === 'pending').length
+  const overdue = S.tasks.filter(t => isOverdue(t) && t.status === 'pending').length
+  document.getElementById('sb-co').textContent = S.companies.length  || '—'
+  document.getElementById('sb-dc').textContent = S.documents.length  || '—'
+  document.getElementById('sb-dh').textContent = S.dashboards.length || '—'
+  const nb  = document.getElementById('sb-tn')
+  const cnt = overdue > 0 ? overdue : pend
+  if (cnt > 0) { nb.textContent = cnt; nb.style.display = 'flex' }
+  else nb.style.display = 'none'
+}
+
+/* ═══ USER ═══ */
+function renderUser(user) {
+  const e   = user.email || '—'
+  const ini = e.slice(0, 2).toUpperCase()
+  document.getElementById('uAv').textContent  = ini
+  document.getElementById('tbAv').textContent = ini
+  document.getElementById('uName').textContent = e
+}
+
+async function signOut() {
+  if (!confirm('¿Cerrar sesión?')) return
+  await db.auth.signOut()
+  window.location.href = 'login.html'
+}
+
+/* ═══ HELPERS UI ═══ */
+function conn(s) {
+  const dot = document.getElementById('cDot'), txt = document.getElementById('cTxt')
+  dot.className = 'conn-dot ' + { ok:'c-ok', loading:'c-loading', err:'c-err' }[s]
+  txt.textContent = { ok:'Conectado', loading:'Actualizando…', err:'Sin conexión' }[s]
+}
+function showErr(m) { document.getElementById('errMsg').textContent = m; document.getElementById('errBar').classList.add('on') }
+function hideErr()  { document.getElementById('errBar').classList.remove('on') }
+function hideLoader() { const e=document.getElementById('lo'); e.classList.add('gone'); setTimeout(()=>e.remove(),500) }
+function ltxt(t)    { document.getElementById('lTxt').textContent = t }
+
+/* ═══ HELPERS DATOS ═══ */
+function isOverdue(t) {
+  if (!t.due_date || t.status !== 'pending') return false
+  return new Date(t.due_date) < new Date(new Date().toDateString())
+}
+
+function prioBadge(t) {
+  if (isOverdue(t)) return '<span class="p-hi">🔴 Vencida</span>'
+  if (!t.due_date)  return '<span class="p-lo">Sin fecha</span>'
+  const days = Math.ceil((new Date(t.due_date) - new Date()) / 86400000)
+  if (days <= 3) return `<span class="p-hi">🔴 ${days}d</span>`
+  if (days <= 7) return `<span class="p-med">🟡 ${days}d</span>`
+  return `<span class="p-lo">🔵 ${days}d</span>`
+}
+
+function statusBadge(s) {
+  const m = { active:['b-ok','Activa'], inactive:['b-n','Inactiva'], pending:['b-warn','Pendiente'], overdue:['b-err','En mora'] }
+  const [c,l] = m[s] || ['b-n', s || '—']
+  return `<span class="badge ${c}">${l}</span>`
+}
+
+function docBadge(s) {
+  const m = { available:['b-ok','Disponible'], pending:['b-warn','Pendiente'], draft:['b-n','Borrador'], archived:['b-n','Archivado'] }
+  const [c,l] = m[s] || ['b-n', s || '—']
+  return `<span class="badge ${c}">${l}</span>`
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' })
+}
+
+function esc(s) {
+  if (!s) return ''
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+}
+
+function emptyState(icon, title, sub) {
+  return `<div style="text-align:center;padding:2rem;color:var(--txt3)">
+    <div style="font-size:1.8rem;opacity:.25;margin-bottom:.5rem">${icon}</div>
+    <div style="font-size:.8rem;color:var(--txt2)">${title}</div>
+    <div style="font-size:.72rem;margin-top:.2rem;line-height:1.6">${sub}</div>
+  </div>`
+}
+
+function setDate() {
+  document.getElementById('tbDate').textContent =
+    new Date().toLocaleDateString('es-CO', { weekday:'short', year:'numeric', month:'short', day:'numeric' })
+}
+
+function setGreeting() {
+  const h = new Date().getHours()
+  document.getElementById('greeting').textContent =
+    (h < 12 ? 'Buenos días' : h < 18 ? 'Buenas tardes' : 'Buenas noches') + ' — Vista general'
+}
+
+/* Auto-refresh cada 60 segundos cuando la pestaña está activa */
+setInterval(() => { if (document.visibilityState === 'visible') loadAll() }, 60_000)
+
+/* Arrancar */
+init()
+</script>
+</body>
+</html>
