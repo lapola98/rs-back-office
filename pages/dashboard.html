@@ -3,1233 +3,834 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Portal Cliente — RS Back Office</title>
+<title>Mi Portal — RS Back Office</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-/* ─────────────────────────────────────────────
-   VARIABLES — idénticas al index.html principal
-───────────────────────────────────────────── */
 :root {
-  --ink:       #0d1117;
-  --ink-soft:  #1e2530;
-  --gold:      #c9a84c;
-  --gold-l:    #e8c97a;
-  --gold-pale: #f5e9c8;
-  --cream:     #faf8f3;   /* fondo principal del sitio */
-  --white:     #ffffff;
-  --g50:       #f8f6f1;
-  --g100:      #f2f0eb;
-  --g200:      #e8e4dc;
-  --g300:      #c8c4bc;
-  --g400:      #a09c94;
-  --g500:      #7a776f;
-  --g700:      #3d3a35;
-  --accent:    #1a3a5c;
-  --ok:     #22a66a;  --ok-bg:   rgba(34,166,106,.09);
-  --warn:   #e8a020;  --warn-bg: rgba(232,160,32,.09);
-  --err:    #d94f3d;  --err-bg:  rgba(217,79,61,.09);
-  --info:   #2a7dc9;  --info-bg: rgba(42,125,201,.09);
-  --fd: 'Cormorant Garamond', Georgia, serif;
-  --fu: 'DM Sans', sans-serif;
-  --sbw: 252px;
-  --tbh: 62px;
+  --ink:#0d1117; --ink-soft:#1e2530;
+  --gold:#c9a84c; --gold-l:#e8c97a; --gold-pale:#f5e9c8; --gold-ring:rgba(201,168,76,.15);
+  --cream:#faf8f3; --white:#ffffff;
+  --g50:#f8f6f1; --g100:#f2f0eb; --g200:#e8e4dc;
+  --g300:#c8c4bc; --g400:#a09c94; --g500:#7a776f; --g700:#3d3a35;
+  --accent:#1a3a5c;
+  --ok:#22a66a;  --ok-bg:rgba(34,166,106,.09);
+  --warn:#d4890a; --warn-bg:rgba(212,137,10,.09);
+  --err:#c0392b;  --err-bg:rgba(192,57,43,.09);
+  --info:#2471a3; --info-bg:rgba(36,113,163,.09);
+  --fd:'Cormorant Garamond',Georgia,serif; --fu:'DM Sans',sans-serif;
+  --sbw:252px; --tbh:62px; --r:10px; --r-lg:14px;
 }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;background:var(--cream);color:var(--ink);-webkit-font-smoothing:antialiased}
+.app{display:flex;height:100vh;overflow:hidden}
 
-*,*::before,*::after { box-sizing:border-box; margin:0; padding:0 }
-html,body { height:100%; overflow:hidden; font-family:var(--fu); font-size:13px;
-  background:var(--cream); color:var(--ink); -webkit-font-smoothing:antialiased }
+/* SIDEBAR */
+.sb{width:var(--sbw);background:var(--white);border-right:1px solid var(--g200);display:flex;flex-direction:column;flex-shrink:0;height:100vh;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;position:relative}
+.sb::-webkit-scrollbar{display:none}
+.sb::before{content:'';position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(201,168,76,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.04) 1px,transparent 1px);background-size:32px 32px}
+.sb-logo{padding:1.2rem 1.15rem;display:flex;align-items:center;gap:.7rem;text-decoration:none;border-bottom:1px solid var(--g200);position:relative;z-index:1}
+.sb-mark{width:38px;height:38px;flex-shrink:0;background:var(--ink);border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:1.05rem;font-weight:600;color:var(--gold);box-shadow:0 4px 14px rgba(13,17,23,.18)}
+.sb-wm strong{display:block;font-size:.82rem;font-weight:600;color:var(--ink);letter-spacing:.04em;line-height:1.2}
+.sb-wm span{font-size:.58rem;color:var(--g400);letter-spacing:.13em;text-transform:uppercase}
+.sb-nav{flex:1;padding:.65rem 0;position:relative;z-index:1}
+.sb-lbl{font-size:.59rem;font-weight:600;color:var(--g300);letter-spacing:.14em;text-transform:uppercase;padding:.85rem 1.15rem .3rem}
+.sb-link{display:flex;align-items:center;gap:.65rem;padding:.6rem 1.15rem;text-decoration:none;color:var(--g500);font-size:.79rem;font-weight:400;transition:all .18s;border-left:2px solid transparent;cursor:pointer}
+.sb-link:hover{color:var(--ink);background:var(--g50)}
+.sb-link.active{color:var(--gold);background:var(--gold-pale);border-left-color:var(--gold);font-weight:600}
+.sb-icon{font-size:.9rem;width:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sb-div{height:1px;background:var(--g100);margin:.45rem 1rem}
+.sb-foot{padding:.9rem 1.15rem;border-top:1px solid var(--g100);position:relative;z-index:1}
+.u-pill{display:flex;align-items:center;gap:.65rem;padding:.6rem .8rem;background:var(--g50);border-radius:var(--r);border:1px solid var(--g200);cursor:pointer;transition:all .18s}
+.u-pill:hover{border-color:var(--gold);background:var(--gold-pale)}
+.u-av{width:32px;height:32px;background:var(--ink);border:1.5px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:600;color:var(--gold-l);flex-shrink:0}
+.u-name{font-size:.74rem;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;line-height:1.3}
+.u-co{font-size:.6rem;color:var(--g500);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.u-out{background:none;border:none;cursor:pointer;color:var(--g300);font-size:.82rem;padding:.2rem;transition:color .18s;margin-left:auto;flex-shrink:0}
+.u-out:hover{color:var(--err)}
 
-/* ═══ LAYOUT ═══ */
-.app { display:flex; height:100vh; overflow:hidden }
+/* TOPBAR */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;height:100vh;overflow:hidden}
+.topbar{height:var(--tbh);background:var(--white);border-bottom:1px solid var(--g200);box-shadow:0 2px 10px rgba(13,17,23,.04);display:flex;align-items:center;padding:0 1.6rem;gap:1rem;flex-shrink:0}
+.tb-bc{font-size:.62rem;color:var(--g500);letter-spacing:.03em}
+.tb-bc span{color:var(--gold);font-weight:600}
+.tb-title{font-family:var(--fd);font-size:1.22rem;font-weight:600;color:var(--ink);line-height:1.2}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:.6rem}
+.tb-date{font-size:.7rem;color:var(--g500);padding:.36rem .72rem;background:var(--g50);border-radius:6px;border:1px solid var(--g200);white-space:nowrap}
+.conn-pill{display:flex;align-items:center;gap:.38rem;font-size:.68rem;color:var(--g500);padding:.36rem .72rem;background:var(--g50);border-radius:6px;border:1px solid var(--g200)}
+.cdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:background .3s}
+.c-ok{background:var(--ok);animation:pd 2.5s infinite}.c-l{background:var(--warn)}.c-err{background:var(--err)}
+@keyframes pd{0%,100%{opacity:1}50%{opacity:.35}}
+.tb-av{width:34px;height:34px;background:var(--ink);border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:600;color:var(--gold-l);cursor:pointer;transition:background .18s;flex-shrink:0}
+.tb-av:hover{background:var(--accent)}
 
-/* ══════════════════════════════════════════════
-   SIDEBAR  — blanco puro, idéntico al nav del sitio
-══════════════════════════════════════════════ */
-.sb {
-  width:var(--sbw); background:var(--white);
-  border-right:1px solid var(--g200);
-  display:flex; flex-direction:column;
-  flex-shrink:0; height:100vh;
-  overflow-y:auto; overflow-x:hidden;
-  scrollbar-width:none; position:relative;
-}
-.sb::-webkit-scrollbar { display:none }
+/* PAGE */
+.content{flex:1;overflow:hidden}
+.page{height:100%;overflow-y:auto;padding:1.5rem 1.6rem;background:var(--cream);scrollbar-width:thin;scrollbar-color:var(--g200) transparent}
+.page::-webkit-scrollbar{width:4px}
+.page::-webkit-scrollbar-thumb{background:var(--g200);border-radius:4px}
 
-/* Grid decorativo dorado muy sutil — igual que hero del index */
-.sb::before {
-  content:''; position:absolute; inset:0; pointer-events:none;
-  background-image:
-    linear-gradient(rgba(201,168,76,.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(201,168,76,.04) 1px, transparent 1px);
-  background-size:32px 32px;
-}
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.anim{animation:fadeUp .35s ease both}
+.anim-1{animation-delay:.05s}.anim-2{animation-delay:.1s}.anim-3{animation-delay:.15s}.anim-4{animation-delay:.2s}
 
-/* Logo — igual que el navbar del index: marca negra + RS dorado */
-.sb-logo {
-  padding:1.2rem 1.15rem; display:flex; align-items:center; gap:.7rem;
-  text-decoration:none; border-bottom:1px solid var(--g200); position:relative; z-index:1;
-}
-.sb-mark {
-  width:38px; height:38px; flex-shrink:0;
-  background:var(--ink); border-radius:9px;
-  display:flex; align-items:center; justify-content:center;
-  font-family:var(--fd); font-size:1.05rem; font-weight:600;
-  color:var(--gold); letter-spacing:.02em;
-  box-shadow:0 4px 14px rgba(13,17,23,.18);
-}
-.sb-wordmark { display:flex; flex-direction:column; gap:.05rem }
-.sb-wordmark strong {
-  font-family:var(--fu); font-size:.82rem; font-weight:600;
-  color:var(--ink); letter-spacing:.04em; line-height:1.2;
-}
-.sb-wordmark span {
-  font-size:.58rem; color:var(--g400);
-  letter-spacing:.13em; text-transform:uppercase;
-}
+/* SKELETON */
+.sk{background:linear-gradient(90deg,var(--g100) 25%,var(--g200) 50%,var(--g100) 75%);background-size:200% 100%;animation:shim 1.5s infinite;border-radius:6px}
+@keyframes shim{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
-/* Nav */
-.sb-nav { flex:1; padding:.65rem 0; position:relative; z-index:1 }
+/* ERROR */
+.err-bar{display:none;align-items:center;gap:.75rem;border-radius:var(--r);padding:.82rem 1.1rem;margin-bottom:1.2rem;border:1px solid var(--err-bg);border-left:3px solid var(--err);background:rgba(192,57,43,.04);font-size:.8rem}
+.err-bar.on{display:flex}
+.err-bar p{color:var(--g700);flex:1}.err-bar strong{color:var(--err)}
+.err-bar button{background:none;border:1px solid var(--g200);color:var(--g500);border-radius:6px;padding:.28rem .7rem;font-size:.7rem;cursor:pointer;font-family:var(--fu);transition:all .18s;white-space:nowrap}
+.err-bar button:hover{background:var(--err);color:#fff;border-color:var(--err)}
 
-.sb-label {
-  font-size:.59rem; font-weight:600; color:var(--g300);
-  letter-spacing:.14em; text-transform:uppercase;
-  padding:.85rem 1.15rem .3rem;
-}
+/* STAG */
+.stag{display:inline-flex;align-items:center;gap:.5rem;font-size:.67rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:.42rem}
+.stag::before{content:'';width:20px;height:1px;background:var(--gold)}
 
-.sb-link {
-  display:flex; align-items:center; gap:.65rem;
-  padding:.6rem 1.15rem; text-decoration:none;
-  color:var(--g500); font-size:.79rem; font-weight:400;
-  transition:all .18s; border-left:2.5px solid transparent;
-}
-.sb-link:hover { color:var(--ink); background:var(--g50) }
-.sb-link.active {
-  color:var(--gold); background:var(--gold-pale);
-  border-left-color:var(--gold); font-weight:600;
-}
-.sb-link.locked { color:var(--g300); cursor:not-allowed }
-.sb-link.locked:hover { background:none; color:var(--g300) }
+/* WELCOME BAND */
+.wb{background:var(--ink);border-radius:var(--r-lg);padding:1.6rem 1.8rem;margin-bottom:1.15rem;display:flex;align-items:center;gap:1.5rem;position:relative;overflow:hidden}
+.wb::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(201,168,76,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.04) 1px,transparent 1px);background-size:32px 32px}
+.wb::after{content:'';position:absolute;top:-60px;right:-40px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,.1) 0%,transparent 65%);pointer-events:none}
+.wb-mark{width:52px;height:52px;background:linear-gradient(135deg,var(--gold),var(--gold-l));border-radius:13px;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:1.3rem;font-weight:600;color:var(--ink);flex-shrink:0;position:relative;z-index:1;box-shadow:0 4px 16px rgba(201,168,76,.3)}
+.wb-txt{position:relative;z-index:1;flex:1;min-width:0}
+.wb-g{font-size:.7rem;color:rgba(255,255,255,.4);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.2rem}
+.wb-n{font-family:var(--fd);font-size:1.5rem;font-weight:600;color:var(--white);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wb-n em{font-style:italic;color:var(--gold-l)}
+.wb-s{font-size:.75rem;color:rgba(255,255,255,.4);margin-top:.25rem}
+.wb-mods{display:flex;gap:.45rem;flex-wrap:wrap;position:relative;z-index:1;flex-shrink:0}
+.wb-mod{display:flex;align-items:center;gap:.35rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);border-radius:100px;padding:.3rem .72rem;font-size:.67rem;color:rgba(255,255,255,.45)}
+.wb-mod.on{background:var(--gold-pale);border-color:rgba(201,168,76,.3);color:var(--gold)}
 
-.sb-icon { font-size:.92rem; width:18px; display:flex; align-items:center; justify-content:center; flex-shrink:0 }
-.sb-badge {
-  margin-left:auto; background:var(--err); color:#fff;
-  font-size:.54rem; font-weight:700;
-  padding:.1rem .38rem; border-radius:100px; min-width:16px; text-align:center;
-}
-.sb-lock { margin-left:auto; font-size:.68rem; opacity:.35 }
-.sb-div { height:1px; background:var(--g100); margin:.45rem 1rem }
+/* KPI ROW */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:.9rem;margin-bottom:1.15rem}
+.kpi{background:var(--white);border:1px solid var(--g200);border-radius:var(--r-lg);padding:1.1rem;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s,border-color .2s}
+.kpi:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(13,17,23,.08);border-color:rgba(201,168,76,.25)}
+.kpi::before{content:'';position:absolute;top:0;left:.8rem;right:.8rem;height:2px;border-radius:0 0 2px 2px;background:var(--kc,var(--gold));opacity:.55}
+.kpi-lbl{font-size:.61rem;font-weight:600;color:var(--g500);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.72rem}
+.kpi-val{font-family:var(--fd);font-size:1.75rem;font-weight:600;color:var(--ink);line-height:1;margin-bottom:.42rem}
+.kpi-val small{font-size:.9rem;font-weight:400;color:var(--g500)}
+.kpi-ft{display:flex;align-items:center;gap:.36rem;font-size:.68rem}
 
-/* User pill */
-.sb-foot { padding:.9rem 1.15rem; border-top:1px solid var(--g100); position:relative; z-index:1 }
-.user-pill {
-  display:flex; align-items:center; gap:.65rem;
-  padding:.6rem .8rem; background:var(--g50);
-  border-radius:10px; border:1px solid var(--g200);
-  cursor:pointer; transition:all .18s;
-}
-.user-pill:hover { border-color:var(--gold); background:var(--gold-pale) }
-.u-av {
-  width:32px; height:32px;
-  background:var(--ink); border:1.5px solid var(--gold);
-  border-radius:50%; display:flex; align-items:center; justify-content:center;
-  font-size:.62rem; font-weight:600; color:var(--gold-l); flex-shrink:0;
-}
-.u-info { flex:1; min-width:0 }
-.u-name { font-size:.74rem; font-weight:500; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; line-height:1.3 }
-.u-role { font-size:.6rem; color:var(--g500); display:block }
-.u-out { background:none; border:none; cursor:pointer; color:var(--g300); font-size:.82rem; padding:.2rem; transition:color .18s; margin-left:auto }
-.u-out:hover { color:var(--err) }
+/* BADGES / DELTA */
+.badge{display:inline-flex;align-items:center;gap:.2rem;padding:.18rem .52rem;border-radius:100px;font-size:.62rem;font-weight:600;white-space:nowrap}
+.badge::before{content:'●';font-size:.44rem}
+.b-ok{background:var(--ok-bg);color:var(--ok)}.b-warn{background:var(--warn-bg);color:var(--warn)}
+.b-err{background:var(--err-bg);color:var(--err)}.b-info{background:var(--info-bg);color:var(--info)}
+.b-gold{background:var(--gold-pale);color:var(--gold)}.b-n{background:var(--g100);color:var(--g500)}
+.delta{display:inline-flex;align-items:center;gap:.17rem;padding:.13rem .42rem;border-radius:100px;font-weight:600;font-size:.65rem}
+.d-up{background:var(--ok-bg);color:var(--ok)}.d-dn{background:var(--err-bg);color:var(--err)}.d-n{background:var(--g100);color:var(--g500)}
 
-/* ══════════════════════════════════════════════
-   MAIN
-══════════════════════════════════════════════ */
-.main { flex:1; display:flex; flex-direction:column; min-width:0; height:100vh; overflow:hidden }
+/* CARD */
+.card{background:var(--white);border:1px solid var(--g200);border-radius:var(--r-lg);padding:1.25rem;margin-bottom:1.1rem;position:relative;overflow:hidden;transition:box-shadow .2s,border-color .2s}
+.card:hover{box-shadow:0 6px 22px rgba(13,17,23,.07)}
+.card::after{content:'';position:absolute;top:0;left:1rem;right:1rem;height:2px;border-radius:0 0 2px 2px;background:linear-gradient(90deg,var(--gold),var(--gold-l));transform:scaleX(0);transform-origin:left;transition:transform .4s;opacity:.7}
+.card:hover::after{transform:scaleX(1)}
+.card-hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem}
+.card-title{font-family:var(--fd);font-size:1.05rem;font-weight:600;color:var(--ink);line-height:1.25}
+.card-sub{font-size:.68rem;color:var(--g500);margin-top:.12rem}
+.card-lnk{font-size:.72rem;color:var(--gold);font-weight:600;transition:color .18s;white-space:nowrap;cursor:pointer;background:none;border:none;font-family:var(--fu);text-decoration:none}
+.card-lnk:hover{color:var(--ink)}
 
-/* ── Topbar — blanco + sombra sutil ── */
-.topbar {
-  height:var(--tbh); background:var(--white);
-  border-bottom:1px solid var(--g200);
-  box-shadow:0 2px 10px rgba(13,17,23,.05);
-  display:flex; align-items:center; padding:0 1.6rem; gap:1rem; flex-shrink:0;
-}
-.tb-left { display:flex; flex-direction:column }
-.tb-bc { font-size:.62rem; color:var(--g500); letter-spacing:.03em }
-.tb-bc span { color:var(--gold); font-weight:600 }
-/* Título con Cormorant — igual que h1 del hero */
-.tb-title { font-family:var(--fd); font-size:1.22rem; font-weight:600; color:var(--ink); line-height:1.2 }
-.tb-right { margin-left:auto; display:flex; align-items:center; gap:.6rem }
-.tb-date { font-size:.7rem; color:var(--g500); padding:.36rem .72rem; background:var(--g50); border-radius:6px; border:1px solid var(--g200); white-space:nowrap }
-.tb-ico {
-  position:relative; width:36px; height:36px; border-radius:8px;
-  background:var(--g50); border:1px solid var(--g200);
-  display:flex; align-items:center; justify-content:center;
-  font-size:.88rem; cursor:pointer; transition:all .18s;
-}
-.tb-ico:hover { background:var(--g100); border-color:var(--g300) }
-.tb-n { position:absolute; top:-4px; right:-4px; background:var(--err); color:#fff; font-size:.5rem; font-weight:700; width:15px; height:15px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid var(--white) }
-/* Avatar topbar — cuadro negro + letra dorada como logo */
-.tb-av { width:36px; height:36px; background:var(--ink); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:.64rem; font-weight:600; color:var(--gold-l); cursor:pointer; letter-spacing:.02em; transition:background .18s }
-.tb-av:hover { background:var(--accent) }
+/* BUTTONS */
+.btn-p{display:inline-flex;align-items:center;gap:.44rem;padding:.62rem 1.3rem;background:var(--ink);color:var(--gold-l);border:none;border-radius:var(--r);font-family:var(--fu);font-size:.82rem;font-weight:500;cursor:pointer;white-space:nowrap;box-shadow:0 4px 16px rgba(13,17,23,.14);transition:all .2s}
+.btn-p:hover{background:var(--accent);transform:translateY(-1px)}
+.btn-s{display:inline-flex;align-items:center;gap:.44rem;padding:.6rem 1.2rem;background:transparent;color:var(--ink);border:1px solid var(--g200);border-radius:var(--r);font-family:var(--fu);font-size:.82rem;cursor:pointer;white-space:nowrap;transition:all .2s}
+.btn-s:hover{border-color:var(--gold);color:var(--gold)}
+.btn-g{display:inline-flex;align-items:center;gap:.35rem;padding:.32rem .76rem;border-radius:6px;border:1px solid var(--g200);background:var(--white);font-family:var(--fu);font-size:.7rem;color:var(--g500);cursor:pointer;white-space:nowrap;transition:all .2s}
+.btn-g:hover,.btn-g.on{background:var(--ink);color:var(--gold-l);border-color:var(--ink)}
 
-/* ── Module tabs ── */
-.mod-tabs {
-  display:flex; align-items:center;
-  background:var(--white); border-bottom:1px solid var(--g200);
-  padding:0 1.6rem; overflow-x:auto; flex-shrink:0; scrollbar-width:none;
-}
-.mod-tabs::-webkit-scrollbar { display:none }
-.mod-tab {
-  display:flex; align-items:center; gap:.44rem;
-  padding:.76rem 1.05rem; font-size:.78rem; font-weight:500;
-  color:var(--g500); cursor:pointer; white-space:nowrap;
-  border-bottom:2.5px solid transparent; transition:all .18s;
-}
-.mod-tab:hover { color:var(--ink); background:var(--g50) }
-.mod-tab.active { color:var(--gold); border-bottom-color:var(--gold); font-weight:600 }
-.mod-tab.locked { color:var(--g300); cursor:not-allowed; opacity:.6 }
-.tab-badge { background:var(--err); color:#fff; font-size:.52rem; font-weight:700; padding:.1rem .32rem; border-radius:100px }
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:.6rem;font-weight:600;color:var(--g500);letter-spacing:.09em;text-transform:uppercase;padding:0 .68rem .66rem;text-align:left;border-bottom:1px solid var(--g200);white-space:nowrap}
+.tbl th:last-child{text-align:right}
+.tbl td{padding:.62rem .68rem;font-size:.78rem;border-bottom:1px solid var(--g100);color:var(--g700);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--g50)}
+.tbl td:last-child{text-align:right}
+.td-w{font-weight:500;color:var(--ink)!important}.td-m{font-size:.7rem!important;color:var(--g500)!important}
 
-/* ── Sub tabs — fondo crema, igual que secciones alternas del index ── */
-.sub-tabs {
-  display:flex; align-items:center; gap:.35rem;
-  background:var(--cream); border-bottom:1px solid var(--g200);
-  padding:.52rem 1.6rem; overflow-x:auto; flex-shrink:0; scrollbar-width:none;
-}
-.sub-tabs::-webkit-scrollbar { display:none }
-.sub-tab {
-  display:flex; align-items:center; gap:.36rem;
-  padding:.38rem .88rem; font-size:.74rem; font-weight:500;
-  color:var(--g500); cursor:pointer; white-space:nowrap;
-  border-radius:6px; border:1px solid transparent; transition:all .18s;
-}
-.sub-tab:hover { color:var(--ink); background:var(--white); border-color:var(--g200) }
-.sub-tab.active { color:var(--ink); background:var(--white); border-color:var(--g200); font-weight:600; box-shadow:0 1px 6px rgba(13,17,23,.06) }
+/* TASKS */
+.task-item{display:flex;align-items:flex-start;gap:.75rem;padding:.7rem 0;border-bottom:1px solid var(--g100);transition:background .15s}
+.task-item:last-child{border-bottom:none}
+.task-item:hover{background:var(--g50);margin:0 -.5rem;padding-left:.5rem;padding-right:.5rem;border-radius:8px}
+.t-chk{width:17px;height:17px;border-radius:4px;border:1.5px solid var(--g300);flex-shrink:0;margin-top:.15rem;cursor:default;display:flex;align-items:center;justify-content:center;font-size:.6rem;background:var(--white);transition:all .18s}
+.t-chk.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.t-body{flex:1;min-width:0}
+.t-title{font-size:.79rem;font-weight:400;color:var(--ink);line-height:1.45;margin-bottom:.2rem}
+.task-item.done .t-title{text-decoration:line-through;color:var(--g500)}
+.t-meta{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;font-size:.66rem;color:var(--g500)}
+.p-hi{font-size:.58rem;font-weight:600;padding:.1rem .38rem;border-radius:100px;background:var(--err-bg);color:var(--err)}
+.p-med{font-size:.58rem;font-weight:600;padding:.1rem .38rem;border-radius:100px;background:var(--warn-bg);color:var(--warn)}
+.p-lo{font-size:.58rem;font-weight:600;padding:.1rem .38rem;border-radius:100px;background:var(--info-bg);color:var(--info)}
 
-/* ── Content + page ── */
-.content { flex:1; display:flex; flex-direction:column; overflow:hidden }
-.page {
-  flex:1; overflow-y:auto; overflow-x:hidden;
-  padding:1.5rem 1.6rem;
-  background:var(--cream);   /* ← fondo crema del sitio */
-  scrollbar-width:thin; scrollbar-color:var(--g200) transparent;
-}
-.page::-webkit-scrollbar { width:4px }
-.page::-webkit-scrollbar-thumb { background:var(--g200); border-radius:4px }
+/* DOCS */
+.doc-item{display:flex;align-items:center;gap:.75rem;padding:.65rem 0;border-bottom:1px solid var(--g100);cursor:pointer;transition:background .15s}
+.doc-item:last-child{border-bottom:none}
+.doc-item:hover{background:var(--g50);margin:0 -.5rem;padding-left:.5rem;padding-right:.5rem;border-radius:8px}
+.doc-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;background:var(--gold-pale)}
 
-/* Views */
-.view { display:none }
-.view.active { display:block; animation:fadeUp .3s ease both }
-@keyframes fadeUp { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:translateY(0) } }
+/* BI EMBED */
+.bi-wrap{background:var(--white);border:1px solid var(--g200);border-radius:var(--r-lg);overflow:hidden;margin-bottom:1.1rem}
+.bi-head{display:flex;align-items:center;justify-content:space-between;padding:.88rem 1.25rem;border-bottom:1px solid var(--g100)}
+.bi-head h3{font-family:var(--fd);font-size:1rem;font-weight:600;color:var(--ink)}
+.bi-live{display:inline-flex;align-items:center;gap:.3rem;font-size:.6rem;padding:.18rem .52rem;border-radius:100px;background:var(--info-bg);color:var(--info);font-weight:600}
+.bi-live::before{content:'●';font-size:.44rem;animation:pd 2s infinite}
+.bi-frame{position:relative;height:420px;background:var(--g50);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.bi-frame::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(201,168,76,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.06) 1px,transparent 1px);background-size:44px 44px}
+.bi-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:none;z-index:2}
+.bi-ph{position:relative;z-index:1;text-align:center;max-width:380px;padding:2rem}
+.bi-ph-icon{width:64px;height:64px;background:var(--ink);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin:0 auto 1.2rem;box-shadow:0 8px 24px rgba(13,17,23,.15)}
+.bi-ph h4{font-family:var(--fd);font-size:1.4rem;font-weight:300;color:var(--ink);margin-bottom:.48rem;line-height:1.3}
+.bi-ph h4 em{font-style:italic;color:var(--gold)}
+.bi-ph p{font-size:.78rem;color:var(--g500);line-height:1.72}
 
-/* ══════════════════════════════════════════════
-   SECTION TAG — idéntico al del index
-══════════════════════════════════════════════ */
-.stag {
-  display:inline-flex; align-items:center; gap:.5rem;
-  font-size:.67rem; letter-spacing:.14em; text-transform:uppercase; color:var(--gold);
-  margin-bottom:.42rem;
-}
-.stag::before { content:''; width:20px; height:1px; background:var(--gold) }
+/* CHAT */
+.chat-wrap{background:var(--white);border:1px solid var(--g200);border-radius:var(--r-lg);overflow:hidden;height:440px;display:flex;flex-direction:column}
+.chat-hd{padding:.88rem 1.2rem;border-bottom:1px solid var(--g100);display:flex;align-items:center;gap:.75rem;flex-shrink:0}
+.chat-av{width:38px;height:38px;background:var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0}
+.chat-name{font-size:.84rem;font-weight:600;color:var(--ink)}
+.chat-status{font-size:.65rem;color:var(--ok);display:flex;align-items:center;gap:.3rem}
+.chat-status::before{content:'●';font-size:.48rem;animation:pd 2s infinite}
+.chat-msgs{flex:1;overflow-y:auto;padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.85rem;background:var(--cream);scrollbar-width:thin;scrollbar-color:var(--g200) transparent}
+.chat-msgs::-webkit-scrollbar{width:3px}
+.chat-msgs::-webkit-scrollbar-thumb{background:var(--g200);border-radius:3px}
+.msg-sep{align-self:center;font-size:.65rem;color:var(--g400);background:var(--g100);border:1px solid var(--g200);border-radius:100px;padding:.2rem .82rem}
+.msg{display:flex;gap:.6rem;align-items:flex-end;max-width:82%}
+.msg.mine{align-self:flex-end;flex-direction:row-reverse}
+.msg-av{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.58rem;font-weight:600}
+.msg.theirs .msg-av{background:var(--ink);color:var(--gold-l)}
+.msg.mine   .msg-av{background:var(--accent);color:rgba(255,255,255,.85)}
+.msg-bubble{padding:.65rem .95rem;border-radius:14px;font-size:.79rem;line-height:1.62}
+.msg.theirs .msg-bubble{background:var(--white);border:1px solid var(--g200);color:var(--ink);border-bottom-left-radius:4px}
+.msg.mine   .msg-bubble{background:var(--ink);color:rgba(255,255,255,.9);border-bottom-right-radius:4px}
+.msg-meta{display:flex;flex-direction:column;gap:.17rem}
+.msg.mine .msg-meta{align-items:flex-end}
+.msg-time{font-size:.6rem;color:var(--g400);white-space:nowrap;padding-bottom:.1rem}
+.chat-typing{padding:.45rem 1.2rem;font-size:.7rem;color:var(--g500);border-top:1px solid var(--g100);display:flex;align-items:center;gap:.4rem;flex-shrink:0}
+.dots span{display:inline-block;width:5px;height:5px;background:var(--g300);border-radius:50%;animation:dot 1.4s infinite;margin:0 1px}
+.dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+@keyframes dot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+.chat-inp-area{padding:.75rem 1rem;border-top:1px solid var(--g100);display:flex;gap:.6rem;align-items:flex-end;flex-shrink:0}
+.chat-inp{flex:1;border:1.5px solid var(--g200);border-radius:var(--r);padding:.6rem .88rem;font-family:var(--fu);font-size:.79rem;color:var(--ink);resize:none;outline:none;min-height:38px;max-height:80px;background:var(--g50);line-height:1.5;transition:all .18s}
+.chat-inp:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-ring);background:var(--white)}
+.chat-inp::placeholder{color:var(--g300)}
+.chat-send{width:36px;height:36px;background:var(--ink);border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.9rem;transition:all .18s;flex-shrink:0}
+.chat-send:hover{background:var(--accent);transform:translateY(-1px)}
 
-/* ══════════════════════════════════════════════
-   CARDS — blanco, borde g200, hover línea dorada
-══════════════════════════════════════════════ */
-.card {
-  background:var(--white); border:1px solid var(--g200); border-radius:14px;
-  padding:1.3rem; margin-bottom:1.1rem; position:relative; overflow:hidden;
-  transition:box-shadow .2s, border-color .2s;
-}
-.card:hover { box-shadow:0 6px 22px rgba(13,17,23,.07) }
-/* Línea dorada animada en hover — igual que service-cards del index */
-.card::after {
-  content:''; position:absolute; top:0; left:1rem; right:1rem; height:2px;
-  border-radius:0 0 2px 2px;
-  background:linear-gradient(90deg, var(--gold), var(--gold-l));
-  transform:scaleX(0); transform-origin:left; transition:transform .4s ease; opacity:.7;
-}
-.card:hover::after { transform:scaleX(1) }
+/* SOLICITUDES */
+.req-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1rem}
+.req-type{background:var(--white);border:1px solid var(--g200);border-radius:var(--r-lg);padding:1rem;cursor:pointer;transition:all .2s;display:flex;align-items:flex-start;gap:.85rem}
+.req-type:hover{border-color:rgba(201,168,76,.4);box-shadow:0 8px 22px rgba(13,17,23,.07);transform:translateY(-2px)}
+.req-type.sel{border-color:var(--gold);background:var(--gold-pale)}
+.req-ico{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.req-type h4{font-size:.82rem;font-weight:600;color:var(--ink);margin-bottom:.18rem}
+.req-type p{font-size:.7rem;color:var(--g500);line-height:1.55}
 
-.card-hd { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1.1rem }
-/* Título con Cormorant — mismo estilo que h2/h3 del index */
-.card-title { font-family:var(--fd); font-size:1.08rem; font-weight:600; color:var(--ink); line-height:1.25 }
-.card-sub { font-size:.69rem; color:var(--g500); margin-top:.14rem }
-.card-link { font-size:.73rem; color:var(--gold); text-decoration:none; font-weight:600; transition:color .18s; white-space:nowrap }
-.card-link:hover { color:var(--ink) }
+/* TABS */
+.tabs{display:flex;gap:.35rem;margin-bottom:1rem;flex-wrap:wrap}
+.tab{padding:.38rem .88rem;border-radius:6px;border:1px solid var(--g200);background:var(--white);font-family:var(--fu);font-size:.74rem;font-weight:500;color:var(--g500);cursor:pointer;transition:all .18s}
+.tab:hover{color:var(--ink);background:var(--g50)}
+.tab.on{background:var(--ink);color:var(--gold-l);border-color:var(--ink);font-weight:600}
 
-/* ══════════════════════════════════════════════
-   KPI CARDS
-══════════════════════════════════════════════ */
-.kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:.9rem; margin-bottom:1.15rem }
-.kpi {
-  background:var(--white); border:1px solid var(--g200); border-radius:14px;
-  padding:1.1rem; position:relative; overflow:hidden;
-  transition:transform .2s, box-shadow .2s, border-color .2s;
-}
-.kpi:hover { transform:translateY(-3px); box-shadow:0 10px 28px rgba(13,17,23,.08); border-color:rgba(201,168,76,.25) }
-.kpi::before {
-  content:''; position:absolute; top:0; left:.8rem; right:.8rem;
-  height:2px; border-radius:0 0 2px 2px;
-  background:var(--kc, var(--gold)); opacity:.55;
-}
-.kpi-lbl { font-size:.61rem; font-weight:600; color:var(--g500); letter-spacing:.08em; text-transform:uppercase; margin-bottom:.72rem }
-/* Valor KPI con Cormorant — igual que stats grandes del hero */
-.kpi-val { font-family:var(--fd); font-size:1.75rem; font-weight:600; color:var(--ink); line-height:1; margin-bottom:.42rem }
-.kpi-val small { font-size:.92rem; font-weight:400; color:var(--g500) }
-.kpi-ft { display:flex; align-items:center; gap:.36rem; font-size:.68rem }
-.kpi-per { color:var(--g500) }
+/* GRID */
+.col-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
 
-/* ══════════════════════════════════════════════
-   BADGES Y DELTAS
-══════════════════════════════════════════════ */
-.badge { display:inline-flex; align-items:center; gap:.2rem; padding:.2rem .52rem; border-radius:100px; font-size:.62rem; font-weight:600; white-space:nowrap }
-.badge::before { content:'●'; font-size:.44rem }
-.b-ok   { background:var(--ok-bg);   color:var(--ok)   }
-.b-warn { background:var(--warn-bg); color:var(--warn) }
-.b-err  { background:var(--err-bg);  color:var(--err)  }
-.b-info { background:var(--info-bg); color:var(--info) }
-.b-gold { background:var(--gold-pale); color:var(--gold) }
-.b-n    { background:var(--g100);    color:var(--g500) }
+/* EMPTY */
+.empty{text-align:center;padding:2.5rem;color:var(--g500)}
+.empty-icon{font-size:2rem;opacity:.28;margin-bottom:.75rem}
+.empty h4{font-family:var(--fd);font-size:1.1rem;font-weight:300;color:var(--g700);margin-bottom:.35rem}
+.empty p{font-size:.76rem;color:var(--g500);line-height:1.65}
 
-.delta { display:inline-flex; align-items:center; gap:.17rem; padding:.13rem .42rem; border-radius:100px; font-weight:600; font-size:.65rem }
-.d-up { background:var(--ok-bg);   color:var(--ok)   }
-.d-dn { background:var(--err-bg);  color:var(--err)  }
-.d-n  { background:var(--g100);    color:var(--g500) }
+/* LOADING */
+.loading-ov{position:fixed;inset:0;background:var(--cream);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;gap:1.2rem;transition:opacity .4s}
+.loading-ov.gone{opacity:0;pointer-events:none}
+.l-mark{width:52px;height:52px;background:var(--ink);border-radius:13px;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:1.4rem;font-weight:600;color:var(--gold);animation:lp 2s infinite}
+@keyframes lp{0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,.3)}70%{box-shadow:0 0 0 14px rgba(201,168,76,0)}}
+.l-txt{font-size:.78rem;color:var(--g500);letter-spacing:.06em}
+.l-bar{width:160px;height:2px;background:var(--g200);border-radius:2px;overflow:hidden}
+.l-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-l));animation:lb 1.8s ease-in-out infinite}
+@keyframes lb{0%{width:0;margin-left:0}50%{width:100%;margin-left:0}100%{width:0;margin-left:100%}}
 
-/* ══════════════════════════════════════════════
-   BOTONES — idénticos al index
-══════════════════════════════════════════════ */
-/* Primario: fondo negro + texto dorado, igual que CTA del hero */
-.btn-p {
-  display:inline-flex; align-items:center; gap:.44rem;
-  padding:.65rem 1.35rem; background:var(--ink); color:var(--gold-l);
-  border:none; border-radius:10px;
-  font-family:var(--fu); font-size:.82rem; font-weight:500; letter-spacing:.03em;
-  cursor:pointer; text-decoration:none; white-space:nowrap;
-  box-shadow:0 4px 16px rgba(13,17,23,.14);
-  transition:background .2s, transform .15s, box-shadow .2s;
-}
-.btn-p:hover { background:var(--accent); transform:translateY(-2px); box-shadow:0 8px 24px rgba(13,17,23,.16) }
-.btn-p:active { transform:translateY(0) }
-
-/* Secundario: borde fino, igual que secondary del index */
-.btn-s {
-  display:inline-flex; align-items:center; gap:.44rem;
-  padding:.62rem 1.3rem; background:transparent; color:var(--ink);
-  border:1px solid rgba(13,17,23,.2); border-radius:10px;
-  font-family:var(--fu); font-size:.82rem; font-weight:500; cursor:pointer;
-  text-decoration:none; white-space:nowrap; transition:all .2s;
-}
-.btn-s:hover { border-color:var(--gold); color:var(--gold); transform:translateY(-1px) }
-
-/* Ghost toolbar */
-.btn-g {
-  display:inline-flex; align-items:center; gap:.36rem;
-  padding:.35rem .8rem; border-radius:6px; border:1px solid var(--g200);
-  background:var(--white); font-family:var(--fu); font-size:.7rem;
-  color:var(--g500); cursor:pointer; white-space:nowrap; transition:all .2s;
-}
-.btn-g:hover, .btn-g.on { background:var(--ink); color:var(--gold-l); border-color:var(--ink) }
-
-/* ══════════════════════════════════════════════
-   ALERT BANNER
-══════════════════════════════════════════════ */
-.alert {
-  display:flex; align-items:center; gap:.75rem;
-  border-radius:10px; padding:.86rem 1.1rem; margin-bottom:1.2rem;
-  font-size:.8rem; border:1px solid; border-left-width:3px;
-}
-.alert-warn { background:linear-gradient(135deg,rgba(232,160,32,.07),rgba(232,160,32,.02)); border-color:rgba(232,160,32,.2); border-left-color:var(--warn) }
-.alert-err  { background:rgba(217,79,61,.05); border-color:rgba(217,79,61,.15); border-left-color:var(--err) }
-.alert-ok   { background:rgba(34,166,106,.06); border-color:rgba(34,166,106,.15); border-left-color:var(--ok) }
-.alert-ico { font-size:1.05rem; flex-shrink:0 }
-.alert-txt { flex:1; color:var(--g700) }
-.alert-txt strong { font-weight:600 }
-.alert-txt strong.w { color:var(--warn) }
-.alert-lnk { font-size:.74rem; color:var(--gold); font-weight:600; text-decoration:none; white-space:nowrap; transition:color .18s }
-.alert-lnk:hover { color:var(--ink) }
-.alert-x { background:none; border:none; cursor:pointer; color:var(--g300); font-size:.95rem; padding:0; transition:color .18s }
-.alert-x:hover { color:var(--g700) }
-
-/* ══════════════════════════════════════════════
-   TABLE
-══════════════════════════════════════════════ */
-.tbl { width:100%; border-collapse:collapse }
-.tbl th {
-  font-size:.61rem; font-weight:600; color:var(--g500);
-  letter-spacing:.08em; text-transform:uppercase;
-  padding:0 .68rem .68rem; text-align:left; border-bottom:1px solid var(--g200); white-space:nowrap;
-}
-.tbl th:last-child { text-align:right }
-.tbl td { padding:.66rem .68rem; font-size:.78rem; border-bottom:1px solid var(--g100); color:var(--g700); vertical-align:middle }
-.tbl tr:last-child td { border-bottom:none }
-.tbl tr:hover td { background:var(--g50) }
-.tbl td:last-child { text-align:right }
-.td-s { font-weight:500; color:var(--ink) !important }
-.td-m { font-size:.7rem !important; color:var(--g500) !important }
-.td-$ { font-weight:600; color:var(--ink) !important; font-size:.8rem !important }
-.act-btn { background:none; border:none; cursor:pointer; color:var(--g300); font-size:.84rem; padding:.2rem .3rem; border-radius:4px; transition:all .18s }
-.act-btn:hover { color:var(--ink); background:var(--g100) }
-
-/* ══════════════════════════════════════════════
-   POWER BI EMBED — fondo crema con grid dorado
-══════════════════════════════════════════════ */
-.pbi-wrap { background:var(--white); border:1px solid var(--g200); border-radius:14px; overflow:hidden; margin-bottom:1.2rem }
-.pbi-hd {
-  display:flex; align-items:center; justify-content:space-between;
-  padding:.88rem 1.25rem; border-bottom:1px solid var(--g100);
-}
-.pbi-hd h3 { font-family:var(--fd); font-size:1rem; font-weight:600; color:var(--ink) }
-.pbi-badge {
-  display:inline-flex; align-items:center; gap:.3rem;
-  font-size:.6rem; padding:.18rem .52rem; border-radius:100px;
-  background:var(--info-bg); color:var(--info); font-weight:600;
-}
-.pbi-badge::before { content:'●'; font-size:.44rem; animation:pulse 2s infinite }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
-
-/* Frame embed: fondo crema/g50 + patrón grid dorado, NO oscuro */
-.pbi-frame {
-  position:relative; height:400px;
-  background:var(--g50);
-  display:flex; align-items:center; justify-content:center; overflow:hidden;
-}
-.pbi-frame::before {
-  content:''; position:absolute; inset:0;
-  background-image:
-    linear-gradient(rgba(201,168,76,.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(201,168,76,.07) 1px, transparent 1px);
-  background-size:44px 44px;
-}
-/* Orbe dorado decorativo — igual que hero del index */
-.pbi-frame::after {
-  content:''; position:absolute;
-  top:-80px; right:-60px; width:300px; height:300px; border-radius:50%;
-  background:radial-gradient(circle, rgba(201,168,76,.1) 0%, transparent 65%);
-  pointer-events:none;
-}
-
-/* Placeholder central */
-.pbi-ph { position:relative; z-index:1; text-align:center; max-width:420px; padding:2rem }
-.pbi-ph-icon {
-  width:64px; height:64px; background:var(--ink); border-radius:16px;
-  display:flex; align-items:center; justify-content:center; font-size:1.6rem;
-  margin:0 auto 1.2rem; box-shadow:0 8px 24px rgba(13,17,23,.15);
-}
-.pbi-ph h4 {
-  font-family:var(--fd); font-size:1.45rem; font-weight:300;
-  color:var(--ink); margin-bottom:.48rem; line-height:1.3;
-}
-.pbi-ph h4 em { font-style:italic; color:var(--gold) }
-.pbi-ph p { font-size:.78rem; color:var(--g500); line-height:1.72; margin-bottom:1.5rem }
-
-/* Mini KPIs sobre fondo claro */
-.pbi-kpis {
-  position:absolute; bottom:1.4rem; left:1.4rem; right:1.4rem;
-  display:grid; grid-template-columns:repeat(4,1fr); gap:.75rem; z-index:2;
-}
-.pbi-kpi {
-  background:var(--white); border:1px solid var(--g200);
-  border-radius:10px; padding:.75rem .9rem;
-  box-shadow:0 2px 10px rgba(13,17,23,.06);
-}
-.pbi-kpi-lbl { font-size:.58rem; color:var(--g500); letter-spacing:.08em; text-transform:uppercase; margin-bottom:.3rem }
-.pbi-kpi-val { font-family:var(--fd); font-size:1.2rem; font-weight:600; color:var(--ink); line-height:1 }
-.pbi-kpi-sub { font-size:.6rem; margin-top:.2rem }
-.pbi-kpi-sub.up { color:var(--ok) } .pbi-kpi-sub.dn { color:var(--err) } .pbi-kpi-sub.n { color:var(--g400) }
-
-/* Mini chart en el frame */
-.pbi-chart {
-  position:absolute; top:1.4rem; right:1.4rem;
-  width:230px; background:var(--white); border:1px solid var(--g200);
-  border-radius:10px; padding:.9rem; z-index:2;
-  box-shadow:0 2px 10px rgba(13,17,23,.06);
-}
-.pbi-chart-ttl { font-size:.61rem; color:var(--g500); margin-bottom:.65rem; letter-spacing:.06em; text-transform:uppercase }
-.bar-row { display:flex; align-items:center; gap:.48rem; margin-bottom:.38rem }
-.bar-lbl { font-size:.6rem; color:var(--g500); width:24px; text-align:right; flex-shrink:0 }
-.bar-track { flex:1; height:7px; background:var(--g100); border-radius:4px; overflow:hidden }
-/* Barras doradas — idéntico a degradados del index */
-.bar-fill { height:100%; border-radius:4px; background:linear-gradient(90deg, var(--gold), var(--gold-l)) }
-.bar-val { font-size:.6rem; color:var(--g700); width:30px; text-align:right; flex-shrink:0; font-weight:500 }
-
-/* ══════════════════════════════════════════════
-   TAREAS
-══════════════════════════════════════════════ */
-.task-bar {
-  display:flex; align-items:center; gap:.6rem;
-  background:var(--white); border:1.5px solid var(--g200);
-  border-radius:10px; padding:.62rem 1rem; margin-bottom:.9rem;
-  transition:border-color .2s, box-shadow .2s;
-}
-.task-bar:focus-within { border-color:var(--gold); box-shadow:0 0 0 3px rgba(201,168,76,.1) }
-.task-bar input { flex:1; border:none; outline:none; font-family:var(--fu); font-size:.8rem; color:var(--ink); background:none }
-.task-bar input::placeholder { color:var(--g300) }
-
-.task-filters { display:flex; gap:.38rem; margin-bottom:.9rem; flex-wrap:wrap }
-.tf { padding:.32rem .76rem; border-radius:6px; border:1px solid var(--g200); background:var(--white); font-family:var(--fu); font-size:.7rem; color:var(--g500); cursor:pointer; transition:all .18s }
-.tf.on, .tf:hover { background:var(--ink); color:var(--gold-l); border-color:var(--ink) }
-
-.task-item {
-  display:flex; align-items:flex-start; gap:.85rem;
-  background:var(--white); border:1px solid var(--g200); border-radius:10px;
-  padding:.85rem 1rem; margin-bottom:.52rem; cursor:pointer;
-  transition:border-color .18s, box-shadow .18s, opacity .2s;
-}
-.task-item:hover { border-color:rgba(201,168,76,.32); box-shadow:0 4px 14px rgba(13,17,23,.06) }
-.task-item.done { opacity:.5 }
-
-.chk {
-  width:18px; height:18px; border-radius:5px; border:2px solid var(--g300);
-  flex-shrink:0; margin-top:.1rem; cursor:pointer;
-  display:flex; align-items:center; justify-content:center;
-  font-size:.62rem; background:var(--white); transition:all .18s;
-}
-.chk.on { background:var(--ok); border-color:var(--ok); color:#fff }
-
-.task-t { font-size:.8rem; font-weight:500; color:var(--ink); line-height:1.45; margin-bottom:.2rem }
-.task-item.done .task-t { text-decoration:line-through; color:var(--g500) }
-.task-meta { display:flex; align-items:center; gap:.62rem; flex-wrap:wrap; font-size:.67rem; color:var(--g500) }
-.p-hi  { font-size:.6rem; font-weight:600; padding:.12rem .4rem; border-radius:100px; background:var(--err-bg);  color:var(--err)  }
-.p-med { font-size:.6rem; font-weight:600; padding:.12rem .4rem; border-radius:100px; background:var(--warn-bg); color:var(--warn) }
-.p-lo  { font-size:.6rem; font-weight:600; padding:.12rem .4rem; border-radius:100px; background:var(--ok-bg);   color:var(--ok)   }
-
-/* ══════════════════════════════════════════════
-   DOCUMENTOS
-══════════════════════════════════════════════ */
-.doc-tb { display:flex; gap:.6rem; align-items:center; margin-bottom:1rem; flex-wrap:wrap }
-.doc-srch {
-  display:flex; align-items:center; gap:.44rem;
-  background:var(--white); border:1.5px solid var(--g200);
-  border-radius:10px; padding:.4rem .88rem; flex:1; min-width:180px; transition:all .18s;
-}
-.doc-srch:focus-within { border-color:var(--gold); box-shadow:0 0 0 3px rgba(201,168,76,.09) }
-.doc-srch input { border:none; outline:none; font-family:var(--fu); font-size:.76rem; color:var(--ink); background:none; flex:1 }
-.doc-srch input::placeholder { color:var(--g300) }
-
-.doc-layout { display:grid; grid-template-columns:168px 1fr; gap:1rem }
-.folder-tree { background:var(--white); border:1px solid var(--g200); border-radius:14px; padding:.6rem 0 }
-.ft-item { display:flex; align-items:center; gap:.5rem; padding:.48rem .88rem; font-size:.76rem; color:var(--g700); cursor:pointer; transition:all .18s }
-.ft-item:hover { background:var(--g50); color:var(--ink) }
-.ft-item.on { background:var(--gold-pale); color:var(--gold); font-weight:600 }
-.ft-c { margin-left:auto; font-size:.6rem; color:var(--g300) }
-
-.doc-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(152px,1fr)); gap:.75rem }
-.doc-card {
-  background:var(--white); border:1px solid var(--g200); border-radius:10px;
-  padding:.9rem .85rem; cursor:pointer; transition:all .2s;
-  display:flex; flex-direction:column; align-items:center; text-align:center; gap:.44rem;
-}
-.doc-card:hover { border-color:rgba(201,168,76,.35); box-shadow:0 8px 20px rgba(13,17,23,.08); transform:translateY(-2px) }
-.doc-ic { font-size:2rem; line-height:1 }
-.doc-nm { font-size:.71rem; font-weight:500; color:var(--ink); line-height:1.38; word-break:break-word }
-.doc-mt { font-size:.62rem; color:var(--g500) }
-.doc-acts { display:flex; gap:.3rem; margin-top:.18rem }
-.doc-a { background:var(--g50); border:1px solid var(--g100); border-radius:5px; padding:.18rem .42rem; font-size:.63rem; color:var(--g500); cursor:pointer; transition:all .18s }
-.doc-a:hover { background:var(--ink); color:var(--gold-l); border-color:var(--ink) }
-
-/* ══════════════════════════════════════════════
-   SOLICITUDES
-══════════════════════════════════════════════ */
-.req-grid { display:grid; grid-template-columns:1fr 1fr; gap:.85rem; margin-bottom:1.1rem }
-.req-type {
-  background:var(--white); border:1px solid var(--g200); border-radius:14px;
-  padding:1.1rem; cursor:pointer; transition:all .2s;
-  display:flex; align-items:flex-start; gap:.85rem;
-}
-.req-type:hover { border-color:rgba(201,168,76,.42); box-shadow:0 8px 22px rgba(13,17,23,.07); transform:translateY(-2px) }
-.req-type.sel { border-color:var(--gold); background:var(--gold-pale) }
-.req-ico { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.15rem; flex-shrink:0 }
-.req-type h4 { font-size:.83rem; font-weight:600; color:var(--ink); margin-bottom:.2rem }
-.req-type p { font-size:.72rem; color:var(--g500); line-height:1.55 }
-
-.req-item {
-  display:flex; align-items:flex-start; gap:.85rem;
-  background:var(--white); border:1px solid var(--g200); border-radius:10px;
-  padding:.85rem 1rem; margin-bottom:.52rem; transition:border-color .18s;
-}
-.req-item:hover { border-color:var(--g300) }
-.req-item-ic { width:34px; height:34px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:.9rem; flex-shrink:0; background:var(--g50); border:1px solid var(--g100) }
-.req-title { font-size:.8rem; font-weight:500; color:var(--ink); margin-bottom:.2rem }
-.req-meta { display:flex; gap:.72rem; font-size:.68rem; color:var(--g500); flex-wrap:wrap }
-
-/* ══════════════════════════════════════════════
-   CHAT — fondos claros, burbuja enviada en tinta
-══════════════════════════════════════════════ */
-.chat-wrap {
-  display:flex; flex-direction:column; background:var(--white);
-  border:1px solid var(--g200); border-radius:14px; overflow:hidden;
-  height:calc(100vh - var(--tbh) - 5.8rem); min-height:420px;
-}
-.chat-hd {
-  padding:.88rem 1.2rem; border-bottom:1px solid var(--g100);
-  display:flex; align-items:center; gap:.75rem; flex-shrink:0;
-}
-.chat-av {
-  width:38px; height:38px; background:var(--ink); border-radius:50%;
-  display:flex; align-items:center; justify-content:center; font-size:.85rem; flex-shrink:0;
-}
-.chat-name { font-size:.84rem; font-weight:600; color:var(--ink) }
-.chat-status { font-size:.65rem; color:var(--ok); display:flex; align-items:center; gap:.3rem }
-.chat-status::before { content:'●'; font-size:.48rem; animation:pulse 2s infinite }
-
-.chat-msgs {
-  flex:1; overflow-y:auto; padding:1rem 1.2rem;
-  display:flex; flex-direction:column; gap:.85rem;
-  background:var(--cream);    /* ← crema del sitio */
-  scrollbar-width:thin; scrollbar-color:var(--g200) transparent;
-}
-.chat-msgs::-webkit-scrollbar { width:3px }
-.chat-msgs::-webkit-scrollbar-thumb { background:var(--g200); border-radius:3px }
-
-.msg-sep { align-self:center; font-size:.65rem; color:var(--g400); background:var(--g100); border:1px solid var(--g200); border-radius:100px; padding:.2rem .82rem }
-
-.msg { display:flex; gap:.6rem; align-items:flex-end; max-width:76% }
-.msg.mine { align-self:flex-end; flex-direction:row-reverse }
-.msg-av { width:28px; height:28px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:.58rem; font-weight:600 }
-.msg.theirs .msg-av { background:var(--ink); color:var(--gold-l) }
-.msg.mine   .msg-av { background:linear-gradient(135deg,var(--accent),var(--ink-soft)); color:var(--gold-l) }
-.msg-bubble { padding:.65rem .95rem; border-radius:14px; font-size:.79rem; line-height:1.62 }
-/* Recibidos: fondo blanco */
-.msg.theirs .msg-bubble { background:var(--white); border:1px solid var(--g200); color:var(--ink); border-bottom-left-radius:4px }
-/* Enviados: fondo tinta + letras claras, igual que botón primario */
-.msg.mine   .msg-bubble { background:var(--ink); color:rgba(255,255,255,.9); border-bottom-right-radius:4px }
-.msg-meta { display:flex; flex-direction:column; gap:.17rem }
-.msg.mine .msg-meta { align-items:flex-end }
-.msg-time { font-size:.6rem; color:var(--g400); white-space:nowrap; padding-bottom:.1rem }
-
-.chat-typing {
-  padding:.48rem 1.2rem; font-size:.7rem; color:var(--g500);
-  border-top:1px solid var(--g100); display:flex; align-items:center; gap:.4rem; flex-shrink:0;
-}
-.dots span { display:inline-block; width:5px; height:5px; background:var(--g300); border-radius:50%; animation:dot 1.4s infinite; margin:0 1px }
-.dots span:nth-child(2){animation-delay:.2s} .dots span:nth-child(3){animation-delay:.4s}
-@keyframes dot { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
-
-.chat-inp-area {
-  padding:.75rem 1rem; border-top:1px solid var(--g100);
-  display:flex; gap:.6rem; align-items:flex-end; flex-shrink:0;
-}
-.chat-inp {
-  flex:1; border:1.5px solid var(--g200); border-radius:10px;
-  padding:.6rem .88rem; font-family:var(--fu); font-size:.79rem; color:var(--ink);
-  resize:none; outline:none; min-height:38px; max-height:100px;
-  background:var(--g50); line-height:1.5; transition:all .18s;
-}
-.chat-inp:focus { border-color:var(--gold); box-shadow:0 0 0 3px rgba(201,168,76,.1); background:var(--white) }
-.chat-inp::placeholder { color:var(--g300) }
-.chat-send { width:36px; height:36px; background:var(--ink); border:none; border-radius:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:.9rem; transition:all .18s; flex-shrink:0 }
-.chat-send:hover { background:var(--accent); transform:translateY(-1px) }
-.chat-att { width:34px; height:34px; background:var(--g50); border:1px solid var(--g200); border-radius:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:.84rem; transition:all .18s; flex-shrink:0 }
-.chat-att:hover { background:var(--g100) }
-
-/* ══════════════════════════════════════════════
-   MÓDULO BLOQUEADO
-══════════════════════════════════════════════ */
-.locked-view { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:440px; text-align:center; padding:3rem }
-.locked-icon { font-size:2.8rem; margin-bottom:1.2rem; opacity:.22 }
-.locked-view h3 { font-family:var(--fd); font-size:1.85rem; font-weight:300; color:var(--ink); margin-bottom:.65rem }
-.locked-view h3 em { font-style:italic; color:var(--gold) }
-.locked-view p { font-size:.83rem; color:var(--g500); line-height:1.72; max-width:360px; margin-bottom:1.75rem }
-
-/* ══════════════════════════════════════════════
-   NOTIF DROPDOWN
-══════════════════════════════════════════════ */
-.notif-dd { position:fixed; top:calc(var(--tbh) + .5rem); right:1.5rem; width:305px; background:var(--white); border:1px solid var(--g200); border-radius:14px; box-shadow:0 20px 50px rgba(13,17,23,.12); z-index:300; display:none }
-.notif-dd.open { display:block; animation:dropIn .2s ease }
-@keyframes dropIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
-.nd-hd { padding:.86rem 1.05rem .66rem; border-bottom:1px solid var(--g100); display:flex; align-items:center; justify-content:space-between }
-.nd-hd h4 { font-size:.82rem; font-weight:600; color:var(--ink) }
-.nd-hd a { font-size:.7rem; color:var(--gold); text-decoration:none; font-weight:500 }
-.nd-item { display:flex; gap:.65rem; padding:.76rem 1.05rem; border-bottom:1px solid var(--g100); cursor:pointer; transition:background .14s }
-.nd-item:last-child { border-bottom:none }
-.nd-item:hover { background:var(--g50) }
-.nd-ic { width:30px; height:30px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:.82rem; flex-shrink:0 }
-.nd-txt { font-size:.76rem; color:var(--g700); line-height:1.48; flex:1 }
-.nd-txt strong { color:var(--ink); font-weight:500; display:block }
-.nd-time { font-size:.62rem; color:var(--g300); margin-top:.16rem }
-
-/* ══════════════════════════════════════════════
-   RESPONSIVE
-══════════════════════════════════════════════ */
-@media(max-width:1100px){.kpi-row{grid-template-columns:repeat(2,1fr)}.pbi-kpis{grid-template-columns:repeat(2,1fr)}.pbi-chart{display:none}}
-@media(max-width:900px){.req-grid{grid-template-columns:1fr}.doc-layout{grid-template-columns:1fr}.folder-tree{display:none}}
-@media(max-width:768px){.sb{display:none}.kpi-row{grid-template-columns:1fr 1fr}}
-@media(max-width:560px){.page{padding:1rem}.kpi-row{grid-template-columns:1fr}}
+@media(max-width:1100px){.kpi-row,.col-2{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:768px){.sb{display:none}.kpi-row{grid-template-columns:1fr 1fr}.req-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
+
+<!--
+═══════════════════════════════════════════════════════════════════
+  ⚠️  PASO 1 — CONFIGURA RLS EN SUPABASE ANTES DE USAR ESTO
+  Copia y ejecuta este SQL en: Supabase > SQL Editor > New Query
+═══════════════════════════════════════════════════════════════════
+
+  -- Habilitar Row Level Security en todas las tablas del cliente
+  ALTER TABLE companies            ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE tasks                ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE documents            ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE embedded_dashboards  ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE profiles             ENABLE ROW LEVEL SECURITY;
+
+  -- profiles: cada usuario SOLO ve su propio perfil
+  CREATE POLICY "perfil_propio" ON profiles
+    FOR SELECT USING (id = auth.uid());
+
+  -- companies: el cliente SOLO ve SU empresa
+  CREATE POLICY "empresa_propia" ON companies
+    FOR SELECT USING (
+      id = (SELECT company_id FROM profiles WHERE id = auth.uid())
+    );
+
+  -- tasks: el cliente SOLO ve las tareas de SU empresa
+  CREATE POLICY "tareas_de_mi_empresa" ON tasks
+    FOR SELECT USING (
+      company_id = (SELECT company_id FROM profiles WHERE id = auth.uid())
+    );
+
+  -- documents: el cliente SOLO ve los documentos de SU empresa
+  CREATE POLICY "docs_de_mi_empresa" ON documents
+    FOR SELECT USING (
+      company_id = (SELECT company_id FROM profiles WHERE id = auth.uid())
+    );
+
+  -- embedded_dashboards: el cliente SOLO ve los BI de SU empresa
+  CREATE POLICY "bi_de_mi_empresa" ON embedded_dashboards
+    FOR SELECT USING (
+      company_id = (SELECT company_id FROM profiles WHERE id = auth.uid())
+    );
+
+  -- El service_role key del admin (backend) ignora RLS.
+  -- El anon key del cliente NUNCA puede ver datos de otras empresas.
+
+═══════════════════════════════════════════════════════════════════
+  ⚠️  PASO 2 — Pon tus credenciales abajo y sube el archivo
+═══════════════════════════════════════════════════════════════════
+-->
+
+<!-- LOADING -->
+<div class="loading-ov" id="lo">
+  <div class="l-mark">RS</div>
+  <div class="l-bar"><div class="l-fill"></div></div>
+  <div class="l-txt" id="lTxt">Iniciando sesión…</div>
+</div>
+
 <div class="app">
 
-<!-- ══════════════════════════════════════
-     SIDEBAR — blanco + detalles dorados
-══════════════════════════════════════ -->
+<!-- SIDEBAR -->
 <aside class="sb">
-  <a href="index.html" class="sb-logo">
+  <div class="sb-logo">
     <div class="sb-mark">RS</div>
-    <div class="sb-wordmark">
-      <strong>RS Back Office</strong>
-      <span>Portal cliente</span>
-    </div>
-  </a>
-
+    <div class="sb-wm"><strong>RS Back Office</strong><span>Mi portal</span></div>
+  </div>
   <nav class="sb-nav">
-    <div class="sb-label">Módulos activos</div>
-    <a href="#" class="sb-link active" onclick="setMod('facturacion');return false">
-      <span class="sb-icon">🧾</span> Facturación y Cartera <span class="sb-badge">3</span>
-    </a>
-    <a href="#" class="sb-link" onclick="setMod('contabilidad');return false">
-      <span class="sb-icon">📋</span> Contabilidad
-    </a>
-    <a href="#" class="sb-link" onclick="setMod('tesoreria');return false">
-      <span class="sb-icon">🏦</span> Tesorería
-    </a>
-    <a href="#" class="sb-link" onclick="setMod('personal');return false">
-      <span class="sb-icon">👥</span> Gestión de Personal
-    </a>
-
+    <div class="sb-lbl">Mi empresa</div>
+    <div class="sb-link active" onclick="go('dashboard')"><span class="sb-icon">🏠</span> Dashboard</div>
+    <div class="sb-link" onclick="go('tareas')"><span class="sb-icon">✅</span> Mis tareas</div>
+    <div class="sb-link" onclick="go('documentos')"><span class="sb-icon">📁</span> Documentos</div>
+    <div class="sb-link" onclick="go('bi')"><span class="sb-icon">📊</span> Dashboards BI</div>
     <div class="sb-div"></div>
-    <div class="sb-label">No contratado</div>
-    <a href="#" class="sb-link locked" onclick="setMod('locked');return false">
-      <span class="sb-icon">📊</span> Nómina Electrónica <span class="sb-lock">🔒</span>
-    </a>
-
-    <div class="sb-div"></div>
-    <div class="sb-label">General</div>
-    <a href="#" class="sb-link" onclick="goChat();return false">
-      <span class="sb-icon">💬</span> Servicio al cliente
-    </a>
+    <div class="sb-lbl">Soporte</div>
+    <div class="sb-link" onclick="go('solicitudes')"><span class="sb-icon">📝</span> Solicitudes</div>
+    <div class="sb-link" onclick="go('chat')"><span class="sb-icon">💬</span> Chat RS</div>
   </nav>
-
   <div class="sb-foot">
-    <div class="user-pill">
-      <div class="u-av">ED</div>
-      <div class="u-info">
-        <span class="u-name">Empresa Demo S.A.S</span>
-        <span class="u-role">Administrador · Plan Premium</span>
+    <div class="u-pill">
+      <div class="u-av" id="uAv">—</div>
+      <div style="flex:1;min-width:0">
+        <span class="u-name" id="uName">Cargando…</span>
+        <span class="u-co" id="uCo">—</span>
       </div>
-      <button class="u-out" title="Cerrar sesión" onclick="alert('Cerrando sesión...')">⎋</button>
+      <button class="u-out" onclick="signOut()" title="Cerrar sesión">⎋</button>
     </div>
   </div>
 </aside>
 
-<!-- ══════════════════════════════════════
-     MAIN
-══════════════════════════════════════ -->
+<!-- MAIN -->
 <div class="main">
-
-  <!-- TOPBAR -->
   <header class="topbar">
-    <div class="tb-left">
-      <div class="tb-bc">Portal / <span id="tbMod">Facturación y Cartera</span></div>
-      <div class="tb-title" id="tbTitle">Facturación y Cartera</div>
+    <div>
+      <div class="tb-bc">Portal / <span id="tbSec">Dashboard</span></div>
+      <div class="tb-title" id="tbTitle">Mi empresa</div>
     </div>
     <div class="tb-right">
+      <div class="conn-pill"><span class="cdot c-l" id="cDot"></span><span id="cTxt">Conectando…</span></div>
       <div class="tb-date" id="tbDate">—</div>
-      <div class="tb-ico" onclick="toggleNotif()" id="notifBtn">🔔<span class="tb-n">3</span></div>
-      <div class="tb-av">ED</div>
+      <div class="tb-av" id="tbAv">—</div>
     </div>
   </header>
 
-  <!-- Notif dropdown -->
-  <div class="notif-dd" id="notifDd">
-    <div class="nd-hd"><h4>Notificaciones</h4><a href="#">Ver todas</a></div>
-    <div class="nd-item"><div class="nd-ic" style="background:var(--err-bg)">⚠️</div><div class="nd-txt"><strong>3 facturas vencidas</strong>Total $8.7M pendiente de cobro<div class="nd-time">Hace 2 horas</div></div></div>
-    <div class="nd-item"><div class="nd-ic" style="background:var(--ok-bg)">✅</div><div class="nd-txt"><strong>Nómina Jun 2025 procesada</strong>Liquidación completada<div class="nd-time">Ayer 4:30 PM</div></div></div>
-    <div class="nd-item"><div class="nd-ic" style="background:var(--warn-bg)">📅</div><div class="nd-txt"><strong>IVA vence en 5 días</strong>Declaración May–Jun 2025<div class="nd-time">Hace 1 día</div></div></div>
-  </div>
-
-  <!-- CONTENT -->
   <div class="content">
+    <div class="page" id="pg">
 
-    <!-- Module tabs -->
-    <div class="mod-tabs" id="modTabs">
-      <div class="mod-tab active" data-mod="facturacion" onclick="setMod('facturacion')">🧾 Facturación y Cartera <span class="tab-badge">3</span></div>
-      <div class="mod-tab" data-mod="contabilidad" onclick="setMod('contabilidad')">📋 Contabilidad</div>
-      <div class="mod-tab" data-mod="tesoreria" onclick="setMod('tesoreria')">🏦 Tesorería</div>
-      <div class="mod-tab" data-mod="personal" onclick="setMod('personal')">👥 Gestión de Personal</div>
-      <div class="mod-tab locked" onclick="setMod('locked')">📊 Nómina Electrónica 🔒</div>
-    </div>
+      <!-- ERROR -->
+      <div class="err-bar" id="errBar">
+        <span style="font-size:1rem;flex-shrink:0">⚠️</span>
+        <p><strong>Error:</strong> <span id="errMsg">—</span></p>
+        <button onclick="loadAll()">Reintentar</button>
+        <button onclick="this.closest('.err-bar').classList.remove('on')" style="margin-left:.3rem">✕</button>
+      </div>
 
-    <!-- Sub tabs -->
-    <div class="sub-tabs" id="subTabs">
-      <div class="sub-tab active" data-sub="dashboard"   onclick="setSub('dashboard')">📊 Dashboard</div>
-      <div class="sub-tab"        data-sub="tareas"      onclick="setSub('tareas')">✅ Tareas</div>
-      <div class="sub-tab"        data-sub="documentos"  onclick="setSub('documentos')">📁 Documentos</div>
-      <div class="sub-tab"        data-sub="solicitudes" onclick="setSub('solicitudes')">📝 Solicitudes</div>
-      <div class="sub-tab"        data-sub="chat"        onclick="setSub('chat')">💬 Chat</div>
-    </div>
-
-    <!-- PAGE -->
-    <div class="page" id="mainPage">
-
-      <!-- ════ DASHBOARD ════ -->
-      <div class="view active" id="view-dashboard">
-
-        <div class="pbi-wrap">
-          <div class="pbi-hd">
-            <div style="display:flex;align-items:center;gap:.65rem">
-              <h3 id="pbi-ttl">Dashboard — Facturación y Cartera</h3>
-              <span class="pbi-badge">Power BI conectado</span>
-            </div>
-            <div style="display:flex;gap:.4rem">
-              <button class="btn-g">🔄 Actualizar</button>
-              <button class="btn-g">⛶ Pantalla completa</button>
-              <button class="btn-g">↓ Exportar</button>
-            </div>
+      <!-- ── DASHBOARD ── -->
+      <div id="s-dashboard">
+        <div class="wb anim" id="wBand">
+          <div class="wb-mark" id="wbIni">RS</div>
+          <div class="wb-txt">
+            <div class="wb-g" id="wbG">Bienvenido</div>
+            <div class="wb-n" id="wbN"><em>Mi empresa</em></div>
+            <div class="wb-s" id="wbS">Portal RS Back Office</div>
           </div>
-          <div class="pbi-frame">
-            <!-- Mini chart -->
-            <div class="pbi-chart">
-              <div class="pbi-chart-ttl">Facturación 6 meses</div>
-              <div class="bar-row"><span class="bar-lbl">Ene</span><div class="bar-track"><div class="bar-fill" style="width:69%"></div></div><span class="bar-val">$62M</span></div>
-              <div class="bar-row"><span class="bar-lbl">Feb</span><div class="bar-track"><div class="bar-fill" style="width:79%"></div></div><span class="bar-val">$71M</span></div>
-              <div class="bar-row"><span class="bar-lbl">Mar</span><div class="bar-track"><div class="bar-fill" style="width:75%"></div></div><span class="bar-val">$68M</span></div>
-              <div class="bar-row"><span class="bar-lbl">Abr</span><div class="bar-track"><div class="bar-fill" style="width:83%"></div></div><span class="bar-val">$75M</span></div>
-              <div class="bar-row"><span class="bar-lbl">May</span><div class="bar-track"><div class="bar-fill" style="width:88%"></div></div><span class="bar-val">$79M</span></div>
-              <div class="bar-row"><span class="bar-lbl">Jun</span><div class="bar-track"><div class="bar-fill" style="width:95%"></div></div><span class="bar-val">$84M</span></div>
-            </div>
-            <!-- Placeholder -->
-            <div class="pbi-ph">
-              <div class="pbi-ph-icon">📊</div>
-              <h4>Dashboard <em>embebido</em></h4>
-              <p>Aquí se visualiza el reporte de Power BI o Looker Studio construido previamente para este módulo. El cliente accede a sus KPIs, gráficas y tablas interactivas en tiempo real sin salir del portal.</p>
-              <button class="btn-p">⬡ Conectar reporte →</button>
-            </div>
-            <!-- KPIs flotantes -->
-            <div class="pbi-kpis" id="pbiKpis">
-              <div class="pbi-kpi"><div class="pbi-kpi-lbl">Facturación mes</div><div class="pbi-kpi-val">$84.2M</div><div class="pbi-kpi-sub up">↑ 12.4% vs mayo</div></div>
-              <div class="pbi-kpi"><div class="pbi-kpi-lbl">Cartera total</div><div class="pbi-kpi-val">$21.7M</div><div class="pbi-kpi-sub dn">$8.7M vencida</div></div>
-              <div class="pbi-kpi"><div class="pbi-kpi-lbl">Facturas emitidas</div><div class="pbi-kpi-val">142</div><div class="pbi-kpi-sub n">Junio 2025</div></div>
-              <div class="pbi-kpi"><div class="pbi-kpi-lbl">% Recaudo</div><div class="pbi-kpi-val">74%</div><div class="pbi-kpi-sub up">↑ 3pts vs meta</div></div>
-            </div>
+          <div class="wb-mods" id="wbMods"></div>
+        </div>
+        <div class="kpi-row" id="kpiRow">
+          <div class="sk" style="height:110px;border-radius:14px"></div>
+          <div class="sk" style="height:110px;border-radius:14px"></div>
+          <div class="sk" style="height:110px;border-radius:14px"></div>
+          <div class="sk" style="height:110px;border-radius:14px"></div>
+        </div>
+        <div class="col-2">
+          <div class="card anim anim-2">
+            <div class="card-hd"><div><div class="stag">Pendientes</div><div class="card-title">Tareas recientes</div></div><button class="card-lnk" onclick="go('tareas')">Ver todas →</button></div>
+            <div id="dTaskEl"><div class="sk" style="height:14px;border-radius:4px;margin-bottom:.55rem"></div><div class="sk" style="height:14px;border-radius:4px;width:70%;margin-bottom:.55rem"></div><div class="sk" style="height:14px;border-radius:4px;width:50%"></div></div>
+          </div>
+          <div class="card anim anim-3">
+            <div class="card-hd"><div><div class="stag">Archivos</div><div class="card-title">Documentos recientes</div></div><button class="card-lnk" onclick="go('documentos')">Ver todos →</button></div>
+            <div id="dDocEl"><div class="sk" style="height:14px;border-radius:4px;margin-bottom:.55rem"></div><div class="sk" style="height:14px;border-radius:4px;width:70%;margin-bottom:.55rem"></div><div class="sk" style="height:14px;border-radius:4px;width:50%"></div></div>
           </div>
         </div>
+        <div id="dBiEl"></div>
+      </div>
 
-        <!-- Alert -->
-        <div class="alert alert-warn">
-          <span class="alert-ico">⚠️</span>
-          <div class="alert-txt"><strong class="w">Atención:</strong> tiene 3 facturas vencidas por $8.700.000 COP pendientes de cobro.</div>
-          <a href="#" class="alert-lnk">Ver cartera →</a>
-          <button class="alert-x" onclick="this.closest('.alert').style.display='none'">✕</button>
-        </div>
-
-        <!-- KPIs -->
-        <div class="kpi-row" id="modKpis">
-          <div class="kpi" style="--kc:var(--gold)"><div class="kpi-lbl">Facturación mes</div><div class="kpi-val">$84.2<small>M</small></div><div class="kpi-ft"><span class="delta d-up">↑ 12.4%</span><span class="kpi-per">vs mayo</span></div></div>
-          <div class="kpi" style="--kc:var(--err)"><div class="kpi-lbl">Cartera vencida</div><div class="kpi-val">$8.7<small>M</small></div><div class="kpi-ft"><span class="delta d-dn">3 facturas</span><span class="kpi-per">+30 días</span></div></div>
-          <div class="kpi" style="--kc:var(--info)"><div class="kpi-lbl">Por cobrar</div><div class="kpi-val">$13.0<small>M</small></div><div class="kpi-ft"><span class="delta d-n">● Vigente</span><span class="kpi-per">8 facturas</span></div></div>
-          <div class="kpi" style="--kc:var(--ok)"><div class="kpi-lbl">Recaudado mes</div><div class="kpi-val">$62.5<small>M</small></div><div class="kpi-ft"><span class="delta d-up">74%</span><span class="kpi-per">de meta</span></div></div>
-        </div>
-
-        <!-- Tabla -->
+      <!-- ── TAREAS ── -->
+      <div id="s-tareas" style="display:none">
         <div class="card">
-          <div class="card-hd">
-            <div><div class="stag">Junio 2025</div><div class="card-title">Últimas facturas</div></div>
-            <a href="#" class="card-link">Ver todas →</a>
+          <div class="card-hd"><div><div class="stag">Mis pendientes</div><div class="card-title">Todas las tareas</div><div class="card-sub" id="tSub">Cargando…</div></div></div>
+          <div class="tabs">
+            <div class="tab on" onclick="fTasks('todas',this)">Todas</div>
+            <div class="tab" onclick="fTasks('pending',this)">Pendientes</div>
+            <div class="tab" onclick="fTasks('completed',this)">Completadas</div>
+            <div class="tab" onclick="fTasks('overdue',this)">🔴 Vencidas</div>
           </div>
-          <table class="tbl">
-            <thead><tr><th>N° Factura</th><th>Cliente</th><th>Emisión</th><th>Vencimiento</th><th>Valor</th><th>Estado</th><th></th></tr></thead>
-            <tbody>
-              <tr><td class="td-m">FE-001251</td><td class="td-s">Constructora Bolívar S.A.S</td><td>01/06/25</td><td>01/07/25</td><td class="td-$">$5.800.000</td><td><span class="badge b-ok">Pagada</span></td><td><button class="act-btn">👁</button><button class="act-btn">📄</button></td></tr>
-              <tr><td class="td-m">FE-001250</td><td class="td-s">Inversiones del Norte Ltda</td><td>03/06/25</td><td>03/07/25</td><td class="td-$">$3.200.000</td><td><span class="badge b-warn">Pendiente</span></td><td><button class="act-btn">👁</button><button class="act-btn">📄</button></td></tr>
-              <tr><td class="td-m">FE-001249</td><td class="td-s">Distribuidora El Progreso</td><td>15/05/25</td><td>15/06/25</td><td class="td-$">$7.100.000</td><td><span class="badge b-err">Vencida</span></td><td><button class="act-btn">👁</button><button class="act-btn">📄</button></td></tr>
-              <tr><td class="td-m">FE-001248</td><td class="td-s">Cementos Andinos S.A</td><td>20/06/25</td><td>20/07/25</td><td class="td-$">$12.400.000</td><td><span class="badge b-info">Enviada</span></td><td><button class="act-btn">👁</button><button class="act-btn">📄</button></td></tr>
-              <tr><td class="td-m">FE-001247</td><td class="td-s">Transportes Cundinamarca</td><td>08/05/25</td><td>08/06/25</td><td class="td-$">$2.900.000</td><td><span class="badge b-err">Vencida</span></td><td><button class="act-btn">👁</button><button class="act-btn">📄</button></td></tr>
-            </tbody>
-          </table>
+          <div id="fullTaskEl"></div>
         </div>
       </div>
 
-      <!-- ════ TAREAS ════ -->
-      <div class="view" id="view-tareas">
+      <!-- ── DOCUMENTOS ── -->
+      <div id="s-documentos" style="display:none">
         <div class="card">
-          <div class="card-hd">
-            <div><div class="stag">Módulo activo</div><div class="card-title" id="task-ttl">Tareas — Facturación y Cartera</div></div>
-            <div style="display:flex;gap:.5rem;align-items:center">
-              <span class="badge b-warn" id="t-pend">5 pendientes</span>
-              <span class="badge b-ok"   id="t-done">3 completadas</span>
-            </div>
+          <div class="card-hd"><div><div class="stag">Mis archivos</div><div class="card-title">Documentos</div><div class="card-sub" id="dSub">Cargando…</div></div></div>
+          <div class="tabs">
+            <div class="tab on" onclick="fDocs('todos',this)">Todos</div>
+            <div class="tab" onclick="fDocs('available',this)">Disponibles</div>
+            <div class="tab" onclick="fDocs('pending',this)">Pendientes</div>
           </div>
-          <div class="task-bar">
-            <span style="color:var(--g300)">✏️</span>
-            <input type="text" id="newTask" placeholder="Escribir nueva tarea y presionar Enter…" onkeydown="addTask(event)">
-            <button class="btn-p" style="padding:.38rem .85rem;font-size:.72rem" onclick="addTaskBtn()">+ Agregar</button>
-          </div>
-          <div class="task-filters">
-            <button class="tf on" onclick="filterTasks('todas',this)">Todas</button>
-            <button class="tf" onclick="filterTasks('pendiente',this)">Pendientes</button>
-            <button class="tf" onclick="filterTasks('completada',this)">Completadas</button>
-            <button class="tf" onclick="filterTasks('alta',this)">🔴 Alta prioridad</button>
-          </div>
-          <div id="taskList"></div>
+          <div id="fullDocEl"></div>
         </div>
       </div>
 
-      <!-- ════ DOCUMENTOS ════ -->
-      <div class="view" id="view-documentos">
-        <div class="card">
-          <div class="card-hd">
-            <div><div class="stag">Archivos y soportes</div><div class="card-title" id="docs-ttl">Documentos — Facturación y Cartera</div></div>
-          </div>
-          <div class="doc-tb">
-            <div class="doc-srch"><span style="color:var(--g300)">🔍</span><input type="text" placeholder="Buscar documento…"></div>
-            <button class="btn-p" style="font-size:.76rem;padding:.42rem .9rem">📤 Subir archivo</button>
-            <button class="btn-g">⊞</button>
-            <button class="btn-g">☰</button>
-          </div>
-          <div class="doc-layout">
-            <div class="folder-tree">
-              <div class="ft-item on">📁 Todos <span class="ft-c">18</span></div>
-              <div class="ft-item" style="padding-left:1.4rem">📂 Facturas <span class="ft-c">9</span></div>
-              <div class="ft-item" style="padding-left:1.4rem">📂 Cartera <span class="ft-c">4</span></div>
-              <div class="ft-item" style="padding-left:1.4rem">📂 Reportes <span class="ft-c">3</span></div>
-              <div class="ft-item" style="padding-left:1.4rem">📂 Contratos <span class="ft-c">2</span></div>
-            </div>
-            <div class="doc-grid">
-              <div class="doc-card"><div class="doc-ic">📕</div><div class="doc-nm">Reporte Cartera Jun 2025</div><div class="doc-mt">PDF · 1.2 MB · 30/06/25</div><div class="doc-acts"><span class="doc-a">👁 Ver</span><span class="doc-a">↓ PDF</span></div></div>
-              <div class="doc-card"><div class="doc-ic">📗</div><div class="doc-nm">Facturas Jun 2025 Consolidado</div><div class="doc-mt">Excel · 840 KB · 30/06/25</div><div class="doc-acts"><span class="doc-a">👁 Ver</span><span class="doc-a">↓ XLS</span></div></div>
-              <div class="doc-card"><div class="doc-ic">📄</div><div class="doc-nm">FE-001251 Constructora Bolívar</div><div class="doc-mt">PDF · 320 KB · 01/06/25</div><div class="doc-acts"><span class="doc-a">👁 Ver</span><span class="doc-a">↓ PDF</span></div></div>
-              <div class="doc-card"><div class="doc-ic">📄</div><div class="doc-nm">FE-001250 Inversiones Norte</div><div class="doc-mt">PDF · 298 KB · 03/06/25</div><div class="doc-acts"><span class="doc-a">👁 Ver</span><span class="doc-a">↓ PDF</span></div></div>
-              <div class="doc-card"><div class="doc-ic">📘</div><div class="doc-nm">Aging Cartera Q2 2025</div><div class="doc-mt">PDF · 560 KB · 28/06/25</div><div class="doc-acts"><span class="doc-a">👁 Ver</span><span class="doc-a">↓ PDF</span></div></div>
-              <div class="doc-card"><div class="doc-ic">📗</div><div class="doc-nm">Conciliación clientes Jun</div><div class="doc-mt">Excel · 1.1 MB · 29/06/25</div><div class="doc-acts"><span class="doc-a">👁 Ver</span><span class="doc-a">↓ XLS</span></div></div>
-              <div class="doc-card"><div class="doc-ic">📄</div><div class="doc-nm">Contrato RS Back Office</div><div class="doc-mt">PDF · 2.1 MB · 01/01/25</div><div class="doc-acts"><span class="doc-a">👁 Ver</span><span class="doc-a">↓ PDF</span></div></div>
-              <div class="doc-card"><div class="doc-ic">📙</div><div class="doc-nm">Informe Gestión de Cobro</div><div class="doc-mt">Word · 480 KB · 27/06/25</div><div class="doc-acts"><span class="doc-a">👁 Ver</span><span class="doc-a">↓ DOC</span></div></div>
-            </div>
-          </div>
-        </div>
+      <!-- ── DASHBOARDS BI ── -->
+      <div id="s-bi" style="display:none">
+        <div id="biList"></div>
       </div>
 
-      <!-- ════ SOLICITUDES ════ -->
-      <div class="view" id="view-solicitudes">
-        <div class="card" style="margin-bottom:1.1rem">
-          <div class="card-hd">
-            <div><div class="stag">Nueva solicitud</div><div class="card-title" id="req-ttl">Solicitud — Facturación y Cartera</div></div>
-          </div>
+      <!-- ── SOLICITUDES ── -->
+      <div id="s-solicitudes" style="display:none">
+        <div class="card">
+          <div class="card-hd"><div><div class="stag">Soporte</div><div class="card-title">Nueva solicitud</div><div class="card-sub">Selecciona el tipo de solicitud y envíala a tu asesor RS</div></div></div>
           <div class="req-grid">
-            <div class="req-type" onclick="this.classList.toggle('sel')"><div class="req-ico" style="background:var(--gold-pale)">🧾</div><div><h4>Corrección de factura</h4><p>Solicite nota crédito, nota débito o ajuste en datos de una factura emitida.</p></div></div>
-            <div class="req-type" onclick="this.classList.toggle('sel')"><div class="req-ico" style="background:var(--info-bg)">📞</div><div><h4>Gestión de cobro</h4><p>Solicite intervención en cartera vencida o negociación de acuerdo de pago.</p></div></div>
-            <div class="req-type" onclick="this.classList.toggle('sel')"><div class="req-ico" style="background:var(--ok-bg)">📄</div><div><h4>Certificado / Documento</h4><p>Solicite certificados de retención, paz y salvo o estados de cuenta.</p></div></div>
-            <div class="req-type" onclick="this.classList.toggle('sel')"><div class="req-ico" style="background:var(--gold-pale)">💬</div><div><h4>Consulta general</h4><p>Envíe una consulta o inquietud al equipo sobre facturación y cartera.</p></div></div>
+            <div class="req-type" onclick="this.classList.toggle('sel')"><div class="req-ico" style="background:var(--gold-pale)">🧾</div><div><h4>Corrección de factura</h4><p>Nota crédito, débito o ajuste de datos.</p></div></div>
+            <div class="req-type" onclick="this.classList.toggle('sel')"><div class="req-ico" style="background:var(--info-bg)">📞</div><div><h4>Gestión de cobro</h4><p>Seguimiento a cartera vencida.</p></div></div>
+            <div class="req-type" onclick="this.classList.toggle('sel')"><div class="req-ico" style="background:var(--ok-bg)">📄</div><div><h4>Certificado / Documento</h4><p>Retenciones, paz y salvo, estados de cuenta.</p></div></div>
+            <div class="req-type" onclick="this.classList.toggle('sel')"><div class="req-ico" style="background:var(--gold-pale)">💬</div><div><h4>Consulta general</h4><p>Cualquier pregunta a tu asesor.</p></div></div>
           </div>
-        </div>
-        <div class="card">
-          <div class="card-hd"><div><div class="stag">Últimas 30 días</div><div class="card-title">Solicitudes recientes</div></div></div>
-          <div class="req-item"><div class="req-item-ic">🧾</div><div style="flex:1"><div class="req-title">Corrección nota crédito — FE-001230</div><div class="req-meta"><span>📅 20/06/2025</span><span>👤 Ana García</span><span>SOL-2025-048</span></div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:.4rem;flex-shrink:0"><span class="badge b-ok">Resuelta</span><span style="font-size:.65rem;color:var(--g500)">2 días</span></div></div>
-          <div class="req-item"><div class="req-item-ic">📄</div><div style="flex:1"><div class="req-title">Certificado de retención — Mayo 2025</div><div class="req-meta"><span>📅 15/06/2025</span><span>👤 Carlos R.</span><span>SOL-2025-041</span></div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:.4rem;flex-shrink:0"><span class="badge b-ok">Resuelta</span><span style="font-size:.65rem;color:var(--g500)">1 día</span></div></div>
-          <div class="req-item"><div class="req-item-ic">📞</div><div style="flex:1"><div class="req-title">Gestión cobro — Distribuidora El Progreso</div><div class="req-meta"><span>📅 28/06/2025</span><span>👤 Ana García</span><span>SOL-2025-055</span></div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:.4rem;flex-shrink:0"><span class="badge b-warn">En proceso</span><span style="font-size:.65rem;color:var(--g500)">3 días</span></div></div>
-          <div class="req-item"><div class="req-item-ic">💬</div><div style="flex:1"><div class="req-title">Consulta impacto IVA en facturación</div><div class="req-meta"><span>📅 01/07/2025</span><span>👤 Carlos R.</span><span>SOL-2025-058</span></div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:.4rem;flex-shrink:0"><span class="badge b-info">Abierta</span><span style="font-size:.65rem;color:var(--g500)">Hoy</span></div></div>
+          <div style="display:flex;justify-content:flex-end;gap:.5rem">
+            <button class="btn-s" onclick="document.querySelectorAll('.req-type').forEach(r=>r.classList.remove('sel'))">Limpiar</button>
+            <button class="btn-p" onclick="alert('Solicitud enviada a tu asesor RS ✓')">Enviar solicitud →</button>
+          </div>
         </div>
       </div>
 
-      <!-- ════ CHAT ════ -->
-      <div class="view" id="view-chat">
+      <!-- ── CHAT ── -->
+      <div id="s-chat" style="display:none">
         <div class="chat-wrap">
           <div class="chat-hd">
             <div class="chat-av">🤝</div>
-            <div>
-              <div class="chat-name">Equipo RS Back Office</div>
-              <div class="chat-status">En línea · Respuesta ~15 min</div>
-            </div>
-            <div style="margin-left:auto;display:flex;gap:.4rem">
-              <button class="btn-g">📋 Abrir solicitud</button>
-              <button class="btn-g">📞 Llamar</button>
-            </div>
+            <div><div class="chat-name">Equipo RS Back Office</div><div class="chat-status">En línea · Respuesta ~15 min</div></div>
+            <div style="margin-left:auto"><button class="btn-g" onclick="go('solicitudes')">📝 Abrir solicitud</button></div>
           </div>
           <div class="chat-msgs" id="chatMsgs">
-            <div class="msg-sep">Hoy — 4 de julio 2025</div>
+            <div class="msg-sep" id="chatSep">Hoy</div>
             <div class="msg theirs">
               <div class="msg-av">RS</div>
               <div class="msg-meta">
-                <div class="msg-bubble">¡Buenos días! 👋 Soy Valentina del equipo de <strong>RS Back Office</strong>, asignada a su módulo de Facturación y Cartera. ¿En qué le puedo ayudar hoy?</div>
-                <div class="msg-time">9:02 AM · Valentina M.</div>
-              </div>
-            </div>
-            <div class="msg mine">
-              <div class="msg-av">ED</div>
-              <div class="msg-meta">
-                <div class="msg-bubble">Buenos días Valentina. Quería consultar el estado de la factura FE-001249 de Distribuidora El Progreso, aparece vencida.</div>
-                <div class="msg-time">9:15 AM · Tú</div>
-              </div>
-            </div>
-            <div class="msg theirs">
-              <div class="msg-av">RS</div>
-              <div class="msg-meta">
-                <div class="msg-bubble">Claro, ya la reviso. La factura FE-001249 por $7.100.000 venció el 15 de junio. Iniciamos gestión de cobro el 20/06 y esperamos respuesta del cliente. ¿Le enviamos el reporte de gestión?</div>
-                <div class="msg-time">9:17 AM · Valentina M.</div>
-              </div>
-            </div>
-            <div class="msg mine">
-              <div class="msg-av">ED</div>
-              <div class="msg-meta">
-                <div class="msg-bubble">Sí por favor, y también necesito el estado de cuenta actualizado para enviarle al cliente.</div>
-                <div class="msg-time">9:19 AM · Tú</div>
-              </div>
-            </div>
-            <div class="msg theirs">
-              <div class="msg-av">RS</div>
-              <div class="msg-meta">
-                <div class="msg-bubble">Perfecto. Preparo ambos documentos y los subo a Documentos del portal en 30 minutos. También abro solicitud formal para dejar el registro. ✅</div>
-                <div class="msg-time">9:20 AM · Valentina M.</div>
+                <div class="msg-bubble">¡Hola! 👋 Soy tu asesor en <strong>RS Back Office</strong>. Aquí puedes consultarme sobre tu facturación, cartera, documentos o cualquier tema de tu cuenta. ¿En qué te ayudo?</div>
+                <div class="msg-time">Asesor RS</div>
               </div>
             </div>
           </div>
-          <div class="chat-typing"><div class="dots"><span></span><span></span><span></span></div> Valentina está escribiendo…</div>
+          <div class="chat-typing"><div class="dots"><span></span><span></span><span></span></div> El asesor puede responder en breve…</div>
           <div class="chat-inp-area">
-            <button class="chat-att" title="Adjuntar">📎</button>
-            <textarea class="chat-inp" id="chatInp" placeholder="Escriba su mensaje…" rows="1" onkeydown="sendMsg(event)"></textarea>
+            <textarea class="chat-inp" id="chatInp" placeholder="Escribe tu mensaje…" rows="1" onkeydown="sendMsg(event)"></textarea>
             <button class="chat-send" onclick="sendMsgBtn()">➤</button>
           </div>
         </div>
       </div>
 
-      <!-- ════ BLOQUEADO ════ -->
-      <div class="view" id="view-locked">
-        <div class="locked-view">
-          <div class="locked-icon">🔒</div>
-          <h3>Módulo <em>no contratado</em></h3>
-          <p>Este módulo no está incluido en su plan actual. Contáctenos para habilitarlo y comenzar a gestionarlo desde el portal.</p>
-          <button class="btn-p" onclick="alert('Redirigiendo a contacto...')">✉ Solicitar habilitación →</button>
-        </div>
-      </div>
-
-    </div><!-- /page -->
-  </div><!-- /content -->
-</div><!-- /main -->
-</div><!-- /app -->
+    </div>
+  </div>
+</div>
+</div>
 
 <script>
-/* ═══ CONFIG MÓDULOS ═══ */
-const MODS = {
-  facturacion:{
-    name:'Facturación y Cartera', pbiTitle:'Dashboard — Facturación y Cartera',
-    kpis:[
-      {lbl:'Facturación mes',val:'$84.2',sfx:'M',d:'↑ 12.4%',dc:'d-up',p:'vs mayo',kc:'var(--gold)'},
-      {lbl:'Cartera vencida',val:'$8.7',sfx:'M',d:'3 facturas',dc:'d-dn',p:'+30 días',kc:'var(--err)'},
-      {lbl:'Por cobrar',val:'$13.0',sfx:'M',d:'● Vigente',dc:'d-n',p:'8 facturas',kc:'var(--info)'},
-      {lbl:'Recaudado mes',val:'$62.5',sfx:'M',d:'74%',dc:'d-up',p:'de meta',kc:'var(--ok)'},
-    ],
-    pbiK:[
-      {lbl:'Facturación mes',val:'$84.2M',sub:'↑ 12.4% vs mayo',c:'up'},
-      {lbl:'Cartera total',val:'$21.7M',sub:'$8.7M vencida',c:'dn'},
-      {lbl:'Facturas emitidas',val:'142',sub:'Junio 2025',c:'n'},
-      {lbl:'% Recaudo',val:'74%',sub:'↑ 3pts vs meta',c:'up'},
-    ]
-  },
-  contabilidad:{
-    name:'Contabilidad', pbiTitle:'Dashboard — Contabilidad',
-    kpis:[
-      {lbl:'Ingresos mes',val:'$210.4',sfx:'M',d:'↑ 8.2%',dc:'d-up',p:'vs mayo',kc:'var(--ok)'},
-      {lbl:'Egresos mes',val:'$163.2',sfx:'M',d:'↑ 5.1%',dc:'d-dn',p:'vs mayo',kc:'var(--err)'},
-      {lbl:'Utilidad bruta',val:'$47.2',sfx:'M',d:'22.4%',dc:'d-up',p:'margen',kc:'var(--gold)'},
-      {lbl:'Obligaciones',val:'3',sfx:'',d:'1 próxima',dc:'d-n',p:'Jul 2025',kc:'var(--warn)'},
-    ],
-    pbiK:[
-      {lbl:'Ingresos mes',val:'$210.4M',sub:'↑ 8.2%',c:'up'},
-      {lbl:'Egresos mes',val:'$163.2M',sub:'↑ 5.1%',c:'dn'},
-      {lbl:'Utilidad',val:'$47.2M',sub:'Margen 22.4%',c:'up'},
-      {lbl:'IVA pendiente',val:'$12.1M',sub:'Vence 9 Jul',c:'dn'},
-    ]
-  },
-  tesoreria:{
-    name:'Tesorería', pbiTitle:'Dashboard — Tesorería',
-    kpis:[
-      {lbl:'Saldo disponible',val:'$12.4',sfx:'M',d:'● Saludable',dc:'d-n',p:'3 cuentas',kc:'var(--ok)'},
-      {lbl:'Pagos programados',val:'$8.9',sfx:'M',d:'5 pagos',dc:'d-n',p:'esta semana',kc:'var(--warn)'},
-      {lbl:'Recaudos esperados',val:'$21.3',sfx:'M',d:'↑ vs meta',dc:'d-up',p:'julio',kc:'var(--info)'},
-      {lbl:'Flujo proyectado',val:'$24.8',sfx:'M',d:'● Positivo',dc:'d-up',p:'fin de mes',kc:'var(--gold)'},
-    ],
-    pbiK:[
-      {lbl:'Saldo total',val:'$12.4M',sub:'3 cuentas activas',c:'n'},
-      {lbl:'Pagos semana',val:'$8.9M',sub:'5 pagos prog.',c:'dn'},
-      {lbl:'Recaudos jul',val:'$21.3M',sub:'↑ vs meta',c:'up'},
-      {lbl:'Flujo mes',val:'+$24.8M',sub:'Proyección positiva',c:'up'},
-    ]
-  },
-  personal:{
-    name:'Gestión de Personal', pbiTitle:'Dashboard — Gestión de Personal',
-    kpis:[
-      {lbl:'Empleados activos',val:'48',sfx:'',d:'↑ 2',dc:'d-up',p:'vs mayo',kc:'var(--accent)'},
-      {lbl:'Nómina mes',val:'$134.5',sfx:'M',d:'● Procesada',dc:'d-n',p:'jun 2025',kc:'var(--gold)'},
-      {lbl:'Seguridad social',val:'$28.2',sfx:'M',d:'● Al día',dc:'d-up',p:'PILA jun',kc:'var(--ok)'},
-      {lbl:'Novedades',val:'4',sfx:'',d:'2 vacaciones',dc:'d-n',p:'pendientes',kc:'var(--warn)'},
-    ],
-    pbiK:[
-      {lbl:'Empleados',val:'48',sub:'↑ 2 nuevos',c:'up'},
-      {lbl:'Nómina',val:'$134.5M',sub:'Junio 2025',c:'n'},
-      {lbl:'Seg. Social',val:'$28.2M',sub:'● Al día',c:'up'},
-      {lbl:'Novedades',val:'4',sub:'Pendientes',c:'dn'},
-    ]
-  },
-};
+/* ══════════════════════════════════════════════════
+   CONFIGURACIÓN — reemplaza con tus valores
+══════════════════════════════════════════════════ */
+const SUPABASE_URL = 'https://doauzsmkoeyvllbmbdda.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvYXV6c21rb2V5dmxsYm1iZGRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MjIwNDcsImV4cCI6MjA4ODk5ODA0N30.gytRSeyMQsVAU-I3DowiqkW_Nfpuk8mU5TgrXbkcBQU'
 
-const TASKS = {
-  facturacion:[
-    {id:1,t:'Revisar facturas vencidas de Distribuidora El Progreso',done:false,p:'alta',date:'Vence hoy',q:'Ana García'},
-    {id:2,t:'Enviar estado de cuenta a Transportes Cundinamarca',done:false,p:'alta',date:'Vence mañana',q:'Carlos M.'},
-    {id:3,t:'Conciliar pagos semana del 23 al 27 junio',done:false,p:'media',date:'30/06/2025',q:'Ana García'},
-    {id:4,t:'Actualizar aging de cartera trimestral',done:false,p:'media',date:'05/07/2025',q:'Carlos M.'},
-    {id:5,t:'Preparar informe recaudo Q2 para gerencia',done:false,p:'baja',date:'10/07/2025',q:'Ana García'},
-    {id:6,t:'Cargar facturas julio al portal del cliente',done:true,p:'media',date:'01/07/2025',q:'Carlos M.'},
-    {id:7,t:'Enviar recordatorio pago — Inversiones del Norte',done:true,p:'alta',date:'28/06/2025',q:'Ana García'},
-    {id:8,t:'Verificar notas crédito Cementos Andinos',done:true,p:'baja',date:'25/06/2025',q:'Carlos M.'},
-  ],
-  contabilidad:[
-    {id:1,t:'Declarar IVA bimestral May–Jun 2025',done:false,p:'alta',date:'Vence 09/07',q:'Equipo Contable'},
-    {id:2,t:'Presentar retención en la fuente junio',done:false,p:'alta',date:'Vence 15/07',q:'Equipo Contable'},
-    {id:3,t:'Cerrar libros contables junio 2025',done:false,p:'media',date:'05/07/2025',q:'Equipo Contable'},
-    {id:4,t:'Preparar estados financieros Q2',done:false,p:'media',date:'15/07/2025',q:'Equipo Contable'},
-    {id:5,t:'Revisar conciliación bancaria junio',done:true,p:'alta',date:'30/06/2025',q:'Equipo Contable'},
-  ],
-  tesoreria:[
-    {id:1,t:'Programar pago nómina julio 2025',done:false,p:'alta',date:'Vence 27/07',q:'Tesorería'},
-    {id:2,t:'Pagar PILA junio — seguridad social',done:false,p:'alta',date:'Vence 15/07',q:'Tesorería'},
-    {id:3,t:'Actualizar flujo de caja proyectado julio',done:false,p:'media',date:'07/07/2025',q:'Tesorería'},
-    {id:4,t:'Conciliar extractos bancarios junio',done:true,p:'alta',date:'30/06/2025',q:'Tesorería'},
-  ],
-  personal:[
-    {id:1,t:'Procesar nómina julio 2025',done:false,p:'alta',date:'Vence 27/07',q:'RRHH'},
-    {id:2,t:'Renovar contrato Carlos Rodríguez — vence julio',done:false,p:'alta',date:'Vence 15/07',q:'RRHH'},
-    {id:3,t:'Gestionar solicitud vacaciones Ana García',done:false,p:'media',date:'10/07/2025',q:'RRHH'},
-    {id:4,t:'Actualizar planilla afiliaciones ARL',done:true,p:'media',date:'28/06/2025',q:'RRHH'},
-  ],
-};
+const { createClient } = supabase
+const db = createClient(SUPABASE_URL, SUPABASE_KEY)
 
-let curMod='facturacion', curSub='dashboard', tFilter='todas';
+/* ══ ESTADO ══ */
+let S = { profile:null, company:null, tasks:[], documents:[], dashboards:[] }
+let tFilter = 'todas', dFilter = 'todos'
 
-/* ─ MÓDULOS ─ */
-function setMod(mod) {
-  curMod=mod; curSub='dashboard';
-  const cfg=MODS[mod];
-  const lbl=cfg?cfg.name:'Nómina Electrónica';
-  document.getElementById('tbMod').textContent=lbl;
-  document.getElementById('tbTitle').textContent=lbl;
-  document.querySelectorAll('.sb-link').forEach(i=>i.classList.remove('active'));
-  document.querySelectorAll('.sb-link').forEach(i=>{
-    if(i.getAttribute('onclick')&&i.getAttribute('onclick').includes(`'${mod}'`)) i.classList.add('active');
-  });
-  document.querySelectorAll('.mod-tab').forEach(t=>t.classList.toggle('active',t.dataset.mod===mod));
-  document.getElementById('modTabs').style.display='flex';
-  if(mod==='locked'){
-    document.getElementById('subTabs').style.display='none';
-    show('locked'); return;
+/* ══════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════ */
+async function init() {
+  setDate()
+  try {
+    ltxt('Verificando sesión…')
+    const { data:{ session } } = await db.auth.getSession()
+    if (!session) { window.location.href = 'login.html'; return }
+    ltxt('Cargando tu información…')
+    await loadAll(session.user)
+  } catch(e) {
+    conn('err'); showErr(e.message)
+  } finally { hideLoader() }
+}
+
+/* ══════════════════════════════════════════════════
+   CARGA DE DATOS
+   ─ Paso 1: obtener profile del usuario autenticado
+     (auth.uid() lo resuelve Supabase automáticamente)
+   ─ Paso 2: con company_id, cargar todo en paralelo
+   ─ RLS garantiza que solo llegan filas de su empresa
+     sin necesidad de filtros adicionales en el cliente
+══════════════════════════════════════════════════ */
+async function loadAll(user) {
+  conn('loading')
+  try {
+    const uid = (user || (await db.auth.getUser()).data.user)?.id
+    if (!uid) { window.location.href = 'login.html'; return }
+
+    /* 1 — Profile propio */
+    const { data: profile, error: pe } = await db
+      .from('profiles')
+      .select('id, full_name, role, company_id')
+      .eq('id', uid)
+      .single()
+
+    if (pe)                throw new Error('Perfil no encontrado: ' + pe.message)
+    if (!profile.company_id) throw new Error('Tu cuenta no tiene empresa asignada. Contacta a RS Back Office.')
+    S.profile = profile
+
+    /* 2 — Carga paralela (RLS filtra por company_id automáticamente) */
+    const [rc, rt, rd, rbi] = await Promise.all([
+      db.from('companies')
+        .select('id, name, status, billing_module, accounting_module, treasury_module, hr_module, created_at')
+        .eq('id', profile.company_id)
+        .single(),
+
+      db.from('tasks')
+        .select('id, title, status, due_date, created_at')
+        .order('due_date', { ascending: true }),
+
+      db.from('documents')
+        .select('id, title, category, status, file_url, created_at')
+        .order('created_at', { ascending: false }),
+
+      db.from('embedded_dashboards')
+        .select('id, title, tool, embed_url, active')
+        .eq('active', true)
+        .order('created_at', { ascending: true }),
+    ])
+
+    if (rc.error)  throw new Error('company: '    + rc.error.message)
+    if (rt.error)  throw new Error('tasks: '      + rt.error.message)
+    if (rd.error)  throw new Error('documents: '  + rd.error.message)
+    if (rbi.error) throw new Error('dashboards: ' + rbi.error.message)
+
+    S.company    = rc.data
+    S.tasks      = rt.data || []
+    S.documents  = rd.data || []
+    S.dashboards = rbi.data || []
+
+    renderAll()
+    conn('ok'); hideErr()
+  } catch(e) {
+    conn('err'); showErr(e.message)
+    console.error('[RS portal]', e)
   }
-  document.getElementById('subTabs').style.display='flex';
-  setSub('dashboard');
 }
 
-function goChat() {
-  document.getElementById('tbMod').textContent='Servicio al cliente';
-  document.getElementById('tbTitle').textContent='Servicio al cliente';
-  document.querySelectorAll('.sb-link').forEach(i=>i.classList.remove('active'));
-  document.getElementById('modTabs').style.display='none';
-  document.getElementById('subTabs').style.display='none';
-  show('chat');
+function renderAll() {
+  renderUser(); renderWelcome(); renderKpis()
+  renderDashTasks(); renderDashDocs(); renderDashBi()
+  renderFullTasks(); renderFullDocs(); renderBiSection()
 }
 
-function setSub(sub) {
-  curSub=sub;
-  document.getElementById('modTabs').style.display='flex';
-  document.querySelectorAll('.sub-tab').forEach(t=>t.classList.toggle('active',t.dataset.sub===sub));
-  show(sub); renderSub(sub);
+/* ══ USER ══ */
+function renderUser() {
+  const p = S.profile, c = S.company
+  const name = p.full_name || p.id.slice(0,8)
+  const ini  = name.slice(0,2).toUpperCase()
+  document.getElementById('uAv').textContent   = ini
+  document.getElementById('tbAv').textContent  = ini
+  document.getElementById('uName').textContent = name
+  document.getElementById('uCo').textContent   = c?.name || '—'
+  document.getElementById('tbTitle').textContent = c?.name || 'Mi empresa'
 }
 
-function show(id) {
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  const el=document.getElementById('view-'+id);
-  if(el) el.classList.add('active');
+/* ══ WELCOME BAND ══ */
+function renderWelcome() {
+  const c = S.company; if (!c) return
+  const h  = new Date().getHours()
+  const g  = h<12?'Buenos días':h<18?'Buenas tardes':'Buenas noches'
+  const ini = c.name.slice(0,2).toUpperCase()
+  document.getElementById('wbIni').textContent = ini
+  document.getElementById('wbG').textContent   = g
+  document.getElementById('wbN').innerHTML     = `<em>${esc(c.name)}</em>`
+  document.getElementById('wbS').textContent   = `Portal RS Back Office · ${fmtDate(new Date().toISOString())}`
+  const mods = [
+    {k:'billing_module',   l:'🧾 Facturación'},
+    {k:'accounting_module',l:'📋 Contabilidad'},
+    {k:'treasury_module',  l:'🏦 Tesorería'},
+    {k:'hr_module',        l:'👥 Personal'},
+  ]
+  document.getElementById('wbMods').innerHTML =
+    mods.map(m=>`<div class="wb-mod ${c[m.k]?'on':''}">${m.l}</div>`).join('')
 }
 
-/* ─ RENDER ─ */
-function renderSub(sub) {
-  const cfg=MODS[curMod]; if(!cfg) return;
-  if(sub==='dashboard'){
-    document.getElementById('pbi-ttl').textContent=cfg.pbiTitle;
-    document.getElementById('pbiKpis').innerHTML=cfg.pbiK.map(k=>`
-      <div class="pbi-kpi">
-        <div class="pbi-kpi-lbl">${k.lbl}</div>
-        <div class="pbi-kpi-val">${k.val}</div>
-        <div class="pbi-kpi-sub ${k.c}">${k.sub}</div>
-      </div>`).join('');
-    document.getElementById('modKpis').innerHTML=cfg.kpis.map(k=>`
-      <div class="kpi" style="--kc:${k.kc}">
-        <div class="kpi-lbl">${k.lbl}</div>
-        <div class="kpi-val">${k.val}<small>${k.sfx}</small></div>
-        <div class="kpi-ft"><span class="delta ${k.dc}">${k.d}</span><span class="kpi-per">${k.p}</span></div>
-      </div>`).join('');
+/* ══ KPIS ══ */
+function renderKpis() {
+  const c = S.company, t = S.tasks, d = S.documents, bi = S.dashboards
+  const mods    = [c.billing_module,c.accounting_module,c.treasury_module,c.hr_module].filter(Boolean).length
+  const pending = t.filter(x=>x.status==='pending').length
+  const overdue = t.filter(x=>isOverdue(x)).length
+  const kcs = overdue>0?'var(--err)':'var(--ok)'
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi anim" style="--kc:var(--gold)">
+      <div class="kpi-lbl">Módulos activos</div>
+      <div class="kpi-val">${mods}<small>/4</small></div>
+      <div class="kpi-ft"><span class="badge b-gold">Plan activo</span></div>
+    </div>
+    <div class="kpi anim anim-1" style="--kc:${kcs}">
+      <div class="kpi-lbl">Tareas pendientes</div>
+      <div class="kpi-val">${pending}</div>
+      <div class="kpi-ft">${overdue>0?`<span class="delta d-dn">⚠ ${overdue} vencida${overdue!==1?'s':''}</span>`:'<span class="delta d-up">✓ Al día</span>'}</div>
+    </div>
+    <div class="kpi anim anim-2" style="--kc:var(--info)">
+      <div class="kpi-lbl">Documentos</div>
+      <div class="kpi-val">${d.length}</div>
+      <div class="kpi-ft"><span style="color:var(--g500);font-size:.68rem">archivos disponibles</span></div>
+    </div>
+    <div class="kpi anim anim-3" style="--kc:var(--ok)">
+      <div class="kpi-lbl">Dashboards BI</div>
+      <div class="kpi-val">${bi.length}</div>
+      <div class="kpi-ft"><span class="badge ${bi.length>0?'b-ok':'b-n'}">${bi.length>0?'Activos':'Sin configurar'}</span></div>
+    </div>`
+}
+
+/* ══ DASH TASKS preview ══ */
+function renderDashTasks() {
+  const top = [...S.tasks.filter(t=>isOverdue(t)&&t.status==='pending'), ...S.tasks.filter(t=>!isOverdue(t)&&t.status==='pending')].slice(0,5)
+  if (!top.length) { document.getElementById('dTaskEl').innerHTML=emptyEl('✅','Sin tareas pendientes','Tu equipo RS está al día.'); return }
+  document.getElementById('dTaskEl').innerHTML = top.map(t=>taskRow(t)).join('')
+}
+
+/* ══ FULL TASKS ══ */
+function renderFullTasks() {
+  let list = [...S.tasks]
+  if (tFilter==='pending')   list = S.tasks.filter(t=>t.status==='pending'&&!isOverdue(t))
+  if (tFilter==='completed') list = S.tasks.filter(t=>t.status==='completed')
+  if (tFilter==='overdue')   list = S.tasks.filter(t=>isOverdue(t))
+  const pend = S.tasks.filter(t=>t.status==='pending').length
+  const done = S.tasks.filter(t=>t.status==='completed').length
+  document.getElementById('tSub').textContent = `${pend} pendiente${pend!==1?'s':''} · ${done} completada${done!==1?'s':''}`
+  if (!list.length) { document.getElementById('fullTaskEl').innerHTML=emptyEl('✅','Sin tareas en esta categoría',''); return }
+  document.getElementById('fullTaskEl').innerHTML = list.map(t=>taskRow(t)).join('')
+}
+
+function taskRow(t) {
+  const done = t.status==='completed'
+  return `<div class="task-item ${done?'done':''}">
+    <div class="t-chk ${done?'on':''}">${done?'✓':''}</div>
+    <div class="t-body">
+      <div class="t-title">${esc(t.title)}</div>
+      <div class="t-meta">${prioBadge(t)}${t.due_date?`<span>📅 ${fmtDate(t.due_date)}</span>`:''}</div>
+    </div>
+  </div>`
+}
+
+function fTasks(f,btn) {
+  tFilter=f
+  document.querySelectorAll('#s-tareas .tab').forEach(b=>b.classList.remove('on'))
+  btn.classList.add('on'); renderFullTasks()
+}
+
+/* ══ DASH DOCS preview ══ */
+function renderDashDocs() {
+  const top = S.documents.slice(0,5)
+  if (!top.length) { document.getElementById('dDocEl').innerHTML=emptyEl('📁','Sin documentos','Aún no hay archivos cargados.'); return }
+  document.getElementById('dDocEl').innerHTML = top.map(d=>docRow(d)).join('')
+}
+
+/* ══ FULL DOCS ══ */
+function renderFullDocs() {
+  let list = [...S.documents]
+  if (dFilter!=='todos') list = S.documents.filter(d=>d.status===dFilter)
+  document.getElementById('dSub').textContent = `${S.documents.length} documento${S.documents.length!==1?'s':''}`
+  if (!list.length) { document.getElementById('fullDocEl').innerHTML=emptyEl('📁','Sin documentos en esta categoría',''); return }
+  document.getElementById('fullDocEl').innerHTML = `
+    <table class="tbl">
+      <thead><tr><th>Documento</th><th>Tipo</th><th>Estado</th><th>Fecha</th><th></th></tr></thead>
+      <tbody>${list.map(d=>`
+        <tr>
+          <td><div class="td-w">${esc(d.title)}</div></td>
+          <td class="td-m">${esc(d.category||'General')}</td>
+          <td>${docBadge(d.status)}</td>
+          <td class="td-m">${fmtDate(d.created_at)}</td>
+          <td>${d.file_url?`<a href="${esc(d.file_url)}" target="_blank" style="color:var(--gold);font-size:.82rem;text-decoration:none" title="Descargar">↓ Descargar</a>`:'<span style="color:var(--g300);font-size:.75rem">Sin archivo</span>'}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`
+}
+
+function docRow(d) {
+  const catIcon={invoice:'📕',report:'📗',contract:'📘',payroll:'📙'}
+  return `<div class="doc-item" ${d.file_url?`onclick="window.open('${esc(d.file_url)}','_blank')"`:''}>
+    <div class="doc-icon">${catIcon[d.category]||'📄'}</div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:.79rem;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(d.title)}</div>
+      <div style="font-size:.65rem;color:var(--g500);margin-top:.1rem">${esc(d.category||'General')} · ${fmtDate(d.created_at)}</div>
+    </div>
+    <div style="flex-shrink:0">${docBadge(d.status)}</div>
+  </div>`
+}
+
+function fDocs(f,btn) {
+  dFilter=f
+  document.querySelectorAll('#s-documentos .tab').forEach(b=>b.classList.remove('on'))
+  btn.classList.add('on'); renderFullDocs()
+}
+
+/* ══ BI (dashboard preview — primer dashboard) ══ */
+function renderDashBi() {
+  const bi = S.dashboards[0]
+  document.getElementById('dBiEl').innerHTML = bi ? biCard(bi, true) : ''
+}
+
+/* ══ BI (sección completa) ══ */
+function renderBiSection() {
+  const el = document.getElementById('biList')
+  if (!S.dashboards.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📊</div><h4>Sin dashboards configurados</h4><p>Tu asesor de RS Back Office publicará pronto los dashboards de tu empresa.</p></div>`
+    return
   }
-  if(sub==='tareas'){ document.getElementById('task-ttl').textContent=`Tareas — ${cfg.name}`; renderTasks(); }
-  if(sub==='documentos') document.getElementById('docs-ttl').textContent=`Documentos — ${cfg.name}`;
-  if(sub==='solicitudes') document.getElementById('req-ttl').textContent=`Solicitud — ${cfg.name}`;
+  el.innerHTML = S.dashboards.map((bi,i)=>biCard(bi,false,i)).join('')
 }
 
-/* ─ TAREAS ─ */
-function renderTasks() {
-  const all=TASKS[curMod]||[];
-  let list=[...all];
-  if(tFilter==='pendiente')  list=all.filter(t=>!t.done);
-  if(tFilter==='completada') list=all.filter(t=>t.done);
-  if(tFilter==='alta')       list=all.filter(t=>t.p==='alta'&&!t.done);
-  const pCls={alta:'p-hi',media:'p-med',baja:'p-lo'};
-  const pLbl={alta:'🔴 Alta',media:'🟡 Media',baja:'🟢 Baja'};
-  // Counters
-  const pend=all.filter(t=>!t.done).length, done=all.filter(t=>t.done).length;
-  const tp=document.getElementById('t-pend'), td=document.getElementById('t-done');
-  if(tp) tp.textContent=pend+' pendientes';
-  if(td) td.textContent=done+' completadas';
-  document.getElementById('taskList').innerHTML=list.map(t=>`
-    <div class="task-item${t.done?' done':''}">
-      <div class="chk${t.done?' on':''}" onclick="toggleTask(${t.id})">${t.done?'✓':''}</div>
-      <div style="flex:1">
-        <div class="task-t">${t.t}</div>
-        <div class="task-meta"><span>📅 ${t.date}</span><span>👤 ${t.q}</span></div>
+function biCard(bi, preview=false, idx=0) {
+  const tool = {powerbi:'Power BI',looker:'Looker Studio'}
+  const hasUrl = bi.embed_url?.startsWith('http')
+  return `<div class="bi-wrap anim" style="animation-delay:${idx*.08}s">
+    <div class="bi-head">
+      <div style="display:flex;align-items:center;gap:.65rem">
+        <h3>${esc(bi.title)}</h3>
+        <span class="bi-live">${tool[bi.tool]||bi.tool||'BI'}</span>
       </div>
-      <div><span class="${pCls[t.p]}">${pLbl[t.p]}</span></div>
-    </div>`).join('')||'<div style="text-align:center;padding:2rem;color:var(--g500);font-size:.8rem">Sin tareas en esta categoría</div>';
+      ${hasUrl?`<button class="btn-g" onclick="window.open('${esc(bi.embed_url)}','_blank')">⛶ Abrir</button>`:''}
+    </div>
+    <div class="bi-frame" style="height:${preview?'320px':'420px'}">
+      ${hasUrl
+        ? `<iframe src="${esc(bi.embed_url)}" allowfullscreen></iframe>`
+        : `<div class="bi-ph"><div class="bi-ph-icon">📊</div><h4>Dashboard <em>en preparación</em></h4><p>Tu asesor está configurando este reporte. Estará disponible pronto.</p></div>`}
+    </div>
+  </div>`
 }
 
-function toggleTask(id) {
-  const all=TASKS[curMod]; if(!all) return;
-  const t=all.find(x=>x.id===id); if(t){t.done=!t.done;renderTasks();}
-}
-function filterTasks(f,btn){
-  tFilter=f;
-  document.querySelectorAll('.tf').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on'); renderTasks();
-}
-function addTask(e){if(e.key==='Enter')addTaskBtn();}
-function addTaskBtn(){
-  const inp=document.getElementById('newTask'), val=inp.value.trim(); if(!val) return;
-  const all=TASKS[curMod];
-  if(all){all.unshift({id:Date.now(),t:val,done:false,p:'media',date:'Sin fecha',q:'Yo'});inp.value='';renderTasks();}
-}
-
-/* ─ CHAT ─ */
-function sendMsg(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsgBtn();}}
-function sendMsgBtn(){
-  const inp=document.getElementById('chatInp'), msgs=document.getElementById('chatMsgs');
-  const val=inp.value.trim(); if(!val) return;
-  const now=new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
-  msgs.insertAdjacentHTML('beforeend',`<div class="msg mine"><div class="msg-av">ED</div><div class="msg-meta"><div class="msg-bubble">${val.replace(/</g,'&lt;')}</div><div class="msg-time">${now} · Tú</div></div></div>`);
-  inp.value=''; msgs.scrollTop=msgs.scrollHeight;
+/* ══ CHAT ══ */
+function sendMsg(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsgBtn()} }
+function sendMsgBtn() {
+  const inp=document.getElementById('chatInp'), msgs=document.getElementById('chatMsgs')
+  const val=inp.value.trim(); if(!val) return
+  const now=new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})
+  const name=S.profile?.full_name||'Tú', ini=name.slice(0,2).toUpperCase()
+  msgs.insertAdjacentHTML('beforeend',`<div class="msg mine"><div class="msg-av">${ini}</div><div class="msg-meta"><div class="msg-bubble">${esc(val)}</div><div class="msg-time">${now} · ${esc(name)}</div></div></div>`)
+  inp.value=''; msgs.scrollTop=msgs.scrollHeight
   setTimeout(()=>{
-    msgs.insertAdjacentHTML('beforeend',`<div class="msg theirs"><div class="msg-av">RS</div><div class="msg-meta"><div class="msg-bubble">Recibido ✅ Estamos revisando su consulta y le respondemos en breve. Si es urgente llámenos al 📞 (601) 234-5678.</div><div class="msg-time">${now} · Valentina M.</div></div></div>`);
-    msgs.scrollTop=msgs.scrollHeight;
-  },1400);
+    msgs.insertAdjacentHTML('beforeend',`<div class="msg theirs"><div class="msg-av">RS</div><div class="msg-meta"><div class="msg-bubble">Mensaje recibido ✅ Tu asesor lo revisará y te responde pronto. Si es urgente, crea una solicitud formal.</div><div class="msg-time">${now} · Equipo RS</div></div></div>`)
+    msgs.scrollTop=msgs.scrollHeight
+  },1200)
 }
 
-/* ─ NOTIF ─ */
-function toggleNotif(){document.getElementById('notifDd').classList.toggle('open');}
-document.addEventListener('click',e=>{
-  if(!e.target.closest('#notifBtn')&&!e.target.closest('#notifDd'))
-    document.getElementById('notifDd').classList.remove('open');
-});
+/* ══ NAVEGACIÓN ══ */
+const SECS = ['dashboard','tareas','documentos','bi','solicitudes','chat']
+const SEC_LBL = {dashboard:'Dashboard',tareas:'Mis tareas',documentos:'Documentos',bi:'Dashboards BI',solicitudes:'Solicitudes',chat:'Chat RS'}
 
-/* ─ INIT ─ */
-document.getElementById('tbDate').textContent=
-  new Date().toLocaleDateString('es-CO',{weekday:'short',year:'numeric',month:'short',day:'numeric'});
-setMod('facturacion');
+function go(id) {
+  SECS.forEach(s=>{ const el=document.getElementById('s-'+s); if(el) el.style.display=s===id?'block':'none' })
+  document.querySelectorAll('.sb-link').forEach(l=>l.classList.remove('active'))
+  document.querySelectorAll('.sb-link').forEach(l=>{ if(l.getAttribute('onclick')?.includes(`'${id}'`)) l.classList.add('active') })
+  document.getElementById('tbSec').textContent = SEC_LBL[id]||id
+  document.getElementById('pg').scrollTop = 0
+}
+
+/* ══ AUTH ══ */
+async function signOut() {
+  if(!confirm('¿Cerrar sesión?')) return
+  await db.auth.signOut(); window.location.href='login.html'
+}
+
+/* ══ HELPERS UI ══ */
+function conn(s) {
+  const dot=document.getElementById('cDot'),txt=document.getElementById('cTxt')
+  dot.className='cdot '+{ok:'c-ok',loading:'c-l',err:'c-err'}[s]
+  txt.textContent={ok:'Conectado',loading:'Actualizando…',err:'Sin conexión'}[s]
+}
+function showErr(m){ document.getElementById('errMsg').textContent=m; document.getElementById('errBar').classList.add('on') }
+function hideErr() { document.getElementById('errBar').classList.remove('on') }
+function hideLoader(){ const e=document.getElementById('lo'); e.classList.add('gone'); setTimeout(()=>e.remove(),500) }
+function ltxt(t){ document.getElementById('lTxt').textContent=t }
+
+/* ══ HELPERS DATOS ══ */
+function isOverdue(t){ if(!t.due_date||t.status!=='pending') return false; return new Date(t.due_date)<new Date(new Date().toDateString()) }
+function prioBadge(t){
+  if(isOverdue(t)) return '<span class="p-hi">🔴 Vencida</span>'
+  if(!t.due_date)  return '<span class="p-lo">Sin fecha</span>'
+  const d=Math.ceil((new Date(t.due_date)-new Date())/86400000)
+  if(d<=3) return `<span class="p-hi">🔴 ${d}d</span>`
+  if(d<=7) return `<span class="p-med">🟡 ${d}d</span>`
+  return `<span class="p-lo">🔵 ${d}d</span>`
+}
+function docBadge(s){ const m={available:['b-ok','Disponible'],pending:['b-warn','Pendiente'],draft:['b-n','Borrador'],archived:['b-n','Archivado']}; const[c,l]=m[s]||['b-n',s||'—']; return `<span class="badge ${c}">${l}</span>` }
+function fmtDate(iso){ if(!iso) return '—'; return new Date(iso).toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}) }
+function esc(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+function emptyEl(ic,t,s){ return `<div class="empty"><div class="empty-icon">${ic}</div><h4>${t}</h4><p>${s}</p></div>` }
+function setDate(){
+  document.getElementById('tbDate').textContent=new Date().toLocaleDateString('es-CO',{weekday:'short',year:'numeric',month:'short',day:'numeric'})
+  document.getElementById('chatSep').textContent='Hoy — '+new Date().toLocaleDateString('es-CO',{day:'numeric',month:'long',year:'numeric'})
+}
+
+/* Auto-refresh silencioso cada 90s */
+setInterval(()=>{ if(document.visibilityState==='visible') loadAll() },90_000)
+
+init()
 </script>
 </body>
 </html>
