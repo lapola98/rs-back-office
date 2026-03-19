@@ -699,240 +699,362 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-/* ═══════════════════════════════════════
-   DATOS
-═══════════════════════════════════════ */
-const DOCS = [
-  // Facturación
-  {id:1,name:'Reporte de Cartera Junio 2025',company:'Constructora Bolívar S.A.S',coShort:'Const. Bolívar',mod:'Facturación',ext:'pdf',icon:'📕',extColor:{bg:'var(--err-bg)',c:'var(--err)'},size:'1.2 MB',date:'30/06/25',by:'Ana García',status:'publicado',ver:'v1.0',dl:4,desc:'Reporte mensual de cartera detallando aging, facturas pendientes y gestión de cobro del período.',kc:'var(--err)'},
-  {id:2,name:'Facturas Junio 2025 Consolidado',company:'Constructora Bolívar S.A.S',coShort:'Const. Bolívar',mod:'Facturación',ext:'xlsx',icon:'📗',extColor:{bg:'var(--ok-bg)',c:'var(--ok)'},size:'840 KB',date:'30/06/25',by:'Ana García',status:'publicado',ver:'v1.0',dl:2,desc:'Archivo consolidado con todas las facturas electrónicas emitidas en el mes de junio.',kc:'var(--ok)'},
-  {id:3,name:'Aging Cartera Q2 2025',company:'Constructora Bolívar S.A.S',coShort:'Const. Bolívar',mod:'Facturación',ext:'pdf',icon:'📕',extColor:{bg:'var(--err-bg)',c:'var(--err)'},size:'560 KB',date:'28/06/25',by:'Ana García',status:'publicado',ver:'v2.0',dl:6,desc:'Análisis de aging de cartera del segundo trimestre. Incluye desglose por cliente y días de mora.',kc:'var(--err)'},
-  {id:4,name:'Informe Gestión de Cobro Mayo',company:'Cementos Andinos S.A',coShort:'Cementos Andinos',mod:'Facturación',ext:'docx',icon:'📘',extColor:{bg:'var(--info-bg)',c:'var(--info)'},size:'480 KB',date:'05/06/25',by:'Ana García',status:'publicado',ver:'v1.0',dl:1,desc:'Informe mensual de gestión de cobro y seguimiento a clientes con cartera vencida.',kc:'var(--info)'},
-  {id:5,name:'Conciliación Clientes Jun 2025',company:'Inversiones del Norte Ltda',coShort:'Inv. del Norte',mod:'Facturación',ext:'xlsx',icon:'📗',extColor:{bg:'var(--ok-bg)',c:'var(--ok)'},size:'1.1 MB',date:'29/06/25',by:'Laura Becerra',status:'publicado',ver:'v1.0',dl:3,desc:'Conciliación completa de cuentas de clientes al cierre de junio.',kc:'var(--ok)'},
-  // Contabilidad
-  {id:6,name:'Estado Financiero Q2 2025',company:'Cementos Andinos S.A',coShort:'Cementos Andinos',mod:'Contabilidad',ext:'pdf',icon:'📕',extColor:{bg:'var(--err-bg)',c:'var(--err)'},size:'2.1 MB',date:'25/06/25',by:'Ana García',status:'revision',ver:'v1.0',dl:0,desc:'Estados financieros completos del segundo trimestre: balance general, estado de resultados y flujo de efectivo.',kc:'var(--err)'},
-  {id:7,name:'Declaración IVA May-Jun 2025',company:'Constructora Bolívar S.A.S',coShort:'Const. Bolívar',mod:'Contabilidad',ext:'pdf',icon:'📕',extColor:{bg:'var(--err-bg)',c:'var(--err)'},size:'340 KB',date:'09/07/25',by:'Ana García',status:'borrador',ver:'v1.0',dl:0,desc:'Borrador de declaración bimestral de IVA período mayo-junio 2025. Pendiente revisión y firma.',kc:'var(--err)'},
-  {id:8,name:'Libro Auxiliar Junio 2025',company:'Inversiones del Norte Ltda',coShort:'Inv. del Norte',mod:'Contabilidad',ext:'xlsx',icon:'📗',extColor:{bg:'var(--ok-bg)',c:'var(--ok)'},size:'3.2 MB',date:'02/07/25',by:'Laura Becerra',status:'publicado',ver:'v1.0',dl:5,desc:'Libro auxiliar contable detallado del mes de junio con todos los movimientos por cuenta.',kc:'var(--ok)'},
-  {id:9,name:'Retención en la Fuente Jun 2025',company:'Cementos Andinos S.A',coShort:'Cementos Andinos',mod:'Contabilidad',ext:'pdf',icon:'📕',extColor:{bg:'var(--err-bg)',c:'var(--err)'},size:'290 KB',date:'15/07/25',by:'Ana García',status:'borrador',ver:'v1.0',dl:0,desc:'Borrador declaración mensual de retención en la fuente correspondiente a junio 2025.',kc:'var(--err)'},
-  {id:10,name:'Conciliación Bancaria Junio',company:'Constructora Bolívar S.A.S',coShort:'Const. Bolívar',mod:'Contabilidad',ext:'xlsx',icon:'📗',extColor:{bg:'var(--ok-bg)',c:'var(--ok)'},size:'680 KB',date:'30/06/25',by:'Ana García',status:'publicado',ver:'v1.0',dl:2,desc:'Conciliación bancaria mensual de todas las cuentas de la empresa al cierre de junio.',kc:'var(--ok)'},
-  // Tesorería
-  {id:11,name:'Flujo de Caja Jul-Ago 2025',company:'Inversiones del Norte Ltda',coShort:'Inv. del Norte',mod:'Tesorería',ext:'xlsx',icon:'📗',extColor:{bg:'var(--ok-bg)',c:'var(--ok)'},size:'760 KB',date:'01/07/25',by:'Laura Becerra',status:'publicado',ver:'v1.0',dl:7,desc:'Proyección de flujo de caja para los meses de julio y agosto con escenarios optimista y conservador.',kc:'var(--ok)'},
-  {id:12,name:'Saldos Cuentas Bancarias Jun',company:'Cementos Andinos S.A',coShort:'Cementos Andinos',mod:'Tesorería',ext:'pdf',icon:'📕',extColor:{bg:'var(--err-bg)',c:'var(--err)'},size:'210 KB',date:'30/06/25',by:'Carlos Muñoz',status:'publicado',ver:'v1.0',dl:3,desc:'Reporte de saldos en cuentas bancarias al cierre del mes de junio.',kc:'var(--err)'},
-  {id:13,name:'Programación Pagos Julio 2025',company:'Constructora Bolívar S.A.S',coShort:'Const. Bolívar',mod:'Tesorería',ext:'xlsx',icon:'📗',extColor:{bg:'var(--ok-bg)',c:'var(--ok)'},size:'420 KB',date:'01/07/25',by:'Carlos Muñoz',status:'revision',ver:'v1.0',dl:0,desc:'Cronograma de pagos programados para el mes de julio: proveedores, nómina, obligaciones fiscales.',kc:'var(--ok)'},
-  {id:14,name:'Extractos Bancarios Junio',company:'Inversiones del Norte Ltda',coShort:'Inv. del Norte',mod:'Tesorería',ext:'pdf',icon:'📕',extColor:{bg:'var(--err-bg)',c:'var(--err)'},size:'1.8 MB',date:'05/07/25',by:'Laura Becerra',status:'publicado',ver:'v1.0',dl:2,desc:'Extractos bancarios consolidados de todas las cuentas registradas correspondientes a junio 2025.',kc:'var(--err)'},
-  // Personal
-  {id:15,name:'Nómina Junio 2025',company:'Constructora Bolívar S.A.S',coShort:'Const. Bolívar',mod:'Personal',ext:'xlsx',icon:'📗',extColor:{bg:'var(--ok-bg)',c:'var(--ok)'},size:'540 KB',date:'27/06/25',by:'Carlos Muñoz',status:'borrador',ver:'v1.0',dl:0,desc:'Liquidación de nómina correspondiente al mes de junio 2025. Pendiente revisión del cliente.',kc:'var(--ok)'},
-  {id:16,name:'PILA Junio 2025',company:'Cementos Andinos S.A',coShort:'Cementos Andinos',mod:'Personal',ext:'pdf',icon:'📕',extColor:{bg:'var(--err-bg)',c:'var(--err)'},size:'380 KB',date:'25/06/25',by:'Carlos Muñoz',status:'publicado',ver:'v1.0',dl:4,desc:'Planilla integrada de liquidación de aportes a seguridad social correspondiente a junio.',kc:'var(--err)'},
-  {id:17,name:'Contratos Personal Activo Jun',company:'Inversiones del Norte Ltda',coShort:'Inv. del Norte',mod:'Personal',ext:'docx',icon:'📘',extColor:{bg:'var(--info-bg)',c:'var(--info)'},size:'920 KB',date:'28/06/25',by:'Laura Becerra',status:'publicado',ver:'v3.1',dl:1,desc:'Relación actualizada de contratos de personal activo con fechas de vencimiento y novedades.',kc:'var(--info)'},
-  {id:18,name:'Certificados Laborales Q2',company:'Cementos Andinos S.A',coShort:'Cementos Andinos',mod:'Personal',ext:'pdf',icon:'📕',extColor:{bg:'var(--err-bg)',c:'var(--err)'},size:'1.4 MB',date:'30/06/25',by:'Carlos Muñoz',status:'revision',ver:'v1.0',dl:0,desc:'Paquete de certificados laborales solicitados por empleados en el segundo trimestre.',kc:'var(--err)'},
-  // Interno
-  {id:19,name:'Contrato RS — Constructora Bolívar',company:'Constructora Bolívar S.A.S',coShort:'Const. Bolívar',mod:'Interno',ext:'pdf',icon:'📕',extColor:{bg:'var(--err-bg)',c:'var(--err)'},size:'2.1 MB',date:'15/01/24',by:'Laura Becerra',status:'publicado',ver:'v1.0',dl:0,desc:'Contrato de prestación de servicios de back office. Firmado y vigente.',kc:'var(--err)'},
-  {id:20,name:'Dashboard BI Facturación Q2',company:'Inversiones del Norte Ltda',coShort:'Inv. del Norte',mod:'Facturación',ext:'pdf',icon:'📕',extColor:{bg:'var(--err-bg)',c:'var(--err)'},size:'2.4 MB',date:'01/07/25',by:'Laura Becerra',status:'publicado',ver:'v1.0',dl:8,desc:'Dashboard ejecutivo de Power BI exportado en PDF para el cliente. Incluye KPIs, gráficas de tendencia y tabla resumen.',kc:'var(--err)'},
-];
+const SUPABASE_URL = 'https://doauzsmkoeyvllbmbdda.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvYXV6c21rb2V5dmxsYm1iZGRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MjIwNDcsImV4cCI6MjA4ODk5ODA0N30.gytRSeyMQsVAU-I3DowiqkW_Nfpuk8mU5TgrXbkcBQU'
+const { createClient } = supabase
+const db = createClient(SUPABASE_URL, SUPABASE_KEY)
 
-const STATUS_LABELS = {publicado:'Publicado',revision:'En revisión',borrador:'Borrador'};
-const STATUS_BADGE  = {publicado:'b-ok',revision:'b-warn',borrador:'b-n'};
-let currentDoc = null;
-let viewMode = 'grid';
-let filterStatus = 'todos';
-let currentFolder = 'todos';
+let DOCS = [], COMPANIES = {}, currentDoc = null
+let viewMode = 'grid', filterStatus = 'todos', currentFolder = 'todos'
 
-/* ═══ RENDER ═══ */
-function getFiltered() {
-  const q = document.getElementById('searchInput').value.toLowerCase();
-  return DOCS.filter(d => {
-    const matchQ = !q || d.name.toLowerCase().includes(q) || d.company.toLowerCase().includes(q) || d.mod.toLowerCase().includes(q);
-    const matchS = filterStatus === 'todos' || d.status === filterStatus;
-    const matchF = matchFolder(d);
-    return matchQ && matchS && matchF;
-  });
+const EXT_MAP = {
+  pdf:  { icon:'📕', bg:'var(--err-bg)',  c:'var(--err)',  kc:'var(--err)'  },
+  xlsx: { icon:'📗', bg:'var(--ok-bg)',   c:'var(--ok)',   kc:'var(--ok)'   },
+  xls:  { icon:'📗', bg:'var(--ok-bg)',   c:'var(--ok)',   kc:'var(--ok)'   },
+  docx: { icon:'📘', bg:'var(--info-bg)', c:'var(--info)', kc:'var(--info)' },
+  doc:  { icon:'📘', bg:'var(--info-bg)', c:'var(--info)', kc:'var(--info)' },
+  csv:  { icon:'📊', bg:'var(--warn-bg)', c:'var(--warn)', kc:'var(--warn)' },
 }
-
-function matchFolder(d) {
-  const f = currentFolder;
-  if(f==='todos')       return true;
-  if(f==='recientes')   return ['30/06/25','01/07/25','02/07/25','05/07/25','09/07/25'].includes(d.date);
-  if(f==='revision')    return d.status==='revision';
-  if(f==='borrador')    return d.status==='borrador';
-  if(f==='facturacion') return d.mod==='Facturación';
-  if(f==='contabilidad')return d.mod==='Contabilidad';
-  if(f==='tesoreria')   return d.mod==='Tesorería';
-  if(f==='personal')    return d.mod==='Personal' || d.mod==='Gestión de Personal';
-  if(f==='cb')          return d.company==='Constructora Bolívar S.A.S';
-  if(f==='ca')          return d.company==='Cementos Andinos S.A';
-  if(f==='in')          return d.company==='Inversiones del Norte Ltda';
-  if(f==='otras')       return !['Constructora Bolívar S.A.S','Cementos Andinos S.A','Inversiones del Norte Ltda'].includes(d.company);
-  if(f==='pdf')         return d.ext==='pdf';
-  if(f==='xlsx')        return d.ext==='xlsx';
-  if(f==='word')        return d.ext==='docx';
-  return true;
-}
-
-function renderAll() {
-  const docs = getFiltered();
-  const title = FOLDER_TITLES[currentFolder] || 'Documentos';
-  const count = `${docs.length} archivo${docs.length!==1?'s':''}`;
-  document.getElementById('sectionTitle').textContent = title;
-  document.getElementById('sectionCount').textContent = count;
-  document.getElementById('sectionTitleL').textContent = title;
-  document.getElementById('sectionCountL').textContent = count;
-  if(viewMode==='grid') renderGrid(docs);
-  else renderList(docs);
-}
-
+const STATUS_LABELS = { available:'Publicado', pending:'En revisión', draft:'Borrador', archived:'Archivado' }
+const STATUS_BADGE  = { available:'b-ok', pending:'b-warn', draft:'b-n', archived:'b-n' }
 const FOLDER_TITLES = {
-  todos:'Todos los documentos',recientes:'Documentos recientes',revision:'En revisión',borrador:'Borradores',
-  facturacion:'Facturación y Cartera',contabilidad:'Contabilidad',tesoreria:'Tesorería',personal:'Gestión de Personal',
-  cb:'Constructora Bolívar',ca:'Cementos Andinos',in:'Inversiones del Norte',otras:'Otras empresas',
-  pdf:'Archivos PDF',xlsx:'Archivos Excel',word:'Archivos Word',
-};
+  todos:'Todos los documentos', recientes:'Documentos recientes', revision:'En revisión', borrador:'Borradores',
+  facturacion:'Facturación y Cartera', contabilidad:'Contabilidad', tesoreria:'Tesorería', personal:'Gestión de Personal',
+  pdf:'Archivos PDF', xlsx:'Archivos Excel', word:'Archivos Word',
+}
+
+function extData(path) {
+  const ext = (path||'').split('.').pop().toLowerCase()
+  return { ext, ...(EXT_MAP[ext] || { icon:'📄', bg:'rgba(255,255,255,.06)', c:'var(--txt2)', kc:'rgba(201,168,76,.3)' }) }
+}
+function fmtDate(iso) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'2-digit'})
+}
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+
+/* ── Carga datos desde Supabase ── */
+async function loadData() {
+  try {
+    const { data: cos } = await db.from('companies').select('id, name')
+    if (cos) cos.forEach(c => { COMPANIES[c.id] = c.name })
+
+    const { data: docs, error } = await db
+      .from('documents')
+      .select('id, title, category, status, storage_path, created_at, company_id')
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+
+    DOCS = (docs || []).map(d => {
+      const { ext, icon, bg, c, kc } = extData(d.storage_path)
+      const coName  = COMPANIES[d.company_id] || 'Sin empresa'
+      const coShort = coName.length > 18 ? coName.slice(0,16)+'…' : coName
+      let file_url  = null
+      if (d.storage_path) {
+        const { data: u } = db.storage.from('documents').getPublicUrl(d.storage_path)
+        file_url = u?.publicUrl || null
+      }
+      return {
+        id: d.id, title: d.title, name: d.title,
+        category: d.category || 'General', mod: d.category || 'General',
+        status: d.status, company: coName, coShort,
+        date: fmtDate(d.created_at), created_at: d.created_at,
+        storage_path: d.storage_path, file_url,
+        ext, icon, extColor: { bg, c }, kc,
+        size: '—', by: 'Admin RS', ver: 'v1.0', dl: 0, desc: d.title,
+        company_id: d.company_id,
+      }
+    })
+    updateStats()
+    renderAll()
+  } catch(e) {
+    console.error('[docs]', e)
+    showTopErr('No se pudieron cargar los documentos: ' + e.message)
+  }
+}
+
+function updateStats() {
+  const t = DOCS.length
+  const pub = DOCS.filter(d=>d.status==='available').length
+  const rev = DOCS.filter(d=>d.status==='pending').length
+  const bor = DOCS.filter(d=>d.status==='draft').length
+  const bars = document.querySelectorAll('.sbar-val')
+  if(bars[0]) bars[0].textContent = t
+  if(bars[1]) bars[1].textContent = pub
+  if(bars[2]) bars[2].textContent = rev
+  if(bars[3]) bars[3].textContent = bor
+  const tc = document.querySelector('.tree-item:first-child .tree-count')
+  if(tc) tc.textContent = t
+  const thd = document.querySelector('.tree-hd p')
+  if(thd) thd.textContent = `${t} documentos · ${Object.keys(COMPANIES).length} empresas`
+}
+
+/* ── Filtros ── */
+function getFiltered() {
+  const q = (document.getElementById('searchInput')?.value||'').toLowerCase()
+  return DOCS.filter(d => {
+    const mQ = !q || d.name.toLowerCase().includes(q) || d.company.toLowerCase().includes(q) || d.mod.toLowerCase().includes(q)
+    const mS = filterStatus==='todos' || mapSt(d.status)===filterStatus
+    const mF = matchFolder(d)
+    return mQ && mS && mF
+  })
+}
+function mapSt(s) {
+  return {available:'publicado',pending:'revision',draft:'borrador',archived:'borrador'}[s]||'borrador'
+}
+function matchFolder(d) {
+  const f = currentFolder
+  if(f==='todos')        return true
+  if(f==='recientes')    return (Date.now()-new Date(d.created_at))<7*86400000
+  if(f==='revision')     return d.status==='pending'
+  if(f==='borrador')     return d.status==='draft'
+  if(f==='facturacion')  return /factura|cartera/i.test(d.category)
+  if(f==='contabilidad') return /contab/i.test(d.category)
+  if(f==='tesoreria')    return /tesorer/i.test(d.category)
+  if(f==='personal')     return /personal|nómina|nomina/i.test(d.category)
+  if(f==='pdf')          return d.ext==='pdf'
+  if(f==='xlsx')         return d.ext==='xlsx'||d.ext==='xls'
+  if(f==='word')         return d.ext==='docx'||d.ext==='doc'
+  return true
+}
+
+/* ── Render ── */
+function renderAll() {
+  const docs = getFiltered()
+  const title = FOLDER_TITLES[currentFolder]||'Documentos'
+  const count = `${docs.length} archivo${docs.length!==1?'s':''}`
+  document.getElementById('sectionTitle').textContent  = title
+  document.getElementById('sectionCount').textContent  = count
+  document.getElementById('sectionTitleL').textContent = title
+  document.getElementById('sectionCountL').textContent = count
+  viewMode==='grid' ? renderGrid(docs) : renderList(docs)
+}
+
+function docCardHTML(d) {
+  const sel = currentDoc && currentDoc.id===d.id ? 'selected' : ''
+  return `
+  <div class="doc-card ${sel}" style="--kc:${esc(d.kc)}" onclick="selectDoc('${d.id}')">
+    <div class="doc-thumb">
+      ${d.icon}
+      <div class="doc-ext" style="background:${d.extColor.bg};color:${d.extColor.c}">${esc(d.ext||'?')}</div>
+    </div>
+    <div class="doc-nm">${esc(d.name)}</div>
+    <div class="doc-co">${esc(d.coShort)}</div>
+    <div class="doc-mt" style="font-size:.6rem;color:var(--txt3)">${esc(d.category)} · ${esc(d.date)}</div>
+    <span class="badge ${STATUS_BADGE[d.status]||'b-n'}" style="font-size:.58rem">${STATUS_LABELS[d.status]||d.status}</span>
+    <div class="doc-card-actions">
+      ${d.file_url
+        ? `<span class="dca" onclick="event.stopPropagation();window.open('${esc(d.file_url)}','_blank')" title="Ver">👁</span>
+           <span class="dca" onclick="event.stopPropagation();window.open('${esc(d.file_url)}','_blank')" title="Descargar">↓</span>`
+        : `<span class="dca" style="opacity:.3" title="Sin archivo">👁</span>
+           <span class="dca" style="opacity:.3">↓</span>`}
+      <span class="dca" onclick="event.stopPropagation();deleteDoc('${d.id}','${esc(d.name)}')" title="Eliminar">🗑</span>
+    </div>
+  </div>`
+}
 
 function renderGrid(docs) {
-  if(!docs.length) { document.getElementById('docGrid').innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">🔍</div><h3>Sin resultados</h3><p>No hay documentos que coincidan con los filtros.</p></div>`; return; }
-  document.getElementById('docGrid').innerHTML = docs.map(d => `
-    <div class="doc-card ${currentDoc&&currentDoc.id===d.id?'selected':''}"
-         style="--kc:${d.kc}" onclick="selectDoc(${d.id})">
-      <div class="doc-thumb">
-        ${d.icon}
-        <div class="doc-ext" style="background:${d.extColor.bg};color:${d.extColor.c}">${d.ext}</div>
-      </div>
-      <div class="doc-nm">${d.name}</div>
-      <div class="doc-co">${d.coShort}</div>
-      <div class="doc-mt">${d.size} · ${d.date}</div>
-      <span class="badge ${STATUS_BADGE[d.status]}" style="font-size:.58rem">${STATUS_LABELS[d.status]}</span>
-      <div class="doc-card-actions">
-        <span class="dca" onclick="event.stopPropagation();alert('Abriendo...')">👁</span>
-        <span class="dca" onclick="event.stopPropagation();alert('Descargando...')">↓</span>
-        <span class="dca" onclick="event.stopPropagation();alert('Eliminando...')">🗑</span>
-      </div>
-    </div>`).join('');
+  const el = document.getElementById('docGrid')
+  if (!docs.length) {
+    el.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <div class="empty-state-icon">🔍</div><h3>Sin resultados</h3>
+      <p>No hay documentos que coincidan.</p></div>`
+    return
+  }
+  el.innerHTML = docs.map(docCardHTML).join('')
 }
 
 function renderList(docs) {
-  if(!docs.length) { document.getElementById('docList').innerHTML=`<div class="empty-state"><div class="empty-state-icon">🔍</div><h3>Sin resultados</h3><p>No hay documentos que coincidan con los filtros.</p></div>`; return; }
-  document.getElementById('docList').innerHTML = docs.map(d => `
-    <div class="dl-item ${currentDoc&&currentDoc.id===d.id?'selected':''}" onclick="selectDoc(${d.id})">
+  const el = document.getElementById('docList')
+  if (!docs.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🔍</div><h3>Sin resultados</h3><p>No hay documentos que coincidan.</p></div>`
+    return
+  }
+  el.innerHTML = docs.map(d => `
+    <div class="dl-item ${currentDoc&&currentDoc.id===d.id?'selected':''}" onclick="selectDoc('${d.id}')">
       <div class="dl-icon" style="background:${d.extColor.bg}">${d.icon}</div>
       <div style="flex:1;min-width:0">
-        <div class="dl-name">${d.name}</div>
-        <div class="dl-co">${d.mod}</div>
+        <div class="dl-name">${esc(d.name)}</div>
+        <div class="dl-co">${esc(d.mod)}</div>
       </div>
-      <div style="width:130px;flex-shrink:0;font-size:.72rem;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.coShort}</div>
-      <div class="dl-mod"><span class="badge b-gold" style="font-size:.58rem">${d.mod.substring(0,8)}</span></div>
-      <div class="dl-status"><span class="badge ${STATUS_BADGE[d.status]}" style="font-size:.58rem">${STATUS_LABELS[d.status]}</span></div>
-      <div class="dl-date">${d.date}</div>
-      <div class="dl-size">${d.size}</div>
+      <div style="width:130px;flex-shrink:0;font-size:.72rem;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(d.coShort)}</div>
+      <div class="dl-mod"><span class="badge b-gold" style="font-size:.58rem">${esc((d.mod||'').substring(0,10))}</span></div>
+      <div class="dl-status"><span class="badge ${STATUS_BADGE[d.status]||'b-n'}" style="font-size:.58rem">${STATUS_LABELS[d.status]||d.status}</span></div>
+      <div class="dl-date">${esc(d.date)}</div>
+      <div class="dl-size">${esc(d.size)}</div>
       <div class="dl-actions">
-        <button class="dla" onclick="event.stopPropagation();alert('Abriendo...')">👁</button>
-        <button class="dla" onclick="event.stopPropagation();alert('Descargando...')">↓</button>
-        <button class="dla" onclick="event.stopPropagation();alert('Opciones...')">⋯</button>
+        ${d.file_url
+          ? `<button class="dla" onclick="event.stopPropagation();window.open('${esc(d.file_url)}','_blank')">👁</button>
+             <button class="dla" onclick="event.stopPropagation();window.open('${esc(d.file_url)}','_blank')">↓</button>`
+          : `<button class="dla" style="opacity:.3">👁</button>
+             <button class="dla" style="opacity:.3">↓</button>`}
+        <button class="dla" onclick="event.stopPropagation();deleteDoc('${d.id}','${esc(d.name)}')">🗑</button>
       </div>
-    </div>`).join('');
+    </div>`).join('')
 }
 
-/* ═══ SELECT ═══ */
+/* ── Preview panel ── */
 function selectDoc(id) {
-  currentDoc = DOCS.find(d=>d.id===id);
-  if(!currentDoc) return;
-  renderAll(); // re-render para actualidad selected
+  currentDoc = DOCS.find(d => d.id === id)
+  if (!currentDoc) return
+  renderAll()
+  document.getElementById('pvEmpty').style.display = 'none'
+  const pv = document.getElementById('pvContent')
+  pv.style.display = 'flex'
+  document.getElementById('pvIcon').textContent         = currentDoc.icon
+  document.getElementById('pvExt').textContent          = (currentDoc.ext||'?').toUpperCase()
+  document.getElementById('pvExt').style.background     = currentDoc.extColor.bg
+  document.getElementById('pvExt').style.color          = currentDoc.extColor.c
+  document.getElementById('pvName').textContent         = currentDoc.name
+  document.getElementById('pvSize').textContent         = currentDoc.size
+  document.getElementById('pv-co').textContent          = currentDoc.company
+  document.getElementById('pv-mod').textContent         = currentDoc.mod
+  document.getElementById('pv-status').innerHTML        = `<span class="badge ${STATUS_BADGE[currentDoc.status]||'b-n'}">${STATUS_LABELS[currentDoc.status]||currentDoc.status}</span>`
+  document.getElementById('pv-type').textContent        = (currentDoc.ext||'?').toUpperCase()
+  document.getElementById('pv-by').textContent          = currentDoc.by
+  document.getElementById('pv-date').textContent        = currentDoc.date
+  document.getElementById('pv-ver').textContent         = currentDoc.ver
+  document.getElementById('pv-dl').textContent          = currentDoc.dl + ' veces'
+  document.getElementById('pv-desc').textContent        = currentDoc.desc
 
-  document.getElementById('pvEmpty').style.display='none';
-  const pv = document.getElementById('pvContent');
-  pv.style.display='flex';
-  document.getElementById('pvIcon').textContent=currentDoc.icon;
-  document.getElementById('pvExt').textContent=currentDoc.ext.toUpperCase();
-  document.getElementById('pvExt').style.background=currentDoc.extColor.bg;
-  document.getElementById('pvExt').style.color=currentDoc.extColor.c;
-  document.getElementById('pvName').textContent=currentDoc.name;
-  document.getElementById('pvSize').textContent=currentDoc.size;
-  document.getElementById('pv-co').textContent=currentDoc.company;
-  document.getElementById('pv-mod').textContent=currentDoc.mod;
-  document.getElementById('pv-status').innerHTML=`<span class="badge ${STATUS_BADGE[currentDoc.status]}">${STATUS_LABELS[currentDoc.status]}</span>`;
-  document.getElementById('pv-type').textContent=currentDoc.ext.toUpperCase();
-  document.getElementById('pv-by').textContent=currentDoc.by;
-  document.getElementById('pv-date').textContent=currentDoc.date;
-  document.getElementById('pv-ver').textContent=currentDoc.ver;
-  document.getElementById('pv-dl').textContent=currentDoc.dl + ' veces';
-  document.getElementById('pv-desc').textContent=currentDoc.desc;
+  document.querySelector('.pv-actions').innerHTML = currentDoc.file_url
+    ? `<button class="btn-p btn-w" onclick="window.open('${esc(currentDoc.file_url)}','_blank')">👁 Ver archivo</button>
+       <button class="btn-s btn-w" onclick="window.open('${esc(currentDoc.file_url)}','_blank')">↓ Descargar</button>
+       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.45rem">
+         <button class="btn-g" style="justify-content:center" onclick="publishDoc('${currentDoc.id}')">📢 Publicar</button>
+         <button class="btn-g" style="justify-content:center">✏️ Editar</button>
+       </div>
+       <button class="btn-danger" onclick="deleteDoc('${currentDoc.id}','${esc(currentDoc.name)}')">🗑 Eliminar</button>`
+    : `<p style="font-size:.74rem;color:var(--txt3);text-align:center;padding:.5rem 0">Sin archivo en Storage</p>
+       <button class="btn-danger" onclick="deleteDoc('${currentDoc.id}','${esc(currentDoc.name)}')">🗑 Eliminar registro</button>`
 }
 
-/* ═══ CONTROLES ═══ */
+/* ── Acciones Supabase ── */
+async function deleteDoc(id, name) {
+  if (!confirm(`¿Eliminar "${name}"?`)) return
+  const { error } = await db.from('documents').delete().eq('id', id)
+  if (error) { alert('Error: ' + error.message); return }
+  if (currentDoc?.id === id) {
+    currentDoc = null
+    document.getElementById('pvEmpty').style.display  = 'flex'
+    document.getElementById('pvContent').style.display = 'none'
+  }
+  await loadData()
+}
+
+async function publishDoc(id) {
+  const { error } = await db.from('documents').update({ status:'available' }).eq('id', id)
+  if (error) { alert('Error: ' + error.message); return }
+  await loadData(); selectDoc(id)
+}
+
+async function uploadDoc() {
+  const fileInput = document.getElementById('fileInput')
+  const coId   = document.getElementById('f-co').value
+  const mod    = document.getElementById('f-mod').value
+  const name   = document.getElementById('f-docname').value.trim()
+  const status = document.getElementById('f-docstatus').value
+  const file   = fileInput.files[0]
+
+  if (!coId || !mod || !name) { alert('Completa empresa, módulo y nombre.'); return }
+  if (!file) { alert('Selecciona un archivo.'); return }
+
+  const btn = document.querySelector('.modal-ft .btn-p')
+  btn.textContent = '⏳ Subiendo…'; btn.disabled = true
+  try {
+    const ext      = file.name.split('.').pop()
+    const safeName = name.replace(/[^a-zA-Z0-9_\-\.]/g,'_') + '_' + Date.now() + '.' + ext
+    const path     = `${coId}/${safeName}`
+    const { error: upErr } = await db.storage.from('documents').upload(path, file, { cacheControl:'3600', upsert:false })
+    if (upErr) throw new Error('Storage: ' + upErr.message)
+    const { error: dbErr } = await db.from('documents').insert({ title:name, category:mod, status, company_id:coId, storage_path:path })
+    if (dbErr) throw new Error('DB: ' + dbErr.message)
+    alert(`"${name}" subido correctamente ✓`)
+    closeModal(); clearFile(); await loadData()
+  } catch(e) {
+    alert('Error: ' + e.message)
+  } finally {
+    btn.textContent = '📤 Subir documento'; btn.disabled = false
+  }
+}
+
+async function populateCompanySelect() {
+  const { data } = await db.from('companies').select('id, name').order('name')
+  if (!data) return
+  const sel = document.getElementById('f-co')
+  sel.innerHTML = '<option value="">Seleccionar empresa…</option>'
+  data.forEach(c => {
+    const o = document.createElement('option'); o.value = c.id; o.textContent = c.name; sel.appendChild(o)
+  })
+}
+
+/* ── Controles UI ── */
 function setView(v) {
-  viewMode=v;
-  document.getElementById('btnGrid').classList.toggle('on', v==='grid');
-  document.getElementById('btnList').classList.toggle('on', v==='list');
-  document.getElementById('gridView').style.display = v==='grid'?'block':'none';
-  document.getElementById('listView').style.display = v==='list'?'block':'none';
-  renderAll();
+  viewMode = v
+  document.getElementById('btnGrid').classList.toggle('on', v==='grid')
+  document.getElementById('btnList').classList.toggle('on', v==='list')
+  document.getElementById('gridView').style.display = v==='grid' ? 'block' : 'none'
+  document.getElementById('listView').style.display = v==='list' ? 'block' : 'none'
+  renderAll()
 }
-
-function setStatus(s,btn) {
-  filterStatus=s;
-  document.querySelectorAll('.docs-toolbar .btn-g:not(#btnGrid):not(#btnList)').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
-  renderAll();
+function setStatus(s, btn) {
+  filterStatus = s
+  document.querySelectorAll('.docs-toolbar .btn-g:not(#btnGrid):not(#btnList)').forEach(b=>b.classList.remove('on'))
+  btn.classList.add('on'); renderAll()
 }
-
 function setFolder(folder, el) {
-  currentFolder=folder;
-  document.querySelectorAll('.tree-item').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active');
-  renderAll();
+  currentFolder = folder
+  document.querySelectorAll('.tree-item').forEach(t=>t.classList.remove('active'))
+  el.classList.add('active'); renderAll()
 }
-
 function filterDocs() { renderAll() }
-
-/* ═══ MODAL ═══ */
-function openModal() { document.getElementById('modalOverlay').classList.add('open') }
+function openModal()  { document.getElementById('modalOverlay').classList.add('open') }
 function closeModal() { document.getElementById('modalOverlay').classList.remove('open') }
 function closeModalOut(e) { if(e.target===document.getElementById('modalOverlay')) closeModal() }
-
 function handleDrop(e) {
-  e.preventDefault();
-  document.getElementById('dropZone').classList.remove('drag');
-  const file = e.dataTransfer.files[0];
-  if(file) showFilePreview(file);
+  e.preventDefault(); document.getElementById('dropZone').classList.remove('drag')
+  if(e.dataTransfer.files[0]) showFilePreview(e.dataTransfer.files[0])
 }
 function handleFile(input) { if(input.files[0]) showFilePreview(input.files[0]) }
 function showFilePreview(file) {
-  const ext = file.name.split('.').pop().toLowerCase();
-  const icons = {pdf:'📕',xlsx:'📗',xls:'📗',docx:'📘',doc:'📘',csv:'📊'};
-  document.getElementById('fpreview-icon').textContent = icons[ext]||'📄';
-  document.getElementById('fpreview-name').textContent = file.name;
-  document.getElementById('fpreview-size').textContent = (file.size/1024/1024).toFixed(1)+' MB';
-  const fp = document.getElementById('filePreview');
-  fp.style.display='flex';
-  document.getElementById('f-docname').value = file.name.replace(/\.[^.]+$/,'');
-  document.getElementById('dropZone').style.display='none';
+  const ext = file.name.split('.').pop().toLowerCase()
+  const icons = {pdf:'📕',xlsx:'📗',xls:'📗',docx:'📘',doc:'📘',csv:'📊'}
+  document.getElementById('fpreview-icon').textContent = icons[ext]||'📄'
+  document.getElementById('fpreview-name').textContent = file.name
+  document.getElementById('fpreview-size').textContent = (file.size/1024/1024).toFixed(1)+' MB'
+  document.getElementById('filePreview').style.display = 'flex'
+  document.getElementById('f-docname').value = file.name.replace(/\.[^.]+$/,'')
+  document.getElementById('dropZone').style.display = 'none'
 }
 function clearFile() {
-  document.getElementById('filePreview').style.display='none';
-  document.getElementById('dropZone').style.display='flex';
-  document.getElementById('fileInput').value='';
+  document.getElementById('filePreview').style.display = 'none'
+  document.getElementById('dropZone').style.display    = 'flex'
+  document.getElementById('fileInput').value = ''
 }
-function uploadDoc() {
-  const co = document.getElementById('f-co').value;
-  const mod = document.getElementById('f-mod').value;
-  const name = document.getElementById('f-docname').value.trim();
-  if(!co||!mod||!name){ alert('Completa empresa, módulo y nombre del documento.'); return; }
-  alert(`Documento "${name}" subido correctamente ✓`);
-  closeModal();
-  clearFile();
+function toggleNotif() { document.getElementById('notifDd').classList.toggle('open') }
+document.addEventListener('click', e => {
+  if(!e.target.closest('#notifBtn') && !e.target.closest('#notifDd'))
+    document.getElementById('notifDd').classList.remove('open')
+})
+function showTopErr(msg) {
+  let bar = document.getElementById('topErrBar')
+  if (!bar) {
+    bar = document.createElement('div'); bar.id = 'topErrBar'
+    bar.style = 'background:var(--err-bg);border-left:3px solid var(--err);padding:.65rem 1.2rem;font-size:.78rem;color:var(--txt2);flex-shrink:0'
+    document.querySelector('.list-area').prepend(bar)
+  }
+  bar.textContent = '⚠️ ' + msg
 }
 
-/* ═══ NOTIF ═══ */
-function toggleNotif(){document.getElementById('notifDd').classList.toggle('open')}
-document.addEventListener('click',e=>{
-  if(!e.target.closest('#notifBtn')&&!e.target.closest('#notifDd'))
-    document.getElementById('notifDd').classList.remove('open');
-});
-
-/* ═══ INIT ═══ */
+/* ── Init ── */
 document.getElementById('tbDate').textContent =
-  new Date().toLocaleDateString('es-CO',{weekday:'short',year:'numeric',month:'short',day:'numeric'});
-document.getElementById('fs-todos').classList.add('on');
-renderAll();
+  new Date().toLocaleDateString('es-CO',{weekday:'short',year:'numeric',month:'short',day:'numeric'})
+document.getElementById('fs-todos').classList.add('on')
+populateCompanySelect()
+loadData()
 </script>
 </body>
 </html>
