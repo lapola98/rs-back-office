@@ -551,7 +551,7 @@ async function loadAll(user) {
         .order('due_date', { ascending: true }),
 
       db.from('documents')
-        .select('id, title, category, status, file_url, created_at')
+        .select('id, title, category, status, storage_path, created_at')
         .order('created_at', { ascending: false }),
 
       db.from('embedded_dashboards')
@@ -567,7 +567,7 @@ async function loadAll(user) {
 
     S.company    = rc.data
     S.tasks      = rt.data || []
-    S.documents  = rd.data || []
+    S.documents  = (rd.data || []).map(d => { let file_url=null; if(d.storage_path){const{data}=db.storage.from('documents').getPublicUrl(d.storage_path);file_url=data?.publicUrl||null} return{...d,file_url} })
     S.dashboards = rbi.data || []
 
     renderAll()

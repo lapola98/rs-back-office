@@ -384,6 +384,29 @@ async function init() {
    Una sola ronda de fetch para companies, tasks, documents,
    embedded_dashboards y profiles usando Promise.all.
 ═══════════════════════ */
+async function attachDocumentUrls(docs) {
+  const result = [];
+
+  for (const d of docs || []) {
+    let fileUrl = null;
+
+    if (d.storage_path) {
+      const { data } = await db.storage
+        .from('documents')
+        .createSignedUrl(d.storage_path, 3600);
+
+      fileUrl = data?.signedUrl || null;
+    }
+
+    result.push({
+      ...d,
+      file_url: fileUrl
+    });
+  }
+
+  return result;
+}
+
 async function loadAll() {
   conn('loading')
   try {
@@ -402,7 +425,7 @@ async function loadAll() {
 
       /* documents — con join a companies */
       db.from('documents')
-        .select('id, title, category, status, created_at, company_id, companies(name)')
+        .select('id, title, category, status, created_at, storage_path, company_id, companies(name)')
         .order('created_at', { ascending: false })
         .limit(20),
 
@@ -420,13 +443,14 @@ async function loadAll() {
     if (r1.error) throw new Error('companies: ' + r1.error.message)
     if (r2.error) throw new Error('tasks: '     + r2.error.message)
     if (r3.error) throw new Error('documents: ' + r3.error.message)
+    const docsWithUrls = await attachDocumentUrls(r3.data || []);
     if (r4.error) throw new Error('embedded_dashboards: ' + r4.error.message)
     if (r5.error) throw new Error('profiles: '  + r5.error.message)
 
     S = {
       companies:  r1.data || [],
       tasks:      r2.data || [],
-      documents:  r3.data || [],
+      documents: docsWithUrls,
       dashboards: r4.data || [],
       profiles:   r5.data || [],
     }
