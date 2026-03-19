@@ -749,405 +749,458 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
 <!-- ══════════════════════════════════
      DATOS + JS
 ══════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const COMPANIES = [
-  {
-    id:1, initials:'CB', color:'#c9a84c', bg:'rgba(201,168,76,.12)',
-    name:'Constructora Bolívar S.A.S', nit:'900.123.456-1', city:'Bogotá D.C.', dept:'Cundinamarca',
-    sector:'Construcción', size:'Mediana empresa', contact:'Jorge Rodríguez',
-    email:'jrodriguez@constructorabolivar.co', tel:'+57 310 234 5678',
-    date:'15 de enero, 2024', asesor:'Ana García', plan:'Premium — 3 módulos',
-    status:'activa', mods:[true,true,true,false],
-    tasks:12, taskVenc:2, docs:18,
-    notes:'Cliente estratégico en sector construcción. Actualmente procesando cierre de proyecto en Zipaquirá. Solicitar actualización de contacto secundario en próxima reunión.',
-    taskList:[
-      {t:'Declarar IVA bimestral May–Jun 2025',done:false,p:'alta',date:'Vence 09/07',mod:'Contabilidad'},
-      {t:'Conciliar extractos bancarios junio',done:false,p:'alta',date:'Vence 15/07',mod:'Tesorería'},
-      {t:'Actualizar aging de cartera trimestral',done:false,p:'media',date:'05/07/2025',mod:'Facturación'},
-      {t:'Preparar estados financieros Q2',done:false,p:'media',date:'15/07/2025',mod:'Contabilidad'},
-      {t:'Cargar nómina julio al portal',done:true,p:'baja',date:'01/07/2025',mod:'Personal'},
-      {t:'Revisar conciliación bancaria junio',done:true,p:'alta',date:'30/06/2025',mod:'Tesorería'},
-    ]
-  },
-  {
-    id:2, initials:'CA', color:'#4a9fd4', bg:'rgba(74,159,212,.12)',
-    name:'Cementos Andinos S.A', nit:'800.345.678-2', city:'Medellín', dept:'Antioquia',
-    sector:'Manufactura', size:'Gran empresa', contact:'Patricia Serna',
-    email:'pserna@cementosandinos.com', tel:'+57 320 345 6789',
-    date:'3 de marzo, 2023', asesor:'Carlos Muñoz', plan:'Estándar — 3 módulos',
-    status:'activa', mods:[true,true,false,true],
-    tasks:8, taskVenc:1, docs:14,
-    notes:'Empresa ancla del sector manufactura. Requiere reportes mensuales antes del día 5. Contacto de nómina: Claudia Ruiz (clausana@cementosandinos.com).',
-    taskList:[
-      {t:'Pagar PILA junio — seguridad social',done:false,p:'alta',date:'Vence 15/07',mod:'Personal'},
-      {t:'Preparar nómina julio 2025',done:false,p:'alta',date:'27/07/2025',mod:'Personal'},
-      {t:'Revisar cartera clientes industriales',done:false,p:'media',date:'10/07/2025',mod:'Facturación'},
-      {t:'Informe contable semestral',done:true,p:'media',date:'30/06/2025',mod:'Contabilidad'},
-    ]
-  },
-  {
-    id:3, initials:'EP', color:'#e8a020', bg:'rgba(232,160,32,.12)',
-    name:'Distribuidora El Progreso', nit:'901.234.567-3', city:'Cali', dept:'Valle del Cauca',
-    sector:'Comercio', size:'Pequeña empresa', contact:'Hernán Castaño',
-    email:'hcastano@elprogreso.co', tel:'+57 315 456 7890',
-    date:'10 de junio, 2024', asesor:'Ana García', plan:'Básico — 1 módulo',
-    status:'en-mora', mods:[true,false,false,false],
-    tasks:4, taskVenc:2, docs:6,
-    notes:'Cliente con retraso en pagos. Factura pendiente de cobro $7.1M vencida desde jun/15. Gestión activa de cobro en proceso.',
-    taskList:[
-      {t:'Gestión cobro factura FE-001249 $7.1M',done:false,p:'alta',date:'Vencida',mod:'Facturación'},
-      {t:'Enviar comunicación formal de mora',done:false,p:'alta',date:'Vence 12/07',mod:'Facturación'},
-      {t:'Generar estado de cuenta actualizado',done:true,p:'media',date:'30/06/2025',mod:'Facturación'},
-    ]
-  },
-  {
-    id:4, initials:'IN', color:'#22a66a', bg:'rgba(34,166,106,.12)',
-    name:'Inversiones del Norte Ltda', nit:'802.456.789-4', city:'Barranquilla', dept:'Atlántico',
-    sector:'Servicios', size:'Mediana empresa', contact:'Sofía Barros',
-    email:'sbarros@inversionesdelnorte.co', tel:'+57 305 567 8901',
-    date:'22 de agosto, 2022', asesor:'Laura Becerra', plan:'Premium — 4 módulos',
-    status:'activa', mods:[true,true,true,true],
-    tasks:6, taskVenc:0, docs:22,
-    notes:'Cliente con todos los módulos activos. Alta satisfacción. Revisar propuesta de ampliación de servicios BI personalizados.',
-    taskList:[
-      {t:'Cargar dashboard Q2 Facturación',done:false,p:'media',date:'10/07/2025',mod:'Facturación'},
-      {t:'Revisar flujo de caja proyectado jul',done:false,p:'media',date:'07/07/2025',mod:'Tesorería'},
-      {t:'Procesar nómina julio',done:false,p:'alta',date:'27/07/2025',mod:'Personal'},
-      {t:'Declarar retención en la fuente jun',done:true,p:'alta',date:'30/06/2025',mod:'Contabilidad'},
-    ]
-  },
-  {
-    id:5, initials:'TC', color:'#7a776f', bg:'rgba(122,119,111,.12)',
-    name:'Transportes Cundinamarca', nit:'900.567.890-5', city:'Bogotá D.C.', dept:'Cundinamarca',
-    sector:'Logística', size:'Pequeña empresa', contact:'Miguel Ávila',
-    email:'mavila@transcundi.co', tel:'+57 312 678 9012',
-    date:'1 de febrero, 2024', asesor:'Carlos Muñoz', plan:'Básico — 2 módulos',
-    status:'inactiva', mods:[true,false,true,false],
-    tasks:2, taskVenc:0, docs:5,
-    notes:'Cliente pausado temporalmente por reestructuración interna. Retorno estimado Q3 2025. Mantener contacto mensual con Miguel.',
-    taskList:[
-      {t:'Seguimiento reactivación contrato',done:false,p:'baja',date:'31/07/2025',mod:'Interno'},
-      {t:'Archivar documentos Q1 2025',done:true,p:'baja',date:'15/06/2025',mod:'Facturación'},
-    ]
-  },
-  {
-    id:6, initials:'LS', color:'#9b59b6', bg:'rgba(155,89,182,.12)',
-    name:'Logística Sur S.A.S', nit:'901.678.901-6', city:'Bucaramanga', dept:'Santander',
-    sector:'Logística', size:'Pequeña empresa', contact:'Andrés Vargas',
-    email:'avargas@logisticasur.co', tel:'+57 318 789 0123',
-    date:'1 de julio, 2025', asesor:'Laura Becerra', plan:'Básico — 2 módulos',
-    status:'nueva', mods:[true,true,false,false],
-    tasks:3, taskVenc:0, docs:2,
-    notes:'Nueva empresa incorporada esta semana. En proceso de configuración inicial. Pendiente cargar primeros documentos y configurar acceso al portal.',
-    taskList:[
-      {t:'Configurar acceso portal cliente',done:false,p:'alta',date:'05/07/2025',mod:'Interno'},
-      {t:'Subir contrato de servicios RS',done:false,p:'media',date:'08/07/2025',mod:'Interno'},
-      {t:'Reunión de inicio con cliente',done:true,p:'alta',date:'01/07/2025',mod:'Interno'},
-    ]
-  },
-  {
-    id:7, initials:'AS', color:'#e05c4b', bg:'rgba(224,92,75,.12)',
-    name:'Alimentos del Sur S.A', nit:'800.789.012-7', city:'Pereira', dept:'Risaralda',
-    sector:'Manufactura', size:'Mediana empresa', contact:'Diana Ospina',
-    email:'dospina@alimdelur.co', tel:'+57 316 890 1234',
-    date:'15 de octubre, 2023', asesor:'Ana García', plan:'Estándar — 2 módulos',
-    status:'activa', mods:[true,true,false,false],
-    tasks:5, taskVenc:1, docs:10,
-    notes:'Empresa del sector alimentos con alta frecuencia de facturas. Requiere reportes semanales de cartera.',
-    taskList:[
-      {t:'Declarar IVA bimestral May-Jun',done:false,p:'alta',date:'Vence 09/07',mod:'Contabilidad'},
-      {t:'Reporte cartera semanal',done:false,p:'media',date:'07/07/2025',mod:'Facturación'},
-      {t:'Conciliar pagos semana 23-27 jun',done:true,p:'media',date:'30/06/2025',mod:'Facturación'},
-    ]
-  },
-  {
-    id:8, initials:'HM', color:'#4a9fd4', bg:'rgba(74,159,212,.12)',
-    name:'Hidroeléctrica del Magdalena', nit:'802.901.234-8', city:'Neiva', dept:'Huila',
-    sector:'Energía', size:'Gran empresa', contact:'Roberto Calderón',
-    email:'rcalderon@hidromagdalena.co', tel:'+57 311 901 2345',
-    date:'5 de mayo, 2023', asesor:'Laura Becerra', plan:'Premium — 3 módulos',
-    status:'activa', mods:[true,true,true,false],
-    tasks:9, taskVenc:0, docs:28,
-    notes:'Cliente premium en el sector energético. Requiere confidencialidad en todos los documentos. Contacto secundario: Margarita Lozano (CFO).',
-    taskList:[
-      {t:'Informe financiero semestral H1-2025',done:false,p:'alta',date:'15/07/2025',mod:'Contabilidad'},
-      {t:'Actualizar flujo de caja H2-2025',done:false,p:'media',date:'10/07/2025',mod:'Tesorería'},
-      {t:'Revisión contratos proveedores',done:true,p:'alta',date:'30/06/2025',mod:'Contabilidad'},
-    ]
-  },
-  {
-    id:9,  initials:'MR', color:'#22a66a', bg:'rgba(34,166,106,.12)',
-    name:'Minería y Recursos S.A.S', nit:'900.012.345-9', city:'Manizales', dept:'Caldas',
-    sector:'Minería', size:'Grande empresa', contact:'Felipe Arango',
-    email:'farango@minrecursos.co', tel:'+57 314 012 3456',
-    date:'20 de febrero, 2024', asesor:'Carlos Muñoz', plan:'Estándar — 2 módulos',
-    status:'activa', mods:[true,false,true,false],
-    tasks:4, taskVenc:0, docs:11,
-    notes:'Empresa minera con ciclos de facturación trimestrales. Coordinar entregas de reportes según ciclo de producción.',
-    taskList:[
-      {t:'Programar pagos proveedores Q3',done:false,p:'media',date:'15/07/2025',mod:'Tesorería'},
-      {t:'Actualizar conciliación bancaria',done:true,p:'alta',date:'30/06/2025',mod:'Tesorería'},
-    ]
-  },
-  {
-    id:10, initials:'SA', color:'#c9a84c', bg:'rgba(201,168,76,.12)',
-    name:'Servicios Agrícolas del Llano', nit:'901.123.456-0', city:'Villavicencio', dept:'Meta',
-    sector:'Agro', size:'Mediana empresa', contact:'Camilo Herrera',
-    email:'cherrera@agrollano.co', tel:'+57 319 123 4567',
-    date:'8 de septiembre, 2023', asesor:'Ana García', plan:'Estándar — 3 módulos',
-    status:'activa', mods:[true,true,false,true],
-    tasks:7, taskVenc:1, docs:16,
-    notes:'Cliente agrícola con nómina variable según temporada. Alta rotación de personal en cosechas. Requiere seguimiento cercano en gestión de personal.',
-    taskList:[
-      {t:'Liquidar contratos temporada cosecha',done:false,p:'alta',date:'Vence 10/07',mod:'Personal'},
-      {t:'Procesar nómina personal temporal',done:false,p:'alta',date:'27/07/2025',mod:'Personal'},
-      {t:'Declarar retención fuente jun',done:true,p:'alta',date:'30/06/2025',mod:'Contabilidad'},
-    ]
-  },
-  {
-    id:11, initials:'FP', color:'#e8a020', bg:'rgba(232,160,32,.12)',
-    name:'Farmacéutica del Pacífico', nit:'800.234.567-1', city:'Cali', dept:'Valle del Cauca',
-    sector:'Salud', size:'Mediana empresa', contact:'Alejandra Mora',
-    email:'amora@farmadelpacifico.co', tel:'+57 317 234 5678',
-    date:'12 de abril, 2024', asesor:'Laura Becerra', plan:'Básico — 2 módulos',
-    status:'activa', mods:[true,true,false,false],
-    tasks:3, taskVenc:0, docs:8,
-    notes:'Empresa del sector salud con facturación a EPS y hospitales. Alta complejidad en gestión de cartera. Requiere certificados de retención frecuentes.',
-    taskList:[
-      {t:'Gestionar cobro cartera EPS',done:false,p:'media',date:'20/07/2025',mod:'Facturación'},
-      {t:'Preparar informe contable jun',done:true,p:'alta',date:'30/06/2025',mod:'Contabilidad'},
-    ]
-  },
-  {
-    id:12, initials:'TI', color:'#4a9fd4', bg:'rgba(74,159,212,.12)',
-    name:'Tecnología e Innovación S.A.S', nit:'901.345.678-2', city:'Bogotá D.C.', dept:'Bogotá D.C.',
-    sector:'Tecnología', size:'Pequeña empresa', contact:'Valentina Ríos',
-    email:'vrios@tecinnova.co', tel:'+57 313 345 6789',
-    date:'14 de noviembre, 2024', asesor:'Carlos Muñoz', plan:'Básico — 1 módulo',
-    status:'activa', mods:[true,false,false,false],
-    tasks:2, taskVenc:0, docs:4,
-    notes:'Startup tecnológica en etapa de crecimiento. Potencial de expansión a más módulos en 2025. Contacto muy activo por el portal.',
-    taskList:[
-      {t:'Procesar facturación mensual jul',done:false,p:'media',date:'05/07/2025',mod:'Facturación'},
-      {t:'Enviar reporte cartera Q2',done:true,p:'media',date:'30/06/2025',mod:'Facturación'},
-    ]
-  },
-];
+const SUPABASE_URL = 'https://doauzsmkoeyvllbmbdda.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvYXV6c21rb2V5dmxsYm1iZGRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MjIwNDcsImV4cCI6MjA4ODk5ODA0N30.gytRSeyMQsVAU-I3DowiqkW_Nfpuk8mU5TgrXbkcBQU'
+const { createClient } = supabase
+const db = createClient(SUPABASE_URL, SUPABASE_KEY)
 
-const MOD_NAMES = ['Facturación y Cartera','Contabilidad','Tesorería','Gestión de Personal'];
-let currentCo = null;
-let currentTab = 'info';
-let coTaskFilter = 'todas';
-let filterStatus = 'todas';
+/* ── Paleta de colores para avatares (rota por índice) ── */
+const PALETTE = [
+  { color:'#c9a84c', bg:'rgba(201,168,76,.12)'  },
+  { color:'#4a9fd4', bg:'rgba(74,159,212,.12)'  },
+  { color:'#22a66a', bg:'rgba(34,166,106,.12)'  },
+  { color:'#e8a020', bg:'rgba(232,160,32,.12)'  },
+  { color:'#9b59b6', bg:'rgba(155,89,182,.12)'  },
+  { color:'#e05c4b', bg:'rgba(224,92,75,.12)'   },
+  { color:'#4a9fd4', bg:'rgba(74,159,212,.12)'  },
+]
 
-/* ═══ RENDER LISTA ═══ */
+/* ── Estado ── */
+let COMPANIES = []
+let currentCo = null
+let currentTab = 'info'
+let coTaskFilter = 'todas'
+let filterStatus = 'todas'
+
+const MOD_NAMES = ['Facturación y Cartera','Contabilidad','Tesorería','Gestión de Personal']
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+function fmtDate(iso) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString('es-CO',{day:'numeric',month:'long',year:'numeric'})
+}
+
+/* ══════════════════════════════════════════
+   CARGA DE DATOS DESDE SUPABASE
+══════════════════════════════════════════ */
+async function loadCompanies() {
+  try {
+    const { data, error } = await db
+      .from('companies')
+      .select('id, name, status, billing_module, accounting_module, treasury_module, hr_module, created_at')
+      .order('name', { ascending: true })
+
+    if (error) throw error
+
+    COMPANIES = (data || []).map((c, i) => {
+      const pal = PALETTE[i % PALETTE.length]
+      const initials = (c.name || '??').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()
+      const mods = [
+        c.billing_module    || false,
+        c.accounting_module || false,
+        c.treasury_module   || false,
+        c.hr_module         || false,
+      ]
+      return {
+        id:         c.id,
+        initials,
+        color:      pal.color,
+        bg:         pal.bg,
+        name:       c.name || 'Sin nombre',
+        nit:        '—',
+        city:       '—',
+        dept:       '—',
+        sector:     '—',
+        size:       '—',
+        contact:    '—',
+        email:      '—',
+        tel:        '—',
+        date:       fmtDate(c.created_at),
+        asesor:     '—',
+        plan:       mods.filter(Boolean).length + ' módulo(s) activo(s)',
+        status:     c.status || 'activa',
+        mods,
+        tasks:      0, taskVenc: 0, docs: 0,
+        notes:      '',
+        taskList:   [],
+        _raw:       c,
+      }
+    })
+
+    /* Cargar conteos de tareas y documentos por empresa en paralelo */
+    await Promise.all(COMPANIES.map(async co => {
+      const [{ count: tCount }, { count: dCount }] = await Promise.all([
+        db.from('tasks').select('*', { count:'exact', head:true }).eq('company_id', co.id),
+        db.from('documents').select('*', { count:'exact', head:true }).eq('company_id', co.id),
+      ])
+      co.tasks = tCount || 0
+      co.docs  = dCount || 0
+
+      /* Tareas vencidas */
+      const { count: vCount } = await db
+        .from('tasks')
+        .select('*', { count:'exact', head:true })
+        .eq('company_id', co.id)
+        .eq('status', 'pending')
+        .lt('due_date', new Date().toISOString().slice(0,10))
+      co.taskVenc = vCount || 0
+    }))
+
+    renderList(getFiltered())
+    updateCount()
+
+  } catch(e) {
+    console.error('[companies]', e)
+    showErr('Error al cargar empresas: ' + e.message)
+  }
+}
+
+/* ══════════════════════════════════════════
+   GUARDAR EMPRESA EN SUPABASE
+══════════════════════════════════════════ */
+async function saveCompany() {
+  const name = document.getElementById('f-razon').value.trim()
+  if (!name) { alert('La razón social es obligatoria.'); return }
+
+  const mods = [...document.querySelectorAll('.form-mod')]
+  const billing    = mods[0]?.classList.contains('on') || false
+  const accounting = mods[1]?.classList.contains('on') || false
+  const treasury   = mods[2]?.classList.contains('on') || false
+  const hr         = mods[3]?.classList.contains('on') || false
+
+  const payload = {
+    name,
+    status:             document.getElementById('f-status').value || 'activa',
+    billing_module:     billing,
+    accounting_module:  accounting,
+    treasury_module:    treasury,
+    hr_module:          hr,
+  }
+
+  const btn = document.querySelector('.modal-ft .btn-p')
+  btn.textContent = '⏳ Guardando…'; btn.disabled = true
+
+  try {
+    const { error } = currentCo
+      ? await db.from('companies').update(payload).eq('id', currentCo.id)
+      : await db.from('companies').insert(payload)
+
+    if (error) throw error
+    alert(`Empresa "${name}" ${currentCo ? 'actualizada' : 'creada'} correctamente ✓`)
+    closeModal()
+    await loadCompanies()
+  } catch(e) {
+    alert('Error: ' + e.message)
+  } finally {
+    btn.textContent = 'Crear empresa →'; btn.disabled = false
+  }
+}
+
+async function confirmDelete() {
+  if (!currentCo) return
+  if (!confirm(`¿Eliminar "${currentCo.name}"? Esta acción no se puede deshacer.`)) return
+  const { error } = await db.from('companies').delete().eq('id', currentCo.id)
+  if (error) { alert('Error: ' + error.message); return }
+  alert('Empresa eliminada')
+  document.getElementById('dpEmpty').style.display  = 'flex'
+  document.getElementById('dpContent').style.display = 'none'
+  currentCo = null
+  await loadCompanies()
+}
+
+/* ══════════════════════════════════════════
+   RENDER LISTA
+══════════════════════════════════════════ */
 function renderList(companies) {
   const statusBadge = {
-    'activa':'<span class="badge b-ok">Activa</span>',
+    active:   '<span class="badge b-ok">Activa</span>',
+    activa:   '<span class="badge b-ok">Activa</span>',
     'en-mora':'<span class="badge b-warn">En mora</span>',
-    'inactiva':'<span class="badge b-n">Inactiva</span>',
-    'nueva':'<span class="badge b-info">Nueva</span>',
-  };
+    inactiva: '<span class="badge b-n">Inactiva</span>',
+    inactive: '<span class="badge b-n">Inactiva</span>',
+    nueva:    '<span class="badge b-info">Nueva</span>',
+    new:      '<span class="badge b-info">Nueva</span>',
+  }
+  if (!companies.length) {
+    document.getElementById('coList').innerHTML =
+      '<div style="text-align:center;padding:2rem;color:var(--txt3);font-size:.8rem">Sin empresas encontradas</div>'
+    return
+  }
   document.getElementById('coList').innerHTML = companies.map(co => `
-    <div class="co-card ${currentCo && currentCo.id===co.id?'active':''}"
-         onclick="selectCo(${co.id})">
-      <div class="co-av" style="background:${co.bg};color:${co.color}">${co.initials}</div>
+    <div class="co-card ${currentCo && currentCo.id===co.id ? 'active' : ''}"
+         onclick="selectCo('${co.id}')">
+      <div class="co-av" style="background:${co.bg};color:${co.color}">${esc(co.initials)}</div>
       <div class="co-info">
-        <div class="co-name">${co.name}</div>
-        <div class="co-city">${co.city} · ${statusBadge[co.status]||''}</div>
+        <div class="co-name">${esc(co.name)}</div>
+        <div class="co-city">${esc(co.city)} · ${statusBadge[co.status]||''}</div>
       </div>
       <div class="co-right">
         <div class="co-mods">
           ${co.mods.map(m=>`<div class="co-dot ${m?'on':''}"></div>`).join('')}
         </div>
-        ${co.taskVenc>0?`<span style="font-size:.58rem;color:var(--err)">⚠ ${co.taskVenc} venc.</span>`:''}
+        ${co.taskVenc > 0
+          ? `<span style="font-size:.58rem;color:var(--err)">⚠ ${co.taskVenc} venc.</span>`
+          : ''}
       </div>
-    </div>`).join('');
+    </div>`).join('')
 }
 
-/* ═══ SELECT EMPRESA ═══ */
+/* ══════════════════════════════════════════
+   SELECT EMPRESA
+══════════════════════════════════════════ */
 function selectCo(id) {
-  currentCo = COMPANIES.find(c=>c.id===id);
-  if(!currentCo) return;
-  document.getElementById('dpEmpty').style.display='none';
-  const content = document.getElementById('dpContent');
-  content.style.display='flex';
-  // Header
-  document.getElementById('dpAv').textContent=currentCo.initials;
-  document.getElementById('dpAv').style.background=currentCo.bg;
-  document.getElementById('dpAv').style.color=currentCo.color;
-  document.getElementById('dpName').textContent=currentCo.name;
-  document.getElementById('dpNit').textContent=`NIT: ${currentCo.nit}`;
-  document.getElementById('dpCity').textContent=`📍 ${currentCo.city}`;
-  const sb = {'activa':'b-ok','en-mora':'b-warn','inactiva':'b-n','nueva':'b-info'};
-  const sl = {'activa':'Activa','en-mora':'En mora','inactiva':'Inactiva','nueva':'Nueva'};
-  document.getElementById('dpStatus').innerHTML=`<span class="badge ${sb[currentCo.status]}">${sl[currentCo.status]}</span>`;
-  setTab('info');
-  renderList(getFiltered());
+  currentCo = COMPANIES.find(c => c.id === id)
+  if (!currentCo) return
+  document.getElementById('dpEmpty').style.display  = 'none'
+  const content = document.getElementById('dpContent')
+  content.style.display = 'flex'
+
+  document.getElementById('dpAv').textContent         = currentCo.initials
+  document.getElementById('dpAv').style.background   = currentCo.bg
+  document.getElementById('dpAv').style.color        = currentCo.color
+  document.getElementById('dpName').textContent      = currentCo.name
+  document.getElementById('dpNit').textContent       = currentCo.nit !== '—' ? `NIT: ${currentCo.nit}` : ''
+  document.getElementById('dpCity').textContent      = currentCo.city !== '—' ? `📍 ${currentCo.city}` : ''
+
+  const sb = { active:'b-ok', activa:'b-ok', 'en-mora':'b-warn', inactiva:'b-n', inactive:'b-n', nueva:'b-info', new:'b-info' }
+  const sl = { active:'Activa', activa:'Activa', 'en-mora':'En mora', inactiva:'Inactiva', inactive:'Inactiva', nueva:'Nueva', new:'Nueva' }
+  document.getElementById('dpStatus').innerHTML =
+    `<span class="badge ${sb[currentCo.status]||'b-n'}">${sl[currentCo.status]||currentCo.status}</span>`
+
+  setTab('info')
+  renderList(getFiltered())
 }
 
-/* ═══ TABS ═══ */
+/* ══════════════════════════════════════════
+   TABS
+══════════════════════════════════════════ */
 function setTab(tab) {
-  currentTab=tab;
-  document.querySelectorAll('.dp-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
-  document.querySelectorAll('.dp-view').forEach(v=>v.classList.remove('active'));
-  document.getElementById('dpv-'+tab).classList.add('active');
-  if(tab==='info') renderInfo();
-  if(tab==='modulos') renderModulos();
-  if(tab==='tareas') renderCoTasks();
+  currentTab = tab
+  document.querySelectorAll('.dp-tab').forEach(t => t.classList.toggle('active', t.dataset.tab===tab))
+  document.querySelectorAll('.dp-view').forEach(v => v.classList.remove('active'))
+  document.getElementById('dpv-'+tab).classList.add('active')
+  if (tab==='info')    renderInfo()
+  if (tab==='modulos') renderModulos()
+  if (tab==='tareas')  renderCoTasks()
+  if (tab==='docs')    renderCoDocs()
 }
 
 function renderInfo() {
-  const co=currentCo; if(!co) return;
-  document.getElementById('info-name').textContent=co.name;
-  document.getElementById('ii-nit').textContent=co.nit;
-  document.getElementById('ii-razon').textContent=co.name;
-  document.getElementById('ii-city').textContent=co.city;
-  document.getElementById('ii-dept').textContent=co.dept;
-  document.getElementById('ii-sector').textContent=co.sector;
-  document.getElementById('ii-size').textContent=co.size;
-  document.getElementById('ii-contact').textContent=co.contact;
-  document.getElementById('ii-email').textContent=co.email;
-  document.getElementById('ii-tel').textContent=co.tel;
-  document.getElementById('ii-date').textContent=co.date;
-  document.getElementById('ii-asesor').textContent=co.asesor;
-  document.getElementById('ii-plan').textContent=co.plan;
-  document.getElementById('ii-notes').textContent=co.notes;
-  document.getElementById('ik-tasks').textContent=co.tasks;
-  document.getElementById('ik-tasks-v').textContent=co.taskVenc>0?`${co.taskVenc} vencidas`:'Al día ✓';
-  document.getElementById('ik-tasks-v').style.color=co.taskVenc>0?'var(--err)':'var(--ok)';
-  document.getElementById('ik-docs').textContent=co.docs;
-  document.getElementById('ik-mods').textContent=co.mods.filter(Boolean).length;
+  const co = currentCo; if (!co) return
+  document.getElementById('info-name').textContent = co.name
+  document.getElementById('ii-nit').textContent    = co.nit
+  document.getElementById('ii-razon').textContent  = co.name
+  document.getElementById('ii-city').textContent   = co.city
+  document.getElementById('ii-dept').textContent   = co.dept
+  document.getElementById('ii-sector').textContent = co.sector
+  document.getElementById('ii-size').textContent   = co.size
+  document.getElementById('ii-contact').textContent= co.contact
+  document.getElementById('ii-email').textContent  = co.email
+  document.getElementById('ii-tel').textContent    = co.tel
+  document.getElementById('ii-date').textContent   = co.date
+  document.getElementById('ii-asesor').textContent = co.asesor
+  document.getElementById('ii-plan').textContent   = co.plan
+  document.getElementById('ii-notes').textContent  = co.notes || 'Sin notas.'
+  document.getElementById('ik-tasks').textContent  = co.tasks
+  document.getElementById('ik-tasks-v').textContent= co.taskVenc > 0 ? `${co.taskVenc} vencidas` : 'Al día ✓'
+  document.getElementById('ik-tasks-v').style.color= co.taskVenc > 0 ? 'var(--err)' : 'var(--ok)'
+  document.getElementById('ik-docs').textContent   = co.docs
+  document.getElementById('ik-mods').textContent   = co.mods.filter(Boolean).length
 }
 
 function renderModulos() {
-  const co=currentCo; if(!co) return;
-  const grid=document.getElementById('modGrid');
-  const icons=['🧾','📋','🏦','👥'];
-  const descs=['Emisión FE, gestión de cobro, aging','Libros, estados financieros, tributos','Flujo de caja, pagos, conciliación','Nómina, PILA, contratos, novedades'];
-  grid.innerHTML=co.mods.map((on,i)=>`
-    <div class="mod-toggle ${on?'on':''}" onclick="toggleMod(this)">
+  const co = currentCo; if (!co) return
+  const icons = ['🧾','📋','🏦','👥']
+  const descs = ['Emisión FE, gestión de cobro, aging','Libros, estados financieros, tributos','Flujo de caja, pagos, conciliación','Nómina, PILA, contratos, novedades']
+  document.getElementById('modGrid').innerHTML = co.mods.map((on, i) => `
+    <div class="mod-toggle ${on?'on':''}" onclick="toggleMod(this)" data-idx="${i}">
       <span class="mod-icon">${icons[i]}</span>
       <div style="flex:1"><div class="mod-name">${MOD_NAMES[i]}</div><div class="mod-desc">${descs[i]}</div></div>
       <div class="mod-switch"></div>
-    </div>`).join('');
+    </div>`).join('')
+
+  // Reemplazar botón guardar para que llame a la función real
+  document.querySelector('#dpv-modulos .btn-p').onclick = saveModules
+}
+
+async function saveModules() {
+  if (!currentCo) return
+  const toggles = [...document.querySelectorAll('#modGrid .mod-toggle')]
+  const payload = {
+    billing_module:    toggles[0]?.classList.contains('on') || false,
+    accounting_module: toggles[1]?.classList.contains('on') || false,
+    treasury_module:   toggles[2]?.classList.contains('on') || false,
+    hr_module:         toggles[3]?.classList.contains('on') || false,
+  }
+  const { error } = await db.from('companies').update(payload).eq('id', currentCo.id)
+  if (error) { alert('Error: ' + error.message); return }
+  alert('Módulos guardados ✓')
+  await loadCompanies()
+  selectCo(currentCo.id)
 }
 
 function toggleMod(el) { el.classList.toggle('on') }
 
-function renderCoTasks() {
-  const co=currentCo; if(!co) return;
-  let tasks=[...co.taskList];
-  if(coTaskFilter==='pendiente') tasks=tasks.filter(t=>!t.done);
-  if(coTaskFilter==='completada') tasks=tasks.filter(t=>t.done);
-  const pCls={alta:'p-hi',media:'p-med',baja:'p-lo'};
-  document.getElementById('coTaskList').innerHTML=tasks.map((t,i)=>`
-    <div class="task-item ${t.done?'done':''}">
-      <div class="t-chk ${t.done?'on':''}" onclick="toggleCoTask(${i})">${t.done?'✓':''}</div>
-      <div class="t-body">
-        <div class="t-title">${t.t}</div>
-        <div class="t-meta">
-          <span class="${pCls[t.p]||'p-lo'}">${t.p}</span>
-          <span>📅 ${t.date}</span>
-          <span>🧩 ${t.mod}</span>
+/* ── Tareas de la empresa ── */
+async function renderCoTasks() {
+  const co = currentCo; if (!co) return
+  const el = document.getElementById('coTaskList')
+  el.innerHTML = '<div style="padding:1rem;color:var(--txt3);font-size:.78rem">Cargando…</div>'
+  try {
+    let q = db.from('tasks').select('id, title, status, due_date').eq('company_id', co.id).order('due_date')
+    if (coTaskFilter === 'pendiente')  q = q.eq('status','pending')
+    if (coTaskFilter === 'completada') q = q.eq('status','completed')
+    const { data, error } = await q
+    if (error) throw error
+    const tasks = data || []
+    if (!tasks.length) { el.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--txt3);font-size:.8rem">Sin tareas</div>'; return }
+    el.innerHTML = tasks.map(t => {
+      const done = t.status === 'completed'
+      const overdue = !done && t.due_date && new Date(t.due_date) < new Date()
+      return `<div class="task-item ${done?'done':''}">
+        <div class="t-chk ${done?'on':''}">${done?'✓':''}</div>
+        <div class="t-body">
+          <div class="t-title">${esc(t.title)}</div>
+          <div class="t-meta">
+            ${overdue ? '<span class="p-hi">Vencida</span>' : done ? '<span class="p-lo">Completada</span>' : '<span class="p-med">Pendiente</span>'}
+            ${t.due_date ? `<span>📅 ${new Date(t.due_date).toLocaleDateString('es-CO',{day:'2-digit',month:'short'})}</span>` : ''}
+          </div>
         </div>
-      </div>
-    </div>`).join('')||'<div style="text-align:center;padding:1.5rem;color:var(--txt3);font-size:.8rem">Sin tareas en esta categoría</div>';
+      </div>`
+    }).join('')
+  } catch(e) { el.innerHTML = `<div style="color:var(--err);padding:1rem;font-size:.78rem">Error: ${e.message}</div>` }
 }
 
-function toggleCoTask(i) {
-  if(!currentCo) return;
-  currentCo.taskList[i].done=!currentCo.taskList[i].done;
-  renderCoTasks();
+function filterModTasks(f, btn) {
+  coTaskFilter = f
+  document.querySelectorAll('#dpv-tareas .btn-g').forEach(b => b.classList.remove('on'))
+  btn.classList.add('on'); renderCoTasks()
 }
 
-function filterModTasks(f,btn) {
-  coTaskFilter=f;
-  document.querySelectorAll('#dpv-tareas .btn-g').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on'); renderCoTasks();
+/* ── Documentos de la empresa ── */
+async function renderCoDocs() {
+  const co = currentCo; if (!co) return
+  const el = document.getElementById('coDocList')
+  el.innerHTML = '<tr><td colspan="6" style="color:var(--txt3);font-size:.78rem;padding:.8rem">Cargando…</td></tr>'
+  try {
+    const { data, error } = await db
+      .from('documents')
+      .select('id, title, category, status, storage_path, created_at')
+      .eq('company_id', co.id)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    const docs = data || []
+    if (!docs.length) {
+      el.innerHTML = '<tr><td colspan="6" style="color:var(--txt3);font-size:.78rem;padding:.8rem;text-align:center">Sin documentos</td></tr>'
+      return
+    }
+    const stBadge = { available:'b-ok', pending:'b-warn', draft:'b-n', archived:'b-n' }
+    const stLabel = { available:'Publicado', pending:'Revisión', draft:'Borrador', archived:'Archivado' }
+    el.innerHTML = docs.map(d => {
+      const ext = (d.storage_path||'').split('.').pop().toLowerCase()
+      const extIcons = { pdf:'📕', xlsx:'📗', xls:'📗', docx:'📘', doc:'📘' }
+      const icon = extIcons[ext] || '📄'
+      let file_url = null
+      if (d.storage_path) {
+        const { data: u } = db.storage.from('documents').getPublicUrl(d.storage_path)
+        file_url = u?.publicUrl || null
+      }
+      return `<tr>
+        <td><div class="td-w">${icon} ${esc(d.title)}</div>
+            <div class="td-m">${ext.toUpperCase()}</div></td>
+        <td><span class="badge b-gold">${esc((d.category||'General').substring(0,8))}</span></td>
+        <td class="td-m">Admin RS</td>
+        <td class="td-m">${new Date(d.created_at).toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'2-digit'})}</td>
+        <td><span class="badge ${stBadge[d.status]||'b-n'}">${stLabel[d.status]||d.status}</span></td>
+        <td>
+          ${file_url ? `<button class="act-btn" onclick="window.open('${file_url}','_blank')" title="Ver">👁</button>` : '<button class="act-btn" style="opacity:.3">👁</button>'}
+          <button class="act-btn" onclick="deleteDocFromCo('${d.id}','${esc(d.title)}')" title="Eliminar">🗑️</button>
+        </td>
+      </tr>`
+    }).join('')
+  } catch(e) { el.innerHTML = `<tr><td colspan="6" style="color:var(--err);padding:.8rem;font-size:.78rem">${e.message}</td></tr>` }
 }
 
-/* ═══ FILTROS LISTA ═══ */
-function setFilter(status,btn) {
-  filterStatus=status;
-  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
-  renderList(getFiltered());
-  updateCount();
+async function deleteDocFromCo(id, name) {
+  if (!confirm(`¿Eliminar "${name}"?`)) return
+  const { error } = await db.from('documents').delete().eq('id', id)
+  if (error) { alert('Error: ' + error.message); return }
+  renderCoDocs()
 }
 
-function filterList() {
-  renderList(getFiltered());
-  updateCount();
+/* ══════════════════════════════════════════
+   FILTROS DE LISTA
+══════════════════════════════════════════ */
+function setFilter(status, btn) {
+  filterStatus = status
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('on'))
+  btn.classList.add('on'); renderList(getFiltered()); updateCount()
 }
-
+function filterList() { renderList(getFiltered()); updateCount() }
 function getFiltered() {
-  const q=document.getElementById('searchInput').value.toLowerCase();
-  return COMPANIES.filter(co=>{
-    const matchQ=!q||co.name.toLowerCase().includes(q)||co.nit.includes(q)||co.city.toLowerCase().includes(q);
-    const matchS=filterStatus==='todas'||co.status===filterStatus;
-    return matchQ&&matchS;
-  });
+  const q = (document.getElementById('searchInput')?.value || '').toLowerCase()
+  return COMPANIES.filter(co => {
+    const matchQ = !q || co.name.toLowerCase().includes(q) || co.nit.includes(q) || co.city.toLowerCase().includes(q)
+    const normS = { active:'activa', activa:'activa', inactive:'inactiva', inactiva:'inactiva', new:'nueva', nueva:'nueva', 'en-mora':'en-mora' }
+    const matchS = filterStatus==='todas' || normS[co.status]===filterStatus || co.status===filterStatus
+    return matchQ && matchS
+  })
 }
-
 function updateCount() {
-  const f=getFiltered();
-  const activas=f.filter(c=>c.status==='activa').length;
-  document.getElementById('coCount').textContent=`${f.length} empresa${f.length!==1?'s':''} · ${activas} activa${activas!==1?'s':''}`;
+  const f = getFiltered()
+  const activas = f.filter(c => c.status==='activa'||c.status==='active').length
+  document.getElementById('coCount').textContent = `${f.length} empresa${f.length!==1?'s':''} · ${activas} activa${activas!==1?'s':''}`
 }
 
-/* ═══ MODAL ═══ */
+/* ══════════════════════════════════════════
+   MODAL
+══════════════════════════════════════════ */
 function openModal() {
-  document.getElementById('modalTitle').textContent='Nueva empresa';
-  document.getElementById('modalSub').textContent='Ingresa los datos del nuevo cliente RS Back Office';
-  document.getElementById('modalOverlay').classList.add('open');
+  currentCo = null
+  document.getElementById('modalTitle').textContent = 'Nueva empresa'
+  document.getElementById('modalSub').textContent   = 'Ingresa los datos del nuevo cliente RS Back Office'
+  document.querySelectorAll('.form-mod').forEach((m,i) => { m.classList.remove('on'); m.querySelector('.form-mod-check').textContent='' })
+  document.querySelectorAll('#modal input, #modal textarea').forEach(el => el.value = '')
+  document.querySelector('.modal-ft .btn-p').textContent = 'Crear empresa →'
+  document.getElementById('modalOverlay').classList.add('open')
 }
 function openEditModal() {
-  if(!currentCo) return;
-  document.getElementById('modalTitle').textContent='Editar empresa';
-  document.getElementById('modalSub').textContent=currentCo.name;
-  document.getElementById('f-razon').value=currentCo.name;
-  document.getElementById('f-nit').value=currentCo.nit;
-  document.getElementById('f-city').value=currentCo.city;
-  document.getElementById('f-contact').value=currentCo.contact;
-  document.getElementById('f-email').value=currentCo.email;
-  document.getElementById('f-tel').value=currentCo.tel;
-  document.getElementById('f-notes').value=currentCo.notes;
-  document.getElementById('modalOverlay').classList.add('open');
+  if (!currentCo) return
+  document.getElementById('modalTitle').textContent = 'Editar empresa'
+  document.getElementById('modalSub').textContent   = currentCo.name
+  document.getElementById('f-razon').value   = currentCo.name
+  document.getElementById('f-nit').value     = currentCo.nit !== '—' ? currentCo.nit : ''
+  document.getElementById('f-city').value    = currentCo.city !== '—' ? currentCo.city : ''
+  document.getElementById('f-contact').value = currentCo.contact !== '—' ? currentCo.contact : ''
+  document.getElementById('f-email').value   = currentCo.email !== '—' ? currentCo.email : ''
+  document.getElementById('f-tel').value     = currentCo.tel !== '—' ? currentCo.tel : ''
+  document.getElementById('f-notes').value   = currentCo.notes || ''
+  document.querySelectorAll('.form-mod').forEach((m, i) => {
+    const on = currentCo.mods[i]
+    m.classList.toggle('on', on); m.querySelector('.form-mod-check').textContent = on ? '✓' : ''
+  })
+  document.querySelector('.modal-ft .btn-p').textContent = 'Guardar cambios →'
+  document.getElementById('modalOverlay').classList.add('open')
 }
-function closeModal() { document.getElementById('modalOverlay').classList.remove('open') }
-function closeModalOutside(e) { if(e.target===document.getElementById('modalOverlay')) closeModal() }
-function toggleFormMod(el) { el.classList.toggle('on'); el.querySelector('.form-mod-check').textContent=el.classList.contains('on')?'✓':'' }
+function closeModal()        { document.getElementById('modalOverlay').classList.remove('open') }
+function closeModalOutside(e){ if(e.target===document.getElementById('modalOverlay')) closeModal() }
+function toggleFormMod(el)   { el.classList.toggle('on'); el.querySelector('.form-mod-check').textContent = el.classList.contains('on') ? '✓' : '' }
 
-function saveCompany() {
-  const name=document.getElementById('f-razon').value.trim();
-  if(!name){alert('La razón social es obligatoria.');return;}
-  alert(`Empresa "${name}" guardada correctamente ✓`);
-  closeModal();
-}
+/* ── Notif + fecha ── */
+function toggleNotif() { document.getElementById('notifDd').classList.toggle('open') }
+document.addEventListener('click', e => {
+  if (!e.target.closest('#notifBtn') && !e.target.closest('#notifDd'))
+    document.getElementById('notifDd').classList.remove('open')
+})
+function showErr(msg) { console.error(msg) }
 
-function confirmDelete() {
-  if(!currentCo) return;
-  if(confirm(`¿Eliminar "${currentCo.name}"? Esta acción no se puede deshacer.`)) {
-    alert('Empresa eliminada');
-    document.getElementById('dpEmpty').style.display='flex';
-    document.getElementById('dpContent').style.display='none';
-    currentCo=null;
-    renderList(getFiltered());
-  }
-}
+document.getElementById('tbDate').textContent =
+  new Date().toLocaleDateString('es-CO',{weekday:'short',year:'numeric',month:'short',day:'numeric'})
 
-/* ═══ NOTIF + FECHA ═══ */
-function toggleNotif(){document.getElementById('notifDd').classList.toggle('open')}
-document.addEventListener('click',e=>{
-  if(!e.target.closest('#notifBtn')&&!e.target.closest('#notifDd'))
-    document.getElementById('notifDd').classList.remove('open');
-});
-document.getElementById('tbDate').textContent=
-  new Date().toLocaleDateString('es-CO',{weekday:'short',year:'numeric',month:'short',day:'numeric'});
-
-/* ═══ INIT ═══ */
-renderList(COMPANIES);
+/* ── INIT ── */
+loadCompanies()
 </script>
 </body>
 </html>
