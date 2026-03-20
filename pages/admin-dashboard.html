@@ -359,7 +359,10 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
 </div>
 
 <script>
-
+/* ── Supabase client ── */
+const SUPABASE_URL = 'https://doauzsmkoeyvllbmbdda.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvYXV6c21rb2V5dmxsYm1iZGRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MjIwNDcsImV4cCI6MjA4ODk5ODA0N30.gytRSeyMQsVAU-I3DowiqkW_Nfpuk8mU5TgrXbkcBQU'
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
 /* ═══ ESTADO ═══ */
 let S = { companies:[], tasks:[], documents:[], dashboards:[], profiles:[] }
