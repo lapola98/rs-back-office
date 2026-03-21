@@ -437,21 +437,58 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
       </div>
 
       <!-- ── SOLICITUDES ── -->
-      <div id="s-solicitudes" style="display:none">
-        <div class="card">
-          <div class="card-hd"><div><div class="stag">Soporte</div><div class="card-title">Nueva solicitud</div><div class="card-sub">Selecciona el tipo de solicitud y envíala a tu asesor RS</div></div></div>
-          <div class="req-grid">
-            <div class="req-type" onclick="this.classList.toggle('sel')"><div class="req-ico" style="background:var(--gold-pale)">🧾</div><div><h4>Corrección de factura</h4><p>Nota crédito, débito o ajuste de datos.</p></div></div>
-            <div class="req-type" onclick="this.classList.toggle('sel')"><div class="req-ico" style="background:var(--info-bg)">📞</div><div><h4>Gestión de cobro</h4><p>Seguimiento a cartera vencida.</p></div></div>
-            <div class="req-type" onclick="this.classList.toggle('sel')"><div class="req-ico" style="background:var(--ok-bg)">📄</div><div><h4>Certificado / Documento</h4><p>Retenciones, paz y salvo, estados de cuenta.</p></div></div>
-            <div class="req-type" onclick="this.classList.toggle('sel')"><div class="req-ico" style="background:var(--gold-pale)">💬</div><div><h4>Consulta general</h4><p>Cualquier pregunta a tu asesor.</p></div></div>
-          </div>
-          <div style="display:flex;justify-content:flex-end;gap:.5rem">
-            <button class="btn-s" onclick="document.querySelectorAll('.req-type').forEach(r=>r.classList.remove('sel'))">Limpiar</button>
-            <button class="btn-p" onclick="alert('Solicitud enviada a tu asesor RS ✓')">Enviar solicitud →</button>
-          </div>
-        </div>
+<div id="s-solicitudes" style="display:none">
+
+  <!-- Nueva solicitud -->
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-hd">
+      <div>
+        <div class="stag">Soporte</div>
+        <div class="card-title">Nueva solicitud</div>
+        <div class="card-sub">Selecciona el tipo y describe tu solicitud</div>
       </div>
+    </div>
+
+    <!-- Tipos de solicitud (se pueblan desde operational_request_types) -->
+    <div class="req-grid" id="reqTypeGrid">
+      <!-- Generado por JS -->
+    </div>
+
+    <!-- Formulario -->
+    <div style="display:flex;flex-direction:column;gap:.75rem;margin-bottom:1rem">
+      <div>
+        <label style="font-size:.62rem;font-weight:600;color:var(--g500);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:.3rem">Título / descripción breve *</label>
+        <input type="text" id="reqTitle" placeholder="Ej: Nota crédito factura FE-001234"
+          style="width:100%;border:1.5px solid var(--g200);border-radius:var(--r);padding:.62rem .88rem;font-family:var(--fu);font-size:.8rem;color:var(--ink);outline:none;background:var(--g50);transition:all .18s"
+          onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--g200)'">
+      </div>
+      <div>
+        <label style="font-size:.62rem;font-weight:600;color:var(--g500);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:.3rem">Detalle adicional (opcional)</label>
+        <textarea id="reqDesc" placeholder="Describe el contexto o adjunta números de documento, fechas, montos…" rows="3"
+          style="width:100%;border:1.5px solid var(--g200);border-radius:var(--r);padding:.62rem .88rem;font-family:var(--fu);font-size:.8rem;color:var(--ink);outline:none;background:var(--g50);resize:vertical;line-height:1.6;transition:all .18s"
+          onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--g200)'"></textarea>
+      </div>
+    </div>
+
+    <div id="reqMsg" style="display:none;padding:.65rem .9rem;border-radius:var(--r);font-size:.78rem;margin-bottom:.75rem"></div>
+
+    <div style="display:flex;justify-content:flex-end;gap:.5rem">
+      <button class="btn-s" onclick="clearReq()">Limpiar</button>
+      <button class="btn-p" onclick="submitRequest()">Enviar solicitud →</button>
+    </div>
+  </div>
+
+  <!-- Historial de solicitudes -->
+  <div class="card">
+    <div class="card-hd">
+      <div><div class="stag">Historial</div><div class="card-title">Mis solicitudes</div></div>
+    </div>
+    <div id="reqHistEl">
+      <div class="sk" style="height:14px;border-radius:4px;margin-bottom:.55rem"></div>
+    </div>
+  </div>
+
+</div>
 
       <!-- ── CHAT ── -->
       <div id="s-chat" style="display:none">
@@ -494,8 +531,143 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
 /* ══ ESTADO ══ */
-let S = { profile:null, company:null, tasks:[], documents:[], dashboards:[] }
+let S = { profile:null, company:null, tasks:[], documents:[], dashboards:[], requestTypes:[], requests:[] }
 let tFilter = 'todas', dFilter = 'todos'
+
+/* ══ SOLICITUDES ══ */
+let selectedReqType = null
+
+function renderRequestTypes() {
+  const grid = document.getElementById('reqTypeGrid')
+  if (!grid) return
+  selectedReqType = null
+  
+
+  // Iconos por código — ajusta según tus códigos reales de operational_request_types
+  const ICONS = {
+    credit_note:         { ico:'🧾', bg:'var(--gold-pale)' },
+    collections_followup:{ ico:'📞', bg:'var(--info-bg)'   },
+    certificate:         { ico:'📄', bg:'var(--ok-bg)'     },
+    general_query:       { ico:'💬', bg:'var(--gold-pale)' },
+  }
+
+  if (!S.requestTypes.length) {
+    grid.innerHTML = '<p style="font-size:.78rem;color:var(--g500)">No hay tipos de solicitud disponibles.</p>'
+    return
+  }
+
+  grid.innerHTML = S.requestTypes.map(t => {
+    const ic = ICONS[t.code] || { ico:'📋', bg:'var(--g100)' }
+    return `<div class="req-type" id="rt-${t.id}" onclick="selectReqType('${t.id}')">
+      <div class="req-ico" style="background:${ic.bg}">${ic.ico}</div>
+      <div>
+        <h4>${esc(t.name)}</h4>
+        <p>${esc(t.description || '')}</p>
+      </div>
+    </div>`
+  }).join('')
+}
+
+function selectReqType(id) {
+  selectedReqType = id
+  document.querySelectorAll('.req-type').forEach(el => {
+    el.classList.toggle('sel', el.id === 'rt-' + id)
+  })
+}
+
+function clearReq() {
+  selectedReqType = null
+  document.querySelectorAll('.req-type').forEach(el => el.classList.remove('sel'))
+  document.getElementById('reqTitle').value = ''
+  document.getElementById('reqDesc').value  = ''
+  hideReqMsg()
+}
+
+function showReqMsg(msg, type) {
+  const el = document.getElementById('reqMsg')
+  el.textContent = msg
+  el.style.display = 'block'
+  el.style.background = type === 'ok' ? 'var(--ok-bg)' : 'var(--err-bg)'
+  el.style.color      = type === 'ok' ? 'var(--ok)'    : 'var(--err)'
+  el.style.border     = `1px solid ${type === 'ok' ? 'var(--ok)' : 'var(--err)'}`
+}
+function hideReqMsg() { document.getElementById('reqMsg').style.display = 'none' }
+
+async function submitRequest() {
+  const title = document.getElementById('reqTitle').value.trim()
+  const desc  = document.getElementById('reqDesc').value.trim()
+
+  if (!selectedReqType) { showReqMsg('⚠️ Selecciona un tipo de solicitud.', 'err'); return }
+  if (!title)           { showReqMsg('⚠️ Escribe un título para la solicitud.', 'err'); return }
+  if (!desc)            { showReqMsg('⚠️ El detalle adicional es obligatorio.', 'err'); return }
+
+  const rt   = S.requestTypes.find(t => t.id === selectedReqType)
+  const now  = new Date()
+  const btn  = document.querySelector('#s-solicitudes .btn-p')
+  btn.textContent = '⏳ Enviando…'; btn.disabled = true
+
+  try {
+    const { error } = await db.from('operational_requests').insert({
+      company_id:       S.company.id,
+      created_by_user_id: S.profile.id,
+      service_id:       rt?.service_id || null,
+      request_type_id:  selectedReqType,
+      title,
+      description:      desc || null,
+      status:           'open',
+      priority:         'medium',
+      requested_at:     now.toISOString(),
+      period_year:      now.getFullYear(),
+      period_month:     now.getMonth() + 1,
+    })
+    if (error) throw error
+
+    showReqMsg('✅ Solicitud enviada correctamente. Tu asesor RS la revisará pronto.', 'ok')
+    clearReq()
+
+    // Recargar historial
+    const { data } = await db.from('operational_requests')
+      .select('id, title, status, priority, requested_at, operational_request_types(name)')
+      .eq('company_id', S.company.id)
+      .order('requested_at', { ascending: false })
+      .limit(20)
+    S.requests = data || []
+    renderRequestHistory()
+
+  } catch(e) {
+    showReqMsg('❌ Error al enviar: ' + e.message, 'err')
+  } finally {
+    btn.textContent = 'Enviar solicitud →'; btn.disabled = false
+  }
+}
+
+function renderRequestHistory() {
+  const el = document.getElementById('reqHistEl')
+  if (!S.requests.length) {
+    el.innerHTML = emptyEl('📝', 'Sin solicitudes aún', 'Tus solicitudes aparecerán aquí una vez enviadas.')
+    return
+  }
+
+  const stBadge = {
+    open:        ['b-warn', 'Abierta'],
+    in_progress: ['b-info', 'En proceso'],
+    resolved:    ['b-ok',   'Resuelta'],
+    closed:      ['b-n',    'Cerrada'],
+  }
+
+  el.innerHTML = `<table class="tbl">
+    <thead><tr><th>Solicitud</th><th>Tipo</th><th>Estado</th><th>Fecha</th></tr></thead>
+    <tbody>${S.requests.map(r => {
+      const [bc, bl] = stBadge[r.status] || ['b-n', r.status]
+      return `<tr>
+        <td><div class="td-w">${esc(r.title)}</div></td>
+        <td class="td-m">${esc(r.operational_request_types?.name || '—')}</td>
+        <td><span class="badge ${bc}">${bl}</span></td>
+        <td class="td-m">${fmtDate(r.requested_at)}</td>
+      </tr>`
+    }).join('')}</tbody>
+  </table>`
+}
 
 /* ══════════════════════════════════════════════════
    INIT
@@ -539,15 +711,17 @@ async function loadAll(user) {
     S.profile = profile
 
     /* 2 — Carga paralela (RLS filtra por company_id automáticamente) */
-    const [rc, rt, rd, rbi] = await Promise.all([
+    const [rc, rt, rd, rbi, rrt, rreq] = await Promise.all([
       db.from('companies')
         .select('id, name, status, billing_module, accounting_module, treasury_module, hr_module, created_at')
         .eq('id', profile.company_id)
         .single(),
 
-      db.from('tasks')
-        .select('id, title, status, due_date, created_at')
-        .order('due_date', { ascending: true }),
+      // Al inicio de loadAll, en la query de tasks, agrega el filtro owner_type:
+    db.from('tasks')
+      .select('id, title, status, due_date, created_at, owner_type')
+      .eq('owner_type', 'client')   // ← solo tareas del cliente
+      .order('due_date', { ascending: true }),
 
       db.from('documents')
         .select('id, title, category, status, storage_path, created_at')
@@ -557,17 +731,32 @@ async function loadAll(user) {
         .select('id, title, tool, embed_url, active')
         .eq('active', true)
         .order('created_at', { ascending: true }),
+        
+      db.from('operational_request_types')
+        .select('id, code, name, description, service_id')
+        .eq('active', true)
+        .order('name'),
+
+      db.from('operational_requests')
+        .select('id, title, status, priority, requested_at, request_type_id, operational_request_types(name)')
+        .eq('company_id', profile.company_id)
+        .order('requested_at', { ascending: false })
+        .limit(20),
     ])
 
     if (rc.error)  throw new Error('company: '    + rc.error.message)
     if (rt.error)  throw new Error('tasks: '      + rt.error.message)
     if (rd.error)  throw new Error('documents: '  + rd.error.message)
     if (rbi.error) throw new Error('dashboards: ' + rbi.error.message)
+    if (rrt.error)  throw new Error('request_types: ' + rrt.error.message)
+    if (rreq.error) throw new Error('requests: '      + rreq.error.message)
 
     S.company    = rc.data
     S.tasks      = rt.data || []
     S.documents  = (rd.data || []).map(d => { let file_url=null; if(d.storage_path){const{data}=db.storage.from('documents').getPublicUrl(d.storage_path);file_url=data?.publicUrl||null} return{...d,file_url} })
     S.dashboards = rbi.data || []
+    S.requestTypes = rrt.data || []
+    S.requests     = rreq.data || []
 
     renderAll()
     conn('ok'); hideErr()
@@ -581,7 +770,11 @@ function renderAll() {
   renderUser(); renderWelcome(); renderKpis()
   renderDashTasks(); renderDashDocs(); renderDashBi()
   renderFullTasks(); renderFullDocs(); renderBiSection()
+  renderRequestTypes()    // ← NUEVO
+  renderRequestHistory()  // ← NUEVO
 }
+
+
 
 /* ══ USER ══ */
 function renderUser() {
