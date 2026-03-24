@@ -229,6 +229,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
     <a href="admin-companies.html" class="sb-link"><span class="sb-icon">🏢</span> Empresas<span class="sb-count" id="sb-co">—</span></a>
     <a href="admin-tasks.html"     class="sb-link"><span class="sb-icon">✅</span> Tareas<span class="sb-badge-n" id="sb-tn">!</span></a>
     <a href="admin-documents.html" class="sb-link"><span class="sb-icon">📁</span> Documentos<span class="sb-count" id="sb-dc">—</span></a>
+    <a href="admin-requests.html" class="sb-link"><span class="sb-icon">📝</span> Solicitudes<span class="sb-badge-n" id="sb-rq" style="display:none">!</span></a>
     <a href="admin-dashboards.html" class="sb-link"><span class="sb-icon">📊</span> Dashboards BI<span class="sb-count" id="sb-dh">—</span></a>
     <div class="sb-div"></div>
     <div class="sb-lbl">Módulos</div>
@@ -358,6 +359,22 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
 </div>
 </div>
 
+<!-- FILA 3: Solicitudes pendientes -->
+<div class="card">
+  <div class="card-hd">
+    <div>
+      <div class="stag">Supabase · operational_requests</div>
+      <div class="card-title">Solicitudes pendientes</div>
+      <div class="card-sub" id="reqSub">Cargando…</div>
+    </div>
+    <a href="admin-requests.html" class="card-lnk">Ver todas →</a>
+  </div>
+  <div id="reqEl">
+    <div class="sk" style="height:14px;border-radius:4px;margin-bottom:.55rem"></div>
+    <div class="sk" style="height:14px;border-radius:4px;width:70%;margin-bottom:.55rem"></div>
+  </div>
+</div>
+
 <script>
 /* ── Supabase client ── */
 const SUPABASE_URL = 'https://doauzsmkoeyvllbmbdda.supabase.co'
@@ -413,7 +430,7 @@ async function attachDocumentUrls(docs) {
 async function loadAll() {
   conn('loading')
   try {
-    const [r1, r2, r3, r4, r5] = await Promise.all([
+    const [r1, r2, r3, r4, r5, r6] = await Promise.all([
 
       /* companies — todos los campos del schema */
       db.from('companies')
@@ -440,6 +457,12 @@ async function loadAll() {
       /* profiles — para contar usuarios del portal */
       db.from('profiles')
         .select('id, full_name, role, company_id'),
+
+      db.from('operational_requests')
+        .select('id, title, status, priority, requested_at, company_id, operational_request_types(name)')
+        .in('status', ['open', 'in_progress'])
+        .order('requested_at', { ascending: false })
+        .limit(10),
     ])
 
     /* Lanzar error si alguna query falla individualmente */
@@ -449,6 +472,7 @@ async function loadAll() {
     const docsWithUrls = await attachDocumentUrls(r3.data || []);
     if (r4.error) throw new Error('embedded_dashboards: ' + r4.error.message)
     if (r5.error) throw new Error('profiles: '  + r5.error.message)
+    if (r6.error) throw new Error('requests: ' + r6.error.message)
 
     S = {
       companies:  r1.data || [],
@@ -456,6 +480,7 @@ async function loadAll() {
       documents: docsWithUrls,
       dashboards: r4.data || [],
       profiles:   r5.data || [],
+      requests:   r6.data || [],
     }
 
     /* Renderizar secciones */
@@ -464,6 +489,7 @@ async function loadAll() {
     renderTasks()
     renderDocs()
     renderMods()
+    renderRequests()
     renderOverdueAlert()
     updateSbCounts()
     conn('ok')
@@ -602,6 +628,47 @@ async function completeTask(id, el) {
   }
 }
 
+function renderRequests() {
+  const reqs = S.requests || []
+  const open = reqs.filter(r => r.status === 'open').length
+  const prog = reqs.filter(r => r.status === 'in_progress').length
+  document.getElementById('reqSub').textContent =
+    `${open} abierta${open!==1?'s':''} · ${prog} en proceso`
+
+  // Badge sidebar
+  const sbRq = document.getElementById('sb-rq')
+  if (sbRq && open > 0) { sbRq.textContent = open; sbRq.style.display = 'flex' }
+
+  if (!reqs.length) {
+    document.getElementById('reqEl').innerHTML = `
+      <div style="text-align:center;padding:1.5rem;color:var(--ok)">
+        <div style="font-size:1.4rem;margin-bottom:.4rem">✅</div>
+        <div style="font-size:.8rem;color:var(--txt2)">Sin solicitudes pendientes</div>
+      </div>`
+    return
+  }
+
+  const ST = { open:'b-warn', in_progress:'b-info', resolved:'b-ok', closed:'b-n' }
+  const SL = { open:'Abierta', in_progress:'En proceso', resolved:'Resuelta', closed:'Cerrada' }
+  const COMPANIES_MAP = {}
+  S.companies.forEach(c => { COMPANIES_MAP[c.id] = c.name })
+
+  document.getElementById('reqEl').innerHTML = `
+    <table class="tbl">
+      <thead><tr><th>Solicitud</th><th>Empresa</th><th>Tipo</th><th>Estado</th><th>Fecha</th><th></th></tr></thead>
+      <tbody>${reqs.map(r => `
+        <tr>
+          <td><div class="td-w">${esc(r.title)}</div></td>
+          <td class="td-m">${esc(COMPANIES_MAP[r.company_id]||'—')}</td>
+          <td class="td-m">${esc(r.operational_request_types?.name||'—')}</td>
+          <td><span class="badge ${ST[r.status]||'b-n'}">${SL[r.status]||r.status}</span></td>
+          <td class="td-m">${fmtDate(r.requested_at)}</td>
+          <td><button class="act-btn" onclick="window.location='admin-requests.html'">→</button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`
+}
+
 /* ═══ DOCUMENTOS ═══ */
 function renderDocs() {
   const docs = S.documents.slice(0, 8)
@@ -697,6 +764,11 @@ function updateSbCounts() {
   const cnt = overdue > 0 ? overdue : pend
   if (cnt > 0) { nb.textContent = cnt; nb.style.display = 'flex' }
   else nb.style.display = 'none'
+  const sbRq = document.getElementById('sb-rq')
+  const openReqs = (S.requests||[]).filter(r => r.status === 'open').length
+  if (sbRq) {
+    if (openReqs > 0) { sbRq.textContent = openReqs; sbRq.style.display = 'flex' }
+    else sbRq.style.display = 'none'
 }
 
 /* ═══ USER ═══ */
