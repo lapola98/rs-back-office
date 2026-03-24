@@ -258,6 +258,12 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
 
 @media(max-width:1100px){.kpi-row,.col-2{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:768px){.sb{display:none}.kpi-row{grid-template-columns:1fr 1fr}.req-grid{grid-template-columns:1fr}}
+
+@keyframes slideInUp {
+  from { opacity:0; transform:translateY(20px) }
+  to   { opacity:1; transform:translateY(0) }
+}
+
 </style>
 </head>
 <body>
@@ -531,7 +537,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
 /* ══ ESTADO ══ */
-let S = { profile:null, company:null, tasks:[], documents:[], dashboards:[], requestTypes:[], requests:[] }
+let S = { profile:null, company:null, tasks:[], documents:[], dashboards:[], requestTypes:[], requests:[], contractedServiceIds:[] }
 let tFilter = 'todas', dFilter = 'todos'
 
 /* ══ SOLICITUDES ══ */
@@ -541,14 +547,15 @@ function renderRequestTypes() {
   const grid = document.getElementById('reqTypeGrid')
   if (!grid) return
   selectedReqType = null
-  
 
-  // Iconos por código — ajusta según tus códigos reales de operational_request_types
   const ICONS = {
-    credit_note:         { ico:'🧾', bg:'var(--gold-pale)' },
-    collections_followup:{ ico:'📞', bg:'var(--info-bg)'   },
-    certificate:         { ico:'📄', bg:'var(--ok-bg)'     },
-    general_query:       { ico:'💬', bg:'var(--gold-pale)' },
+    credit_note:          { ico:'🧾', bg:'var(--gold-pale)' },
+    collections_followup: { ico:'📞', bg:'var(--info-bg)'   },
+    accounting:           { ico:'📋', bg:'var(--info-bg)'   },
+    controller:           { ico:'📊', bg:'var(--info-bg)'   },
+    hiring:               { ico:'👥', bg:'var(--ok-bg)'     },
+    certificate:          { ico:'📄', bg:'var(--ok-bg)'     },
+    general_query:        { ico:'💬', bg:'var(--gold-pale)' },
   }
 
   if (!S.requestTypes.length) {
@@ -558,14 +565,85 @@ function renderRequestTypes() {
 
   grid.innerHTML = S.requestTypes.map(t => {
     const ic = ICONS[t.code] || { ico:'📋', bg:'var(--g100)' }
-    return `<div class="req-type" id="rt-${t.id}" onclick="selectReqType('${t.id}')">
-      <div class="req-ico" style="background:${ic.bg}">${ic.ico}</div>
-      <div>
-        <h4>${esc(t.name)}</h4>
-        <p>${esc(t.description || '')}</p>
+
+    // ¿Este tipo corresponde a un servicio contratado?
+    const contracted = !t.service_id || S.contractedServiceIds.includes(t.service_id)
+
+    if (contracted) {
+      // DISPONIBLE — seleccionable
+      return `<div class="req-type" id="rt-${t.id}" onclick="selectReqType('${t.id}')">
+        <div class="req-ico" style="background:${ic.bg}">${ic.ico}</div>
+        <div>
+          <h4>${esc(t.name)}</h4>
+          <p>${esc(t.description || '')}</p>
+        </div>
+      </div>`
+    } else {
+      // BLOQUEADO — visible pero no seleccionable
+      return `<div class="req-type" 
+        style="opacity:.45;cursor:not-allowed;filter:grayscale(.6)"
+        onclick="showUpgradeMsg('${esc(t.name)}')"
+        title="Servicio no contratado">
+        <div class="req-ico" style="background:var(--g100);position:relative">
+          ${ic.ico}
+          <span style="position:absolute;top:-4px;right:-4px;font-size:.55rem;background:var(--g300);color:var(--white);border-radius:100px;padding:.05rem .3rem;font-weight:700">🔒</span>
+        </div>
+        <div>
+          <h4 style="color:var(--g500)">${esc(t.name)}</h4>
+          <p style="color:var(--g400)">${esc(t.description || 'Servicio no incluido en tu plan')}</p>
+        </div>
+      </div>`
+    }
+  }).join('')
+}
+
+function showUpgradeMsg(serviceName) {
+  // Mostrar notificación comercial inline
+  const existing = document.getElementById('upgradeNotif')
+  if (existing) existing.remove()
+
+  const notif = document.createElement('div')
+  notif.id = 'upgradeNotif'
+  notif.style = `
+    position:fixed;bottom:1.5rem;right:1.5rem;z-index:999;
+    background:var(--ink);border:1px solid var(--gold);border-radius:14px;
+    padding:1.2rem 1.4rem;max-width:320px;
+    box-shadow:0 12px 40px rgba(13,17,23,.35);
+    animation:slideInUp .3s ease
+  `
+  notif.innerHTML = `
+    <div style="display:flex;align-items:flex-start;gap:.75rem">
+      <div style="font-size:1.3rem;flex-shrink:0">✨</div>
+      <div style="flex:1">
+        <div style="font-family:var(--fd);font-size:1rem;font-weight:600;color:var(--white);margin-bottom:.3rem">
+          Amplía tu plan
+        </div>
+        <div style="font-size:.78rem;color:rgba(255,255,255,.55);line-height:1.6;margin-bottom:.85rem">
+          <strong style="color:var(--gold-l)">${esc(serviceName)}</strong> no está incluido en tu plan actual. 
+          Contacta a tu asesor RS para activarlo.
+        </div>
+        <div style="display:flex;gap:.5rem">
+          <a href="mailto:ventas@rsbackoffice.co" 
+            style="display:inline-flex;align-items:center;gap:.35rem;padding:.48rem .9rem;
+            background:var(--gold);color:var(--ink);border-radius:8px;font-size:.76rem;
+            font-weight:600;text-decoration:none;transition:background .18s"
+            onmouseover="this.style.background='var(--gold-l)'"
+            onmouseout="this.style.background='var(--gold)'">
+            📧 Contactar asesor
+          </a>
+          <button onclick="document.getElementById('upgradeNotif').remove()" 
+            style="padding:.48rem .85rem;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
+            border-radius:8px;font-size:.76rem;color:rgba(255,255,255,.6);cursor:pointer;font-family:var(--fu)">
+            Cerrar
+          </button>
+        </div>
       </div>
     </div>`
-  }).join('')
+
+  document.body.appendChild(notif)
+
+  // Auto-cerrar a los 8 segundos
+  setTimeout(() => { notif.remove() }, 8000)
 }
 
 function selectReqType(id) {
@@ -711,7 +789,7 @@ async function loadAll(user) {
     S.profile = profile
 
     /* 2 — Carga paralela (RLS filtra por company_id automáticamente) */
-    const [rc, rt, rd, rbi, rrt, rreq] = await Promise.all([
+    const [rc, rt, rd, rbi, rrt, rreq, rcs] = await Promise.all([
       db.from('companies')
         .select('id, name, status, billing_module, accounting_module, treasury_module, hr_module, created_at')
         .eq('id', profile.company_id)
@@ -742,6 +820,11 @@ async function loadAll(user) {
         .eq('company_id', profile.company_id)
         .order('requested_at', { ascending: false })
         .limit(20),
+
+      db.from('company_services')
+        .select('service_id, active')
+        .eq('company_id', profile.company_id)
+        .eq('active', true),
     ])
 
     if (rc.error)  throw new Error('company: '    + rc.error.message)
@@ -750,6 +833,7 @@ async function loadAll(user) {
     if (rbi.error) throw new Error('dashboards: ' + rbi.error.message)
     if (rrt.error)  throw new Error('request_types: ' + rrt.error.message)
     if (rreq.error) throw new Error('requests: '      + rreq.error.message)
+    if (rcs.error) throw new Error('company_services: ' + rcs.error.message)
 
     S.company    = rc.data
     S.tasks      = rt.data || []
@@ -757,6 +841,7 @@ async function loadAll(user) {
     S.dashboards = rbi.data || []
     S.requestTypes = rrt.data || []
     S.requests     = rreq.data || []
+    S.contractedServiceIds = (rcs.data || []).map(cs => cs.service_id)
 
     renderAll()
     conn('ok'); hideErr()
