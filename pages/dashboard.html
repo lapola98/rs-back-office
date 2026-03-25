@@ -882,14 +882,16 @@ function renderWelcome() {
   document.getElementById('wbG').textContent   = g
   document.getElementById('wbN').innerHTML     = `<em>${esc(c.name)}</em>`
   document.getElementById('wbS').textContent   = `Portal RS Back Office · ${fmtDate(new Date().toISOString())}`
-  const mods = [
-    {k:'billing_module',   l:'🧾 Facturación'},
-    {k:'accounting_module',l:'📋 Contabilidad'},
-    {k:'treasury_module',  l:'🏦 Tesorería'},
-    {k:'hr_module',        l:'👥 Personal'},
-  ]
-  document.getElementById('wbMods').innerHTML =
-    mods.map(m=>`<div class="wb-mod ${c[m.k]?'on':''}">${m.l}</div>`).join('')
+  const SERVICE_NAMES = {
+  '03288227-5f30-4fc8-9857-6005b905a1fa': '📊 Controller',
+  '78687f1c-1a0b-44af-957e-1fe2f6fc6bef': '👥 Nómina',
+  'a629c808-d0ae-4f40-8ac6-fa1cd0c4778b': '📋 Contabilidad',
+  'c4b63af0-b25f-4d15-9021-10ea5ac5ce95': '🧾 Facturación',
+}
+document.getElementById('wbMods').innerHTML =
+  Object.entries(SERVICE_NAMES).map(([id, label]) =>
+    `<div class="wb-mod ${S.contractedServiceIds.includes(id)?'on':''}">${label}</div>`
+  ).join('')
 }
 
 /* ══ KPIS ══ */
