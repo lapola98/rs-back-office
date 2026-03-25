@@ -36,3 +36,188 @@
   - Necesidad de procesamiento pesado de archivos
   - Complejidad creciente en lógica de negocio
   - Costos no controlables en Supabase
+
+
+  # 🧠 Decisión: Generación de tareas recurrentes con pg_cron + función SQL
+
+## Contexto
+
+El sistema requiere generar tareas recurrentes mensuales basadas en:
+
+- servicios contratados por empresa (`company_services`)
+- plantillas de tareas (`task_templates`)
+- diferenciación de ownership (`owner_type`: cliente vs RS)
+
+Ejemplos:
+- Cliente: subir extracto bancario, novedades de nómina  
+- RS: cierre contable mensual, liquidación de retención en la fuente  
+
+Se evaluaron varias alternativas para ejecutar este proceso de forma automática.
+
+---
+
+## Opciones evaluadas
+
+### 1. Supabase pg_cron + función SQL (elegida)
+
+- Cron ejecuta directamente una función en Postgres  
+- Lógica completamente dentro de la base de datos  
+
+### 2. Supabase pg_cron + Edge Function
+
+- Cron llama una función HTTP (TypeScript)  
+- Lógica fuera de la base de datos  
+
+### 3. Cron externo (GitHub Actions / servidor / Zapier)
+
+- Job fuera de Supabase que ejecuta lógica contra la DB  
+
+---
+
+## Decisión
+
+Se utilizará:
+
+👉 **pg_cron + función SQL (`generate_monthly_tasks`)**
+
+---
+
+## Justificación
+
+### Costos
+
+- No genera invocaciones de Edge Functions  
+- No requiere infraestructura adicional  
+- Uso directo de recursos de la base de datos  
+
+→ opción más económica  
+
+---
+
+### Seguridad
+
+- No expone endpoints HTTP  
+- No requiere manejo de tokens  
+- No depende de credenciales externas  
+
+→ menor superficie de ataque  
+
+---
+
+### Fiabilidad
+
+- Sin dependencias de red  
+- Sin riesgo de fallos HTTP  
+- Ejecución directa en la base de datos  
+
+→ mayor robustez para jobs recurrentes  
+
+---
+
+### Simplicidad
+
+- Menos componentes  
+- Menor complejidad operativa  
+- Fácil debugging desde SQL  
+
+→ menor deuda técnica  
+
+---
+
+### Escalabilidad
+
+- Lógica set-based (joins entre tablas)  
+- Adecuado para crecimiento en número de empresas y tareas  
+- Bajo volumen de jobs  
+
+→ suficiente para etapa actual  
+
+---
+
+## Diseño implementado
+
+### Flujo
+
+1. `task_templates` define reglas  
+2. `company_services` define alcance por empresa  
+3. función `generate_monthly_tasks(year, month)`:
+   - cruza plantillas + servicios  
+   - genera tareas en `tasks`  
+   - evita duplicados  
+4. `pg_cron` ejecuta la función mensualmente  
+
+---
+
+### Frecuencia
+
+- Ejecución: 1 vez al mes  
+- Ejemplo: día 1 a las 06:00  
+
+---
+
+## Consideraciones técnicas
+
+### Idempotencia (crítico)
+
+La función debe evitar duplicados:
+
+- uso de `unique_key`  
+- índice único en `tasks`  
+
+Esto permite que el cron:
+- pueda ejecutarse más de una vez sin errores  
+- sea seguro ante reintentos  
+
+---
+
+### Alcance actual
+
+- Solo tareas mensuales (`frequency = 'monthly'`)  
+- No incluye:
+  - tareas anuales  
+  - SLA  
+  - facturación  
+  - dependencias entre tareas  
+
+---
+
+## Limitaciones conocidas
+
+- No soporta aún:
+  - reglas complejas (ej. días hábiles)  
+  - lógica condicional avanzada  
+  - integraciones externas  
+
+---
+
+## Evolución futura
+
+Se evaluará migrar a:
+
+👉 **pg_cron → Edge Function**
+
+cuando se requiera:
+
+- integración con APIs externas  
+- notificaciones (email, WhatsApp, etc.)  
+- lógica compleja no adecuada para SQL  
+- observabilidad avanzada  
+
+---
+
+## Estado
+
+- [x] Decisión adoptada  
+- [x] Implementación inicial  
+
+---
+
+## Resumen
+
+Para generación de tareas recurrentes:
+
+- se prioriza simplicidad, costo y robustez  
+- se evita complejidad prematura  
+- se mantiene lógica dentro de la base de datos  
+
+👉 **pg_cron + función SQL es la opción óptima para esta etapa del sistema**

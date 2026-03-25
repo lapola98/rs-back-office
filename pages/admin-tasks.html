@@ -256,6 +256,10 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
         <button class="btn-g" onclick="setStatus('completed',this)">Completadas</button>
         <div class="tb-sep"></div>
         <button class="btn-p" onclick="openModal()">+ Nueva tarea</button>
+        <div class="tb-sep"></div>
+        <button class="btn-g on" onclick="setOwner('todas',this)">Todas</button>
+        <button class="btn-g" onclick="setOwner('rs_team',this)">⚙️ RS</button>
+        <button class="btn-g" onclick="setOwner('client',this)">🏢 Cliente</button>
       </div>
 
       <!-- FILTRO POR EMPRESA -->
@@ -340,6 +344,7 @@ let ALL_TASKS = []
 let COMPANIES = {}   // { id: { name, color } }
 let filterStatus = 'todas'
 let filterCo     = 'todas'
+let filterOwner  = 'todas'
 let editingId    = null
 
 const CO_COLORS = ['#c9a84c','#4a9fd4','#22a66a','#e8a020','#9b59b6','#e05c4b']
@@ -369,7 +374,7 @@ async function loadData() {
     // Cargar tareas
     const { data: tasks, error } = await db
       .from('tasks')
-      .select('id, title, status, due_date, company_id, created_at')
+      .select('id, title, status, due_date, company_id, owner_type, created_at')
       .order('due_date', { ascending: true, nullsFirst: false })
 
     if (error) throw error
@@ -431,6 +436,12 @@ function setStatus(s, btn) {
   btn.classList.add('on'); renderTable()
 }
 
+function setOwner(o, btn) {
+  filterOwner = o
+  document.querySelectorAll('.toolbar .btn-g[onclick*="setOwner"]').forEach(b => b.classList.remove('on'))
+  btn.classList.add('on'); renderTable()
+}
+
 function setCoFilter(coId, el) {
   filterCo = coId
   document.querySelectorAll('.co-chip').forEach(c => c.classList.remove('on'))
@@ -444,10 +455,12 @@ function getFiltered() {
     const matchQ = !q || t.title.toLowerCase().includes(q) || coName.includes(q)
     const matchCo = filterCo === 'todas' || t.company_id === filterCo
     const matchS = filterStatus === 'todas'
+    const matchOwner = filterOwner === 'todas' || t.owner_type === filterOwner
       || (filterStatus === 'overdue'   && isOverdue(t))
       || (filterStatus === 'pending'   && t.status === 'pending' && !isOverdue(t))
       || (filterStatus === 'completed' && t.status === 'completed')
     return matchQ && matchCo && matchS
+    return matchQ && matchCo && matchS && matchOwner
   })
 }
 
@@ -492,7 +505,7 @@ function renderTable() {
           onclick="toggleDone('${t.id}','${t.status}')">${done?'✓':''}</div>
       </td>
       <td>
-        <div class="td-w" style="${done?'text-decoration:line-through;color:var(--txt3)':''}">${esc(t.title)}</div>
+        <div class="td-w">${esc(t.title)} ${t.owner_type==='rs_team'?'<span style="font-size:.58rem;font-weight:600;padding:.1rem .38rem;border-radius:100px;background:rgba(201,168,76,.15);color:var(--gold)">⚙️ RS</span>':t.owner_type==='client'?'<span style="font-size:.58rem;font-weight:600;padding:.1rem .38rem;border-radius:100px;background:var(--info-bg);color:var(--info)">🏢</span>':''}</div>
       </td>
       <td>
         <div style="display:flex;align-items:center;gap:.5rem">
