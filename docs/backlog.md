@@ -6,7 +6,6 @@
 - Onboarding:
     * Soporte
     * KYC
-    * Link a Home
     * Solicitud en revisión
     * Gestión en admin
     * BI
