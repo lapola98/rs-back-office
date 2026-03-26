@@ -26,11 +26,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{height:100%;scroll-behavior:smooth}
 body{min-height:100%;font-family:var(--fu);font-size:13px;background:var(--cream);color:var(--ink);-webkit-font-smoothing:antialiased}
-
-/* ── LAYOUT ── */
 .shell{display:grid;grid-template-columns:340px 1fr;min-height:100vh}
-
-/* ── SIDEBAR ── */
 .side{background:var(--ink);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;overflow:hidden}
 .side::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(201,168,76,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.04) 1px,transparent 1px);background-size:36px 36px;pointer-events:none}
 .side::after{content:'';position:absolute;bottom:-80px;right:-60px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,.1) 0%,transparent 65%);pointer-events:none}
@@ -39,8 +35,6 @@ body{min-height:100%;font-family:var(--fu);font-size:13px;background:var(--cream
 .brand-mark{width:42px;height:42px;background:linear-gradient(135deg,var(--gold),var(--gold-l));border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:1.1rem;font-weight:600;color:var(--ink);flex-shrink:0;box-shadow:0 4px 16px rgba(201,168,76,.3)}
 .brand-txt strong{display:block;font-size:.82rem;font-weight:600;color:var(--white);letter-spacing:.04em}
 .brand-txt span{font-size:.58rem;color:rgba(255,255,255,.35);letter-spacing:.12em;text-transform:uppercase}
-
-/* STEPS NAV */
 .steps-nav{flex:1;display:flex;flex-direction:column;gap:0}
 .step-item{display:flex;align-items:flex-start;gap:.85rem;padding:.85rem 0;position:relative;cursor:default}
 .step-item:not(:last-child)::after{content:'';position:absolute;left:17px;top:48px;width:1px;height:calc(100% - 20px);background:rgba(255,255,255,.08)}
@@ -54,12 +48,9 @@ body{min-height:100%;font-family:var(--fu);font-size:13px;background:var(--cream
 .step-item.active .step-label{color:var(--gold-l)}
 .step-desc{font-size:.67rem;color:rgba(255,255,255,.2);margin-top:.12rem;line-height:1.5;transition:color .3s}
 .step-item.active .step-desc{color:rgba(255,255,255,.45)}
-
 .side-foot{padding-top:1.5rem;border-top:1px solid rgba(255,255,255,.06)}
 .side-foot p{font-size:.67rem;color:rgba(255,255,255,.2);line-height:1.6}
 .side-foot a{color:var(--gold);text-decoration:none}
-
-/* ── MAIN CONTENT ── */
 .main{display:flex;flex-direction:column;min-height:100vh}
 .topbar{height:58px;background:var(--white);border-bottom:1px solid var(--g200);display:flex;align-items:center;padding:0 2.5rem;justify-content:space-between;flex-shrink:0}
 .tb-bc{font-size:.65rem;color:var(--g400);letter-spacing:.04em}
@@ -68,21 +59,15 @@ body{min-height:100%;font-family:var(--fu);font-size:13px;background:var(--cream
 .progress-txt{font-size:.7rem;color:var(--g500)}
 .progress-bar{width:120px;height:3px;background:var(--g200);border-radius:2px;overflow:hidden}
 .progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-l));border-radius:2px;transition:width .4s ease}
-
 .content-area{flex:1;padding:2.5rem;max-width:720px;width:100%}
-
-/* ── STEP PANELS ── */
 .step-panel{display:none;animation:fadeUp .3s ease both}
 .step-panel.active{display:block}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-
 .step-header{margin-bottom:2rem}
 .step-tag{display:inline-flex;align-items:center;gap:.4rem;font-size:.62rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:.55rem}
 .step-tag::before{content:'';width:16px;height:1px;background:var(--gold)}
 .step-title{font-family:var(--fd);font-size:2rem;font-weight:600;color:var(--ink);line-height:1.2;margin-bottom:.4rem}
 .step-sub{font-size:.82rem;color:var(--g500);line-height:1.6}
-
-/* ── FORM ── */
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
 .form-grid.full{grid-template-columns:1fr}
 .form-grid.three{grid-template-columns:1fr 1fr 1fr}
@@ -96,8 +81,6 @@ body{min-height:100%;font-family:var(--fu);font-size:13px;background:var(--cream
 .field select.filled{color:var(--ink)}
 .field textarea{resize:vertical;min-height:80px;line-height:1.6}
 .field-hint{font-size:.67rem;color:var(--g400);margin-top:.15rem}
-
-/* ── SERVICES GRID ── */
 .services-grid{display:grid;grid-template-columns:1fr 1fr;gap:.85rem;margin-bottom:1.5rem}
 .svc-card{border:1.5px solid var(--g200);border-radius:var(--r-lg);padding:1.2rem;cursor:pointer;transition:all .2s;position:relative;background:var(--white)}
 .svc-card:hover{border-color:rgba(201,168,76,.4);transform:translateY(-2px);box-shadow:0 8px 24px rgba(13,17,23,.07)}
@@ -106,8 +89,6 @@ body{min-height:100%;font-family:var(--fu);font-size:13px;background:var(--cream
 .svc-ico{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin-bottom:.75rem}
 .svc-name{font-size:.85rem;font-weight:600;color:var(--ink);margin-bottom:.25rem}
 .svc-desc{font-size:.72rem;color:var(--g500);line-height:1.55}
-
-/* ── POLICIES ── */
 .policy-block{border:1px solid var(--g200);border-radius:var(--r-lg);overflow:hidden;margin-bottom:.85rem;background:var(--white)}
 .policy-head{display:flex;align-items:center;justify-content:space-between;padding:.9rem 1.1rem;cursor:pointer;transition:background .18s}
 .policy-head:hover{background:var(--g50)}
@@ -124,8 +105,6 @@ body{min-height:100%;font-family:var(--fu);font-size:13px;background:var(--cream
 .policy-chk.on{background:var(--ok);border-color:var(--ok);color:#fff}
 .policy-accept-txt{font-size:.75rem;color:var(--g500);line-height:1.6;cursor:pointer}
 .policy-accept-txt strong{color:var(--ink)}
-
-/* ── KYC ── */
 .doc-upload-area{border:2px dashed var(--g200);border-radius:var(--r-lg);padding:1.5rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--white);margin-bottom:.85rem;position:relative}
 .doc-upload-area:hover{border-color:var(--gold);background:var(--gold-pale)}
 .doc-upload-area.has-file{border-color:var(--ok);border-style:solid;background:var(--ok-bg)}
@@ -137,8 +116,6 @@ body{min-height:100%;font-family:var(--fu);font-size:13px;background:var(--cream
 .doc-upload-area.has-file .doc-upload-sub{color:var(--ok);font-weight:500}
 .doc-header{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem}
 .doc-req{font-size:.6rem;font-weight:700;padding:.12rem .42rem;border-radius:100px;background:var(--err-bg);color:var(--err);text-transform:uppercase;letter-spacing:.08em}
-
-/* ── CONFIRM ── */
 .confirm-card{background:var(--white);border:1px solid var(--g200);border-radius:var(--r-lg);padding:1.5rem;margin-bottom:1rem}
 .confirm-title{font-family:var(--fd);font-size:1.1rem;font-weight:600;color:var(--ink);margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
 .confirm-row{display:flex;justify-content:space-between;align-items:flex-start;padding:.5rem 0;border-bottom:1px solid var(--g100);font-size:.8rem}
@@ -147,8 +124,6 @@ body{min-height:100%;font-family:var(--fu);font-size:13px;background:var(--cream
 .confirm-val{color:var(--ink);font-weight:500;text-align:right}
 .svc-tags{display:flex;flex-wrap:wrap;gap:.35rem;justify-content:flex-end}
 .svc-tag{background:var(--gold-pale);color:var(--gold);font-size:.65rem;font-weight:600;padding:.2rem .52rem;border-radius:100px;border:1px solid rgba(201,168,76,.3)}
-
-/* ── SUCCESS ── */
 .success-screen{text-align:center;padding:3rem 2rem}
 .success-icon{width:72px;height:72px;background:var(--ok-bg);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto 1.5rem;border:2px solid var(--ok)}
 .success-title{font-family:var(--fd);font-size:2.2rem;font-weight:600;color:var(--ink);margin-bottom:.65rem}
@@ -159,94 +134,39 @@ body{min-height:100%;font-family:var(--fu);font-size:13px;background:var(--cream
 .ns-num{width:26px;height:26px;border-radius:50%;background:var(--gold-pale);border:1px solid rgba(201,168,76,.3);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;color:var(--gold);flex-shrink:0}
 .ns-txt{font-size:.78rem;color:var(--g700);line-height:1.55}
 .ns-txt strong{color:var(--ink);display:block;margin-bottom:.1rem}
-
-/* ── NAVIGATION BUTTONS ── */
 .nav-row{display:flex;align-items:center;justify-content:space-between;margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--g100)}
 .btn-back{display:inline-flex;align-items:center;gap:.4rem;padding:.62rem 1.1rem;background:transparent;color:var(--g500);border:1px solid var(--g200);border-radius:var(--r);font-family:var(--fu);font-size:.8rem;cursor:pointer;transition:all .2s}
 .btn-back:hover{border-color:var(--g400);color:var(--ink)}
 .btn-next{display:inline-flex;align-items:center;gap:.44rem;padding:.68rem 1.6rem;background:var(--ink);color:var(--gold-l);border:none;border-radius:var(--r);font-family:var(--fu);font-size:.82rem;font-weight:500;cursor:pointer;box-shadow:0 4px 16px rgba(13,17,23,.14);transition:all .2s}
 .btn-next:hover{background:#1a2230;transform:translateY(-1px)}
 .btn-next:disabled{opacity:.5;cursor:not-allowed;transform:none}
-
-/* ── ALERTS ── */
 .alert{display:none;align-items:center;gap:.65rem;padding:.75rem 1rem;border-radius:var(--r);margin-bottom:1rem;font-size:.78rem}
 .alert.on{display:flex}
 .alert-err{background:var(--err-bg);border:1px solid rgba(192,57,43,.2);color:var(--err)}
-.alert-ok{background:var(--ok-bg);border:1px solid rgba(34,166,106,.2);color:var(--ok)}
-
-/* ── SKELETON ── */
 .sk{background:linear-gradient(90deg,var(--g100) 25%,var(--g200) 50%,var(--g100) 75%);background-size:200% 100%;animation:shim 1.5s infinite;border-radius:6px;height:14px;margin-bottom:.5rem}
 @keyframes shim{0%{background-position:200% 0}100%{background-position:-200% 0}}
-
-@media(max-width:900px){
-  .shell{grid-template-columns:1fr}
-  .side{display:none}
-  .form-grid{grid-template-columns:1fr}
-  .services-grid{grid-template-columns:1fr}
-}
+@media(max-width:900px){.shell{grid-template-columns:1fr}.side{display:none}.form-grid{grid-template-columns:1fr}.services-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-
 <div class="shell">
-
-<!-- SIDEBAR -->
 <aside class="side">
   <div class="side-inner">
     <div class="brand">
       <div class="brand-mark">RS</div>
-      <div class="brand-txt">
-        <strong>RS Back Office</strong>
-        <span>Proceso de vinculación</span>
-      </div>
+      <div class="brand-txt"><strong>RS Back Office</strong><span>Proceso de vinculación</span></div>
     </div>
-
     <div class="steps-nav">
-      <div class="step-item active" id="nav-1">
-        <div class="step-num">1</div>
-        <div class="step-txt">
-          <div class="step-label">Datos de empresa</div>
-          <div class="step-desc">Información básica del negocio y representante legal</div>
-        </div>
-      </div>
-      <div class="step-item" id="nav-2">
-        <div class="step-num">2</div>
-        <div class="step-txt">
-          <div class="step-label">Servicios</div>
-          <div class="step-desc">Selecciona los módulos que necesitas</div>
-        </div>
-      </div>
-      <div class="step-item" id="nav-3">
-        <div class="step-num">3</div>
-        <div class="step-txt">
-          <div class="step-label">Políticas</div>
-          <div class="step-desc">Términos, privacidad y autorizaciones</div>
-        </div>
-      </div>
-      <div class="step-item" id="nav-4">
-        <div class="step-num">4</div>
-        <div class="step-txt">
-          <div class="step-label">KYC / Documentos</div>
-          <div class="step-desc">RUT, cédula y formulario SARLAFT</div>
-        </div>
-      </div>
-      <div class="step-item" id="nav-5">
-        <div class="step-num">5</div>
-        <div class="step-txt">
-          <div class="step-label">Confirmación</div>
-          <div class="step-desc">Revisa y envía tu solicitud</div>
-        </div>
-      </div>
+      <div class="step-item active" id="nav-1"><div class="step-num">1</div><div class="step-txt"><div class="step-label">Datos de empresa</div><div class="step-desc">Información básica del negocio y representante legal</div></div></div>
+      <div class="step-item" id="nav-2"><div class="step-num">2</div><div class="step-txt"><div class="step-label">Servicios</div><div class="step-desc">Selecciona los módulos que necesitas</div></div></div>
+      <div class="step-item" id="nav-3"><div class="step-num">3</div><div class="step-txt"><div class="step-label">Políticas</div><div class="step-desc">Términos, privacidad y autorizaciones</div></div></div>
+      <div class="step-item" id="nav-4"><div class="step-num">4</div><div class="step-txt"><div class="step-label">KYC / Documentos</div><div class="step-desc">RUT, cédula y formulario SARLAFT</div></div></div>
+      <div class="step-item" id="nav-5"><div class="step-num">5</div><div class="step-txt"><div class="step-label">Confirmación</div><div class="step-desc">Revisa y envía tu solicitud</div></div></div>
     </div>
-
-    <div class="side-foot">
-      <p>¿Tienes cuenta? <a href="login.html">Ingresar →</a><br>
-      ¿Necesitas ayuda? <a href="mailto:soporte@rsbackoffice.co">Escríbenos</a></p>
-    </div>
+    <div class="side-foot"><p>¿Tienes cuenta? <a href="login.html">Ingresar →</a><br>¿Necesitas ayuda? <a href="mailto:soporte@rsbackoffice.co">Escríbenos</a></p></div>
   </div>
 </aside>
 
-<!-- MAIN -->
 <div class="main">
   <div class="topbar">
     <div class="tb-bc">RS Back Office / <span id="stepBc">Datos de empresa</span></div>
@@ -257,227 +177,74 @@ body{min-height:100%;font-family:var(--fu);font-size:13px;background:var(--cream
   </div>
 
   <div class="content-area">
+    <div class="alert alert-err" id="alertErr"><span id="alertIcon">⚠️</span><span id="alertErrMsg">Error</span></div>
 
-    <!-- ALERT -->
-    <div class="alert alert-err" id="alertErr">
-      <span>⚠️</span><span id="alertErrMsg">Error</span>
-    </div>
-
-    <!-- ═══ PASO 1: DATOS EMPRESA ═══ -->
+    <!-- PASO 1 -->
     <div class="step-panel active" id="panel-1">
       <div class="step-header">
         <div class="step-tag">Paso 1 de 5</div>
         <div class="step-title">Datos de su empresa</div>
-        <div class="step-sub">Ingrese la información básica de su empresa y del representante legal. Estos datos serán verificados durante el proceso de vinculación.</div>
+        <div class="step-sub">Ingrese la información básica de su empresa y del representante legal.</div>
       </div>
-
-      <div class="form-grid full" style="margin-bottom:.75rem">
-        <div style="font-size:.7rem;font-weight:600;color:var(--g400);letter-spacing:.1em;text-transform:uppercase;padding:.4rem 0;border-bottom:1px solid var(--g200);margin-bottom:.25rem">Información de la empresa</div>
-      </div>
-
+      <div class="form-grid full" style="margin-bottom:.75rem"><div style="font-size:.7rem;font-weight:600;color:var(--g400);letter-spacing:.1em;text-transform:uppercase;padding:.4rem 0;border-bottom:1px solid var(--g200)">Información de la empresa</div></div>
       <div class="form-grid">
-        <div class="field">
-          <label>Razón social <span class="req">*</span></label>
-          <input type="text" id="f-company-name" placeholder="Nombre S.A.S.">
-        </div>
-        <div class="field">
-          <label>NIT <span class="req">*</span></label>
-          <input type="text" id="f-nit" placeholder="900.123.456-7">
-        </div>
+        <div class="field"><label>Razón social <span class="req">*</span></label><input type="text" id="f-company-name" placeholder="Nombre S.A.S."></div>
+        <div class="field"><label>NIT <span class="req">*</span></label><input type="text" id="f-nit" placeholder="900.123.456-7"></div>
       </div>
       <div class="form-grid three">
-        <div class="field">
-          <label>Tipo de empresa <span class="req">*</span></label>
-          <select id="f-type" onchange="this.classList.add('filled')">
-            <option value="">Seleccionar…</option>
-            <option value="SAS">S.A.S.</option>
-            <option value="LTDA">Ltda.</option>
-            <option value="SA">S.A.</option>
-            <option value="persona_natural">Persona Natural</option>
-            <option value="otro">Otro</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Sector / Industria</label>
-          <select id="f-sector" onchange="this.classList.add('filled')">
-            <option value="">Seleccionar…</option>
-            <option value="comercio">Comercio</option>
-            <option value="servicios">Servicios</option>
-            <option value="manufactura">Manufactura</option>
-            <option value="construccion">Construcción</option>
-            <option value="tecnologia">Tecnología</option>
-            <option value="salud">Salud</option>
-            <option value="educacion">Educación</option>
-            <option value="otro">Otro</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Ciudad <span class="req">*</span></label>
-          <input type="text" id="f-city" placeholder="Bogotá">
-        </div>
+        <div class="field"><label>Tipo de empresa <span class="req">*</span></label><select id="f-type" onchange="this.classList.add('filled')"><option value="">Seleccionar…</option><option value="SAS">S.A.S.</option><option value="LTDA">Ltda.</option><option value="SA">S.A.</option><option value="persona_natural">Persona Natural</option><option value="otro">Otro</option></select></div>
+        <div class="field"><label>Sector</label><select id="f-sector" onchange="this.classList.add('filled')"><option value="">Seleccionar…</option><option value="comercio">Comercio</option><option value="servicios">Servicios</option><option value="manufactura">Manufactura</option><option value="construccion">Construcción</option><option value="tecnologia">Tecnología</option><option value="salud">Salud</option><option value="educacion">Educación</option><option value="otro">Otro</option></select></div>
+        <div class="field"><label>Ciudad <span class="req">*</span></label><input type="text" id="f-city" placeholder="Bogotá"></div>
       </div>
       <div class="form-grid">
-        <div class="field">
-          <label>Dirección</label>
-          <input type="text" id="f-address" placeholder="Calle 100 # 15-20, Of. 302">
-        </div>
-        <div class="field">
-          <label>Teléfono empresa</label>
-          <input type="tel" id="f-phone" placeholder="+57 601 234 5678">
-        </div>
+        <div class="field"><label>Dirección</label><input type="text" id="f-address" placeholder="Calle 100 # 15-20"></div>
+        <div class="field"><label>Teléfono empresa</label><input type="tel" id="f-phone" placeholder="+57 601 234 5678"></div>
       </div>
-      <div class="form-grid full" style="margin-top:.5rem">
-        <div class="field">
-          <label>Sitio web</label>
-          <input type="url" id="f-website" placeholder="https://www.miempresa.com">
-        </div>
-      </div>
-
-      <div class="form-grid full" style="margin-top:1.25rem">
-        <div style="font-size:.7rem;font-weight:600;color:var(--g400);letter-spacing:.1em;text-transform:uppercase;padding:.4rem 0;border-bottom:1px solid var(--g200);margin-bottom:.25rem">Representante legal</div>
-      </div>
-
+      <div class="form-grid full" style="margin-top:.5rem"><div class="field"><label>Sitio web</label><input type="url" id="f-website" placeholder="https://www.miempresa.com"></div></div>
+      <div class="form-grid full" style="margin-top:1.25rem"><div style="font-size:.7rem;font-weight:600;color:var(--g400);letter-spacing:.1em;text-transform:uppercase;padding:.4rem 0;border-bottom:1px solid var(--g200)">Representante legal</div></div>
       <div class="form-grid">
-        <div class="field">
-          <label>Nombre completo <span class="req">*</span></label>
-          <input type="text" id="f-rep-name" placeholder="Juan Pérez García">
-        </div>
-        <div class="field">
-          <label>Cédula de ciudadanía <span class="req">*</span></label>
-          <input type="text" id="f-rep-cedula" placeholder="1.234.567.890">
-        </div>
+        <div class="field"><label>Nombre completo <span class="req">*</span></label><input type="text" id="f-rep-name" placeholder="Juan Pérez García"></div>
+        <div class="field"><label>Cédula <span class="req">*</span></label><input type="text" id="f-rep-cedula" placeholder="1.234.567.890"></div>
       </div>
       <div class="form-grid">
-        <div class="field">
-          <label>Correo electrónico <span class="req">*</span></label>
-          <input type="email" id="f-rep-email" placeholder="gerente@miempresa.com">
-          <div class="field-hint">Será su usuario de acceso al portal</div>
-        </div>
-        <div class="field">
-          <label>Teléfono móvil <span class="req">*</span></label>
-          <input type="tel" id="f-rep-phone" placeholder="+57 310 234 5678">
-        </div>
+        <div class="field"><label>Correo electrónico <span class="req">*</span></label><input type="email" id="f-rep-email" placeholder="gerente@miempresa.com"><div class="field-hint">Será su usuario de acceso al portal</div></div>
+        <div class="field"><label>Teléfono móvil <span class="req">*</span></label><input type="tel" id="f-rep-phone" placeholder="+57 310 234 5678"></div>
       </div>
-      <div class="form-grid full">
-        <div class="field">
-          <label>Cargo en la empresa</label>
-          <input type="text" id="f-rep-position" placeholder="Gerente General">
-        </div>
-      </div>
-
-      <div class="nav-row">
-        <div></div>
-        <button class="btn-next" onclick="goStep2()">Continuar → Servicios</button>
-      </div>
+      <div class="form-grid full"><div class="field"><label>Cargo</label><input type="text" id="f-rep-position" placeholder="Gerente General"></div></div>
+      <div class="nav-row"><div></div><button class="btn-next" onclick="goStep2()">Continuar → Servicios</button></div>
     </div>
 
-    <!-- ═══ PASO 2: SERVICIOS ═══ -->
+    <!-- PASO 2 -->
     <div class="step-panel" id="panel-2">
-      <div class="step-header">
-        <div class="step-tag">Paso 2 de 5</div>
-        <div class="step-title">Seleccione sus servicios</div>
-        <div class="step-sub">Escoja uno o más módulos según las necesidades de su empresa. Puede agregar servicios adicionales en cualquier momento.</div>
-      </div>
-
-      <div class="services-grid" id="servicesGrid">
-        <div class="sk" style="height:130px;border-radius:14px"></div>
-        <div class="sk" style="height:130px;border-radius:14px"></div>
-        <div class="sk" style="height:130px;border-radius:14px"></div>
-        <div class="sk" style="height:130px;border-radius:14px"></div>
-      </div>
-
-      <div class="nav-row">
-        <button class="btn-back" onclick="goTo(1)">← Volver</button>
-        <button class="btn-next" onclick="goStep3()">Continuar → Políticas</button>
-      </div>
+      <div class="step-header"><div class="step-tag">Paso 2 de 5</div><div class="step-title">Seleccione sus servicios</div><div class="step-sub">Escoja uno o más módulos según las necesidades de su empresa.</div></div>
+      <div class="services-grid" id="servicesGrid"><div class="sk" style="height:130px;border-radius:14px"></div><div class="sk" style="height:130px;border-radius:14px"></div><div class="sk" style="height:130px;border-radius:14px"></div><div class="sk" style="height:130px;border-radius:14px"></div></div>
+      <div class="nav-row"><button class="btn-back" onclick="goTo(1)">← Volver</button><button class="btn-next" onclick="goStep3()">Continuar → Políticas</button></div>
     </div>
 
-    <!-- ═══ PASO 3: POLÍTICAS ═══ -->
+    <!-- PASO 3 -->
     <div class="step-panel" id="panel-3">
-      <div class="step-header">
-        <div class="step-tag">Paso 3 de 5</div>
-        <div class="step-title">Políticas y autorizaciones</div>
-        <div class="step-sub">Lea cada política y confirme su aceptación. Su aceptación queda registrada con fecha, hora y datos de identificación.</div>
-      </div>
-
-      <div id="policiesContainer">
-        <div class="sk" style="height:70px;border-radius:10px;margin-bottom:.75rem"></div>
-        <div class="sk" style="height:70px;border-radius:10px;margin-bottom:.75rem"></div>
-        <div class="sk" style="height:70px;border-radius:10px"></div>
-      </div>
-
-      <div class="nav-row">
-        <button class="btn-back" onclick="goTo(2)">← Volver</button>
-        <button class="btn-next" onclick="goStep4()">Continuar → KYC</button>
-      </div>
+      <div class="step-header"><div class="step-tag">Paso 3 de 5</div><div class="step-title">Políticas y autorizaciones</div><div class="step-sub">Lea cada política y confirme su aceptación. Queda registrada con fecha y hora.</div></div>
+      <div id="policiesContainer"><div class="sk" style="height:70px;border-radius:10px;margin-bottom:.75rem"></div><div class="sk" style="height:70px;border-radius:10px;margin-bottom:.75rem"></div><div class="sk" style="height:70px;border-radius:10px"></div></div>
+      <div class="nav-row"><button class="btn-back" onclick="goTo(2)">← Volver</button><button class="btn-next" onclick="goStep4()">Continuar → KYC</button></div>
     </div>
 
-    <!-- ═══ PASO 4: KYC ═══ -->
+    <!-- PASO 4 -->
     <div class="step-panel" id="panel-4">
-      <div class="step-header">
-        <div class="step-tag">Paso 4 de 5</div>
-        <div class="step-title">Documentos de vinculación</div>
-        <div class="step-sub">Suba los documentos requeridos en formato PDF o imagen. Serán verificados por nuestro equipo en máximo 2 días hábiles.</div>
-      </div>
-
-      <!-- RUT -->
-      <div class="doc-header">
-        <div style="font-size:.8rem;font-weight:600;color:var(--ink)">📄 RUT de la empresa</div>
-        <div class="doc-req">Requerido</div>
-      </div>
-      <div class="doc-upload-area" id="upload-rut">
-        <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" onchange="handleFile('rut',this)">
-        <div class="doc-upload-icon">📋</div>
-        <div class="doc-upload-label" id="lbl-rut">Subir RUT</div>
-        <div class="doc-upload-sub" id="sub-rut">PDF o imagen · Máx. 10 MB</div>
-      </div>
-
-      <!-- CÉDULA -->
-      <div class="doc-header" style="margin-top:.25rem">
-        <div style="font-size:.8rem;font-weight:600;color:var(--ink)">🪪 Cédula del representante legal</div>
-        <div class="doc-req">Requerido</div>
-      </div>
-      <div class="doc-upload-area" id="upload-cedula">
-        <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" onchange="handleFile('cedula',this)">
-        <div class="doc-upload-icon">🪪</div>
-        <div class="doc-upload-label" id="lbl-cedula">Subir cédula (ambas caras)</div>
-        <div class="doc-upload-sub" id="sub-cedula">PDF o imagen · Máx. 10 MB</div>
-      </div>
-
-      <!-- SARLAFT -->
-      <div class="doc-header" style="margin-top:.25rem">
-        <div style="font-size:.8rem;font-weight:600;color:var(--ink)">🛡️ Formulario SARLAFT</div>
-        <div class="doc-req">Requerido</div>
-      </div>
-      <div style="background:var(--info-bg);border:1px solid rgba(36,113,163,.2);border-radius:var(--r);padding:.75rem 1rem;margin-bottom:.65rem;font-size:.76rem;color:var(--info);line-height:1.6">
-        📎 El formulario SARLAFT puede descargarlo aquí:
-        <a href="#" style="color:var(--gold);font-weight:600;text-decoration:none"> Descargar formulario →</a>
-        <br>Diligéncielo, fírmelo y súbalo en PDF o imagen.
-      </div>
-      <div class="doc-upload-area" id="upload-sarlaft">
-        <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" onchange="handleFile('sarlaft',this)">
-        <div class="doc-upload-icon">🛡️</div>
-        <div class="doc-upload-label" id="lbl-sarlaft">Subir formulario SARLAFT firmado</div>
-        <div class="doc-upload-sub" id="sub-sarlaft">PDF o imagen · Máx. 10 MB</div>
-      </div>
-
-      <div class="nav-row">
-        <button class="btn-back" onclick="goTo(3)">← Volver</button>
-        <button class="btn-next" onclick="goStep5()">Continuar → Confirmación</button>
-      </div>
+      <div class="step-header"><div class="step-tag">Paso 4 de 5</div><div class="step-title">Documentos de vinculación</div><div class="step-sub">Suba los documentos requeridos en PDF o imagen. Máx. 10 MB por archivo.</div></div>
+      <div class="doc-header"><div style="font-size:.8rem;font-weight:600;color:var(--ink)">📄 RUT de la empresa</div><div class="doc-req">Requerido</div></div>
+      <div class="doc-upload-area" id="upload-rut"><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" onchange="handleFile('rut',this)"><div class="doc-upload-icon">📋</div><div class="doc-upload-label" id="lbl-rut">Subir RUT</div><div class="doc-upload-sub" id="sub-rut">PDF o imagen · Máx. 10 MB</div></div>
+      <div class="doc-header" style="margin-top:.25rem"><div style="font-size:.8rem;font-weight:600;color:var(--ink)">🪪 Cédula del representante legal</div><div class="doc-req">Requerido</div></div>
+      <div class="doc-upload-area" id="upload-cedula"><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" onchange="handleFile('cedula',this)"><div class="doc-upload-icon">🪪</div><div class="doc-upload-label" id="lbl-cedula">Subir cédula (ambas caras)</div><div class="doc-upload-sub" id="sub-cedula">PDF o imagen · Máx. 10 MB</div></div>
+      <div class="doc-header" style="margin-top:.25rem"><div style="font-size:.8rem;font-weight:600;color:var(--ink)">🛡️ Formulario SARLAFT</div><div class="doc-req">Requerido</div></div>
+      <div style="background:var(--info-bg);border:1px solid rgba(36,113,163,.2);border-radius:var(--r);padding:.75rem 1rem;margin-bottom:.65rem;font-size:.76rem;color:var(--info);line-height:1.6">📎 Descargue, diligencie y firme el formulario SARLAFT antes de subirlo. <a href="#" style="color:var(--gold);font-weight:600;text-decoration:none">Descargar formulario →</a></div>
+      <div class="doc-upload-area" id="upload-sarlaft"><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" onchange="handleFile('sarlaft',this)"><div class="doc-upload-icon">🛡️</div><div class="doc-upload-label" id="lbl-sarlaft">Subir formulario SARLAFT firmado</div><div class="doc-upload-sub" id="sub-sarlaft">PDF o imagen · Máx. 10 MB</div></div>
+      <div class="nav-row"><button class="btn-back" onclick="goTo(3)">← Volver</button><button class="btn-next" onclick="goStep5()">Continuar → Confirmación</button></div>
     </div>
 
-    <!-- ═══ PASO 5: CONFIRMACIÓN ═══ -->
+    <!-- PASO 5 -->
     <div class="step-panel" id="panel-5">
-      <div class="step-header">
-        <div class="step-tag">Paso 5 de 5</div>
-        <div class="step-title">Revise y confirme</div>
-        <div class="step-sub">Verifique que toda la información sea correcta antes de enviar su solicitud de vinculación.</div>
-      </div>
-
-      <!-- Resumen empresa -->
-      <div class="confirm-card">
-        <div class="confirm-title">🏢 Datos de la empresa</div>
+      <div class="step-header"><div class="step-tag">Paso 5 de 5</div><div class="step-title">Revise y confirme</div><div class="step-sub">Verifique que toda la información sea correcta antes de enviar.</div></div>
+      <div class="confirm-card"><div class="confirm-title">🏢 Datos de la empresa</div>
         <div class="confirm-row"><span class="confirm-lbl">Razón social</span><span class="confirm-val" id="cv-name">—</span></div>
         <div class="confirm-row"><span class="confirm-lbl">NIT</span><span class="confirm-val" id="cv-nit">—</span></div>
         <div class="confirm-row"><span class="confirm-lbl">Tipo</span><span class="confirm-val" id="cv-type">—</span></div>
@@ -485,166 +252,158 @@ body{min-height:100%;font-family:var(--fu);font-size:13px;background:var(--cream
         <div class="confirm-row"><span class="confirm-lbl">Representante</span><span class="confirm-val" id="cv-rep">—</span></div>
         <div class="confirm-row"><span class="confirm-lbl">Correo</span><span class="confirm-val" id="cv-email">—</span></div>
       </div>
-
-      <!-- Servicios seleccionados -->
-      <div class="confirm-card">
-        <div class="confirm-title">⚙️ Servicios seleccionados</div>
-        <div class="confirm-row"><span class="confirm-lbl">Módulos</span><div class="svc-tags" id="cv-services">—</div></div>
-      </div>
-
-      <!-- Políticas -->
-      <div class="confirm-card">
-        <div class="confirm-title">✅ Políticas aceptadas</div>
-        <div id="cv-policies"></div>
-      </div>
-
-      <!-- Documentos -->
-      <div class="confirm-card">
-        <div class="confirm-title">📁 Documentos cargados</div>
+      <div class="confirm-card"><div class="confirm-title">⚙️ Servicios seleccionados</div><div class="confirm-row"><span class="confirm-lbl">Módulos</span><div class="svc-tags" id="cv-services">—</div></div></div>
+      <div class="confirm-card"><div class="confirm-title">✅ Políticas aceptadas</div><div id="cv-policies"></div></div>
+      <div class="confirm-card"><div class="confirm-title">📁 Documentos cargados</div>
         <div class="confirm-row"><span class="confirm-lbl">RUT</span><span class="confirm-val" id="cv-rut">—</span></div>
         <div class="confirm-row"><span class="confirm-lbl">Cédula rep. legal</span><span class="confirm-val" id="cv-cedula">—</span></div>
         <div class="confirm-row"><span class="confirm-lbl">SARLAFT</span><span class="confirm-val" id="cv-sarlaft">—</span></div>
       </div>
-
-      <div class="nav-row">
-        <button class="btn-back" onclick="goTo(4)">← Volver</button>
-        <button class="btn-next" id="btnSubmit" onclick="submitOnboarding()">🚀 Enviar solicitud</button>
-      </div>
+      <div class="nav-row"><button class="btn-back" onclick="goTo(4)">← Volver</button><button class="btn-next" id="btnSubmit" onclick="submitOnboarding()">🚀 Enviar solicitud</button></div>
     </div>
 
-    <!-- ═══ ÉXITO ═══ -->
+    <!-- ÉXITO -->
     <div class="step-panel" id="panel-success">
       <div class="success-screen">
         <div class="success-icon">✅</div>
         <div class="success-title">¡Solicitud enviada!</div>
-        <div class="success-sub">
-          Hemos recibido su solicitud de vinculación. Nuestro equipo la revisará en <strong>máximo 2 días hábiles</strong> y le notificaremos por correo electrónico.
-        </div>
+        <div class="success-sub">Hemos recibido su solicitud. Nuestro equipo la revisará en <strong>máximo 2 días hábiles</strong>.</div>
         <div class="next-steps">
           <div style="font-size:.72rem;font-weight:600;color:var(--g400);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.75rem">¿Qué sigue?</div>
-          <div class="next-step-item">
-            <div class="ns-num">1</div>
-            <div class="ns-txt"><strong>Revisión de documentos</strong>Nuestro equipo verificará el RUT, cédula y formulario SARLAFT.</div>
-          </div>
-          <div class="next-step-item">
-            <div class="ns-num">2</div>
-            <div class="ns-txt"><strong>Notificación por email</strong>Le avisaremos al correo registrado con el resultado de la revisión.</div>
-          </div>
-          <div class="next-step-item">
-            <div class="ns-num">3</div>
-            <div class="ns-txt"><strong>Activación del portal</strong>Una vez aprobado, recibirá sus credenciales de acceso al portal.</div>
-          </div>
+          <div class="next-step-item"><div class="ns-num">1</div><div class="ns-txt"><strong>Revisión de documentos</strong>Verificaremos RUT, cédula y SARLAFT.</div></div>
+          <div class="next-step-item"><div class="ns-num">2</div><div class="ns-txt"><strong>Notificación por email</strong>Le avisaremos al correo registrado.</div></div>
+          <div class="next-step-item"><div class="ns-num">3</div><div class="ns-txt"><strong>Activación del portal</strong>Recibirá sus credenciales una vez aprobado.</div></div>
         </div>
-        <div style="margin-top:1.5rem">
-          <a href="index.html" style="display:inline-flex;align-items:center;gap:.4rem;padding:.62rem 1.2rem;background:var(--ink);color:var(--gold-l);border-radius:var(--r);font-size:.8rem;font-weight:500;text-decoration:none">
-            ← Volver al inicio
-          </a>
-        </div>
+        <div style="margin-top:1.5rem"><a href="index.html" style="display:inline-flex;align-items:center;gap:.4rem;padding:.62rem 1.2rem;background:var(--ink);color:var(--gold-l);border-radius:var(--r);font-size:.8rem;font-weight:500;text-decoration:none">← Volver al inicio</a></div>
       </div>
     </div>
 
-  </div><!-- /content-area -->
-</div><!-- /main -->
-</div><!-- /shell -->
+  </div>
+</div>
+</div>
 
 <script>
 const SUPABASE_URL = 'https://doauzsmkoeyvllbmbdda.supabase.co'
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvYXV6c21rb2V5dmxsYm1iZGRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MjIwNDcsImV4cCI6MjA4ODk5ODA0N30.gytRSeyMQsVAU-I3DowiqkW_Nfpuk8mU5TgrXbkcBQU'
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
-/* ══ ESTADO GLOBAL ══ */
+const STEP_LABELS = ['','Datos de empresa','Servicios','Políticas','KYC / Documentos','Confirmación']
+const SERVICE_ICONS = {
+  'Contabilidad':           {ico:'📋',bg:'#e8f4fd'},
+  'Nómina':                 {ico:'👥',bg:'#f0fdf4'},
+  'Controller':             {ico:'📊',bg:'#fef9ec'},
+  'Facturación y cobranza': {ico:'🧾',bg:'#fef9ec'},
+}
+const ESTADOS_BLOQUEADOS = ['pending_review','approved','needs_correction']
+const ESTADOS_EDITABLES  = ['draft','services_selected','policies_accepted','kyc_submitted']
+
 let STATE = {
   step: 1,
-  onboardingId: null,      // creado en paso 1
-  kycSubmissionId: null,   // creado en paso 4
-  services: [],            // [ { id, name, selected } ]
-  policies: [],            // [ { id, type, title, version, accepted } ]
+  onboardingId: null,
+  kycSubmissionId: null,
+  services: [],
+  policies: [],
   docs: {
-    rut:     { file: null, path: null },
-    cedula:  { file: null, path: null },
-    sarlaft: { file: null, path: null },
+    rut:    {file:null,path:null},
+    cedula: {file:null,path:null},
+    sarlaft:{file:null,path:null},
   }
-}
-
-const STEP_LABELS = ['', 'Datos de empresa', 'Servicios', 'Políticas', 'KYC / Documentos', 'Confirmación']
-const SERVICE_ICONS = {
-  'Contabilidad':           { ico:'📋', bg:'#e8f4fd' },
-  'Nómina':                 { ico:'👥', bg:'#f0fdf4' },
-  'Controller':             { ico:'📊', bg:'#fef9ec' },
-  'Facturación y cobranza': { ico:'🧾', bg:'#fef9ec' },
 }
 
 /* ══ INIT ══ */
 async function init() {
   await Promise.all([loadServices(), loadPolicies()])
+  const params = new URLSearchParams(window.location.search)
+  const nit = params.get('nit')
+  if (nit) {
+    document.getElementById('f-nit').value = nit
+    showInfo('Encontramos una solicitud previa. Complete los datos y continúe.')
+  }
 }
 
-/* ══ PASO 1 — VALIDAR Y GUARDAR ══ */
+/* ══ PASO 1 ══ */
 async function goStep2() {
-  const name   = v('f-company-name')
-  const nit    = v('f-nit')
-  const type   = v('f-type')
-  const city   = v('f-city')
+  const name     = v('f-company-name')
+  const nit      = v('f-nit')
+  const type     = v('f-type')
+  const city     = v('f-city')
   const repName  = v('f-rep-name')
   const repEmail = v('f-rep-email')
   const repPhone = v('f-rep-phone')
   const repCed   = v('f-rep-cedula')
 
-  if (!name || !nit || !type || !city || !repName || !repEmail || !repPhone || !repCed) {
-    return showErr('Complete todos los campos obligatorios (marcados con *).')
-  }
+  if (!name||!nit||!type||!city||!repName||!repEmail||!repPhone||!repCed)
+    return showErr('Complete todos los campos obligatorios (*).')
   if (!isEmail(repEmail)) return showErr('Ingrese un correo electrónico válido.')
 
   const btn = document.querySelector('#panel-1 .btn-next')
   btn.textContent = '⏳ Guardando…'; btn.disabled = true
 
   try {
-    // Verificar si ya existe un onboarding con este NIT o email
     if (!STATE.onboardingId) {
-      const { data, error } = await db.from('client_onboardings').insert({
-        company_name:   name,
-        company_nit:    nit,
-        company_type:   type,
-        company_sector: v('f-sector'),
-        company_city:   city,
-        company_address:v('f-address'),
-        company_phone:  v('f-phone'),
-        company_website:v('f-website'),
-        rep_name:       repName,
-        rep_email:      repEmail,
-        rep_phone:      repPhone,
-        rep_cedula:     repCed,
-        rep_position:   v('f-rep-position'),
-        status:         'draft',
-        current_step:   2,
-        ip_address:     null,
-        user_agent:     navigator.userAgent,
+      // Buscar cualquier onboarding con este NIT (no rechazado)
+      const {data: existing} = await db
+        .from('client_onboardings')
+        .select('id, current_step, status')
+        .eq('company_nit', nit)
+        .neq('status','rejected')
+        .order('created_at', {ascending:false})
+        .limit(1)
+        .maybeSingle()
+
+      if (existing) {
+        if (ESTADOS_BLOQUEADOS.includes(existing.status)) {
+          // BLOQUEADO — mostrar pantalla informativa
+          btn.textContent = 'Continuar → Servicios'; btn.disabled = false
+          return showBlocked(existing.status)
+        }
+        // EDITABLE — retomar
+        STATE.onboardingId = existing.id
+        await db.from('client_onboardings').update({
+          company_name:    name, company_nit: nit, company_type: type,
+          company_sector:  v('f-sector'), company_city: city,
+          company_address: v('f-address'), company_phone: v('f-phone'),
+          company_website: v('f-website'), rep_name: repName,
+          rep_email: repEmail, rep_phone: repPhone, rep_cedula: repCed,
+          rep_position: v('f-rep-position'),
+          current_step: Math.max(existing.current_step, 2),
+        }).eq('id', existing.id)
+        await restoreState(existing)
+        hideErr(); goTo(2)
+        return
+      }
+
+      // NUEVO onboarding
+      const {data, error} = await db.from('client_onboardings').insert({
+        company_name:    name, company_nit: nit, company_type: type,
+        company_sector:  v('f-sector'), company_city: city,
+        company_address: v('f-address'), company_phone: v('f-phone'),
+        company_website: v('f-website'), rep_name: repName,
+        rep_email: repEmail, rep_phone: repPhone, rep_cedula: repCed,
+        rep_position: v('f-rep-position'),
+        status: 'draft', current_step: 2,
+        user_agent: navigator.userAgent,
       }).select().single()
 
-      if (error) throw error
+      if (error) {
+        if (error.code === '23505')
+          return showErr('Ya existe una solicitud activa con este NIT.')
+        throw error
+      }
       STATE.onboardingId = data.id
+
     } else {
-      // Actualizar si ya existe
-      const { error } = await db.from('client_onboardings')
-        .update({
-          company_name:   name,
-          company_nit:    nit,
-          company_type:   type,
-          company_sector: v('f-sector'),
-          company_city:   city,
-          company_address:v('f-address'),
-          company_phone:  v('f-phone'),
-          company_website:v('f-website'),
-          rep_name:       repName,
-          rep_email:      repEmail,
-          rep_phone:      repPhone,
-          rep_cedula:     repCed,
-          rep_position:   v('f-rep-position'),
-          current_step:   2,
-        })
-        .eq('id', STATE.onboardingId)
-      if (error) throw error
+      // Ya tenemos ID — actualizar
+      await db.from('client_onboardings').update({
+        company_name:    name, company_nit: nit, company_type: type,
+        company_sector:  v('f-sector'), company_city: city,
+        company_address: v('f-address'), company_phone: v('f-phone'),
+        company_website: v('f-website'), rep_name: repName,
+        rep_email: repEmail, rep_phone: repPhone, rep_cedula: repCed,
+        rep_position: v('f-rep-position'), current_step: 2,
+      }).eq('id', STATE.onboardingId)
     }
+
     hideErr(); goTo(2)
   } catch(e) {
     showErr('Error al guardar: ' + e.message)
@@ -653,18 +412,37 @@ async function goStep2() {
   }
 }
 
+async function restoreState(onboarding) {
+  const {data: contracts} = await db.from('service_contracts')
+    .select('service_id').eq('onboarding_id', onboarding.id)
+  if (contracts?.length) {
+    const ids = contracts.map(c => c.service_id)
+    STATE.services.forEach(s => { s.selected = ids.includes(s.id) })
+    renderServices()
+  }
+  const {data: acceptances} = await db.from('policy_acceptances')
+    .select('policy_version_id').eq('onboarding_id', onboarding.id)
+  if (acceptances?.length) {
+    const ids = acceptances.map(a => a.policy_version_id)
+    STATE.policies.forEach(p => { p.accepted = ids.includes(p.id) })
+    renderPolicies()
+  }
+  const {data: kyc} = await db.from('kyc_submissions')
+    .select('id').eq('onboarding_id', onboarding.id).maybeSingle()
+  if (kyc) STATE.kycSubmissionId = kyc.id
+}
+
 /* ══ PASO 2 — SERVICIOS ══ */
 async function loadServices() {
-  const { data } = await db.from('services').select('id, name').eq('active', true).order('name')
+  const {data} = await db.from('services').select('id, name').eq('active',true).order('name')
   if (!data) return
-  STATE.services = data.map(s => ({ ...s, selected: false }))
+  STATE.services = data.map(s => ({...s, selected:false}))
   renderServices()
 }
 
 function renderServices() {
-  const grid = document.getElementById('servicesGrid')
-  grid.innerHTML = STATE.services.map(s => {
-    const ic = SERVICE_ICONS[s.name] || { ico:'⚙️', bg:'var(--g100)' }
+  document.getElementById('servicesGrid').innerHTML = STATE.services.map(s => {
+    const ic = SERVICE_ICONS[s.name] || {ico:'⚙️',bg:'var(--g100)'}
     return `<div class="svc-card ${s.selected?'selected':''}" id="svc-${s.id}" onclick="toggleService('${s.id}')">
       <div class="svc-ico" style="background:${ic.bg}">${ic.ico}</div>
       <div class="svc-name">${esc(s.name)}</div>
@@ -673,325 +451,251 @@ function renderServices() {
   }).join('')
 }
 
-function svcDesc(name) {
-  const d = {
-    'Contabilidad': 'Cierre mensual, conciliaciones, estados financieros y obligaciones tributarias.',
-    'Nómina': 'Procesamiento de nómina, seguridad social, PILA y gestión de novedades.',
-    'Controller': 'Análisis financiero, presupuesto, control de gestión e informes gerenciales.',
-    'Facturación y cobranza': 'Facturación electrónica, cartera, cobros y gestión de cuentas por cobrar.',
-  }
-  return d[name] || 'Servicio especializado de back office empresarial.'
+function svcDesc(n) {
+  return ({
+    'Contabilidad':'Cierre mensual, conciliaciones, estados financieros y tributarios.',
+    'Nómina':'Procesamiento de nómina, seguridad social y PILA.',
+    'Controller':'Análisis financiero, presupuesto e informes gerenciales.',
+    'Facturación y cobranza':'Facturación electrónica, cartera y cobros.',
+  })[n] || 'Servicio especializado de back office empresarial.'
 }
 
 function toggleService(id) {
-  const svc = STATE.services.find(s => s.id === id)
-  if (svc) svc.selected = !svc.selected
+  const s = STATE.services.find(x => x.id === id)
+  if (s) s.selected = !s.selected
   renderServices()
 }
 
 async function goStep3() {
-  const selected = STATE.services.filter(s => s.selected)
-  if (!selected.length) return showErr('Seleccione al menos un servicio.')
-
+  if (!STATE.services.filter(s=>s.selected).length)
+    return showErr('Seleccione al menos un servicio.')
   const btn = document.querySelector('#panel-2 .btn-next')
   btn.textContent = '⏳ Guardando…'; btn.disabled = true
-
   try {
-    // Borrar selecciones previas y re-insertar
     await db.from('service_contracts').delete().eq('onboarding_id', STATE.onboardingId)
-    for (const svc of selected) {
-      await db.from('service_contracts').insert({
-        onboarding_id: STATE.onboardingId,
-        service_id:    svc.id,
-        status:        'selected',
-      })
+    for (const s of STATE.services.filter(x=>x.selected)) {
+      await db.from('service_contracts').insert({onboarding_id:STATE.onboardingId, service_id:s.id, status:'selected'})
     }
-    await db.from('client_onboardings').update({ status:'services_selected', current_step:3 }).eq('id', STATE.onboardingId)
+    await db.from('client_onboardings').update({status:'services_selected',current_step:3}).eq('id',STATE.onboardingId)
     hideErr(); goTo(3)
-  } catch(e) {
-    showErr('Error: ' + e.message)
-  } finally {
-    btn.textContent = 'Continuar → Políticas'; btn.disabled = false
-  }
+  } catch(e) { showErr('Error: '+e.message) }
+  finally { btn.textContent='Continuar → Políticas'; btn.disabled=false }
 }
 
 /* ══ PASO 3 — POLÍTICAS ══ */
 async function loadPolicies() {
-  const { data } = await db.from('policy_versions')
-    .select('id, policy_type, version, title, content')
-    .eq('active', true)
-    .order('policy_type')
+  const {data} = await db.from('policy_versions')
+    .select('id, policy_type, version, title, content').eq('active',true).order('policy_type')
   if (!data) return
-  STATE.policies = data.map(p => ({ ...p, accepted: false }))
+  STATE.policies = data.map(p => ({...p, accepted:false}))
   renderPolicies()
 }
 
 function renderPolicies() {
-  const ICONS = {
-    terms_of_service: '📋',
-    privacy_policy:   '🔒',
-    data_processing:  '✍️',
-    sarlaft:          '🛡️',
-  }
-  const COLORS = {
-    terms_of_service: '#fef9ec',
-    privacy_policy:   '#e8f4fd',
-    data_processing:  '#f0fdf4',
-    sarlaft:          '#fdf2f2',
-  }
+  const ICONS  = {terms_of_service:'📋',privacy_policy:'🔒',data_processing:'✍️',sarlaft:'🛡️'}
+  const COLORS = {terms_of_service:'#fef9ec',privacy_policy:'#e8f4fd',data_processing:'#f0fdf4',sarlaft:'#fdf2f2'}
   document.getElementById('policiesContainer').innerHTML = STATE.policies.map(p => `
     <div class="policy-block" id="pb-${p.id}">
       <div class="policy-head" onclick="togglePolicy('${p.id}')">
         <div class="policy-head-left">
           <div class="policy-ico" style="background:${COLORS[p.policy_type]||'var(--g100)'}">${ICONS[p.policy_type]||'📄'}</div>
-          <div>
-            <div class="policy-name">${esc(p.title)}</div>
-            <div class="policy-version">Versión ${p.version} · Activa</div>
-          </div>
+          <div><div class="policy-name">${esc(p.title)}</div><div class="policy-version">v${p.version} · Activa</div></div>
         </div>
         <div class="policy-chevron">▾</div>
       </div>
       <div class="policy-content">${esc(p.content)}</div>
       <div class="policy-accept">
-        <div class="policy-chk ${p.accepted?'on':''}" id="chk-${p.id}" onclick="toggleAccept('${p.id}')">
-          ${p.accepted?'✓':''}
-        </div>
-        <div class="policy-accept-txt" onclick="toggleAccept('${p.id}')">
-          He leído y acepto <strong>${esc(p.title)}</strong>
-        </div>
+        <div class="policy-chk ${p.accepted?'on':''}" id="chk-${p.id}" onclick="toggleAccept('${p.id}')">${p.accepted?'✓':''}</div>
+        <div class="policy-accept-txt" onclick="toggleAccept('${p.id}')">He leído y acepto <strong>${esc(p.title)}</strong></div>
       </div>
     </div>`).join('')
 }
 
-function togglePolicy(id) {
-  const block = document.getElementById('pb-' + id)
-  block.classList.toggle('open')
-}
+function togglePolicy(id) { document.getElementById('pb-'+id).classList.toggle('open') }
 
 function toggleAccept(id) {
-  const p = STATE.policies.find(x => x.id === id)
-  if (!p) return
+  const p = STATE.policies.find(x=>x.id===id); if(!p) return
   p.accepted = !p.accepted
-  const chk = document.getElementById('chk-' + id)
-  chk.classList.toggle('on', p.accepted)
-  chk.textContent = p.accepted ? '✓' : ''
+  const chk = document.getElementById('chk-'+id)
+  chk.classList.toggle('on', p.accepted); chk.textContent = p.accepted?'✓':''
 }
 
 async function goStep4() {
-  const unaccepted = STATE.policies.filter(p => !p.accepted)
-  if (unaccepted.length) return showErr(`Debe aceptar todas las políticas. Falta: ${unaccepted.map(p=>p.title).join(', ')}.`)
-
+  const unaccepted = STATE.policies.filter(p=>!p.accepted)
+  if (unaccepted.length) return showErr('Debe aceptar todas las políticas.')
   const btn = document.querySelector('#panel-3 .btn-next')
-  btn.textContent = '⏳ Registrando…'; btn.disabled = true
-
+  btn.textContent='⏳ Registrando…'; btn.disabled=true
   try {
-    // Borrar aceptaciones previas y re-insertar
-    await db.from('policy_acceptances').delete().eq('onboarding_id', STATE.onboardingId)
-    const repName  = v('f-rep-name')
-    const repEmail = v('f-rep-email')
-    const repCed   = v('f-rep-cedula')
-
+    await db.from('policy_acceptances').delete().eq('onboarding_id',STATE.onboardingId)
     for (const p of STATE.policies) {
       await db.from('policy_acceptances').insert({
-        onboarding_id:      STATE.onboardingId,
-        policy_version_id:  p.id,
-        accepted_by_name:   repName,
-        accepted_by_email:  repEmail,
-        accepted_by_cedula: repCed,
-        accepted_at:        new Date().toISOString(),
-        user_agent:         navigator.userAgent,
-        acceptance_method:  'checkbox',
+        onboarding_id: STATE.onboardingId, policy_version_id: p.id,
+        accepted_by_name: v('f-rep-name'), accepted_by_email: v('f-rep-email'),
+        accepted_by_cedula: v('f-rep-cedula'),
+        accepted_at: new Date().toISOString(), user_agent: navigator.userAgent,
+        acceptance_method: 'checkbox',
       })
     }
-    await db.from('client_onboardings').update({ status:'policies_accepted', current_step:4 }).eq('id', STATE.onboardingId)
-
-    // Crear kyc_submission si no existe
+    await db.from('client_onboardings').update({status:'policies_accepted',current_step:4}).eq('id',STATE.onboardingId)
     if (!STATE.kycSubmissionId) {
-      const { data } = await db.from('kyc_submissions').insert({
-        onboarding_id: STATE.onboardingId,
-        status: 'pending',
+      const {data} = await db.from('kyc_submissions').insert({
+        onboarding_id: STATE.onboardingId, status:'pending'
       }).select().single()
       if (data) STATE.kycSubmissionId = data.id
     }
-
     hideErr(); goTo(4)
-  } catch(e) {
-    showErr('Error: ' + e.message)
-  } finally {
-    btn.textContent = 'Continuar → KYC'; btn.disabled = false
-  }
+  } catch(e) { showErr('Error: '+e.message) }
+  finally { btn.textContent='Continuar → KYC'; btn.disabled=false }
 }
 
-/* ══ PASO 4 — KYC DOCUMENTOS ══ */
+/* ══ PASO 4 — KYC ══ */
 function handleFile(docType, input) {
-  const file = input.files[0]
-  if (!file) return
-  if (file.size > 10 * 1024 * 1024) {
-    showErr('El archivo excede el límite de 10 MB.')
-    input.value = ''
-    return
-  }
+  const file = input.files[0]; if(!file) return
+  if (file.size > 10*1024*1024) { showErr('Archivo excede 10 MB.'); input.value=''; return }
   STATE.docs[docType].file = file
-  const area = document.getElementById('upload-' + docType)
-  area.classList.add('has-file')
-  document.getElementById('lbl-' + docType).textContent = '✓ ' + file.name
-  document.getElementById('sub-' + docType).textContent = formatBytes(file.size) + ' · Listo para subir'
+  document.getElementById('upload-'+docType).classList.add('has-file')
+  document.getElementById('lbl-'+docType).textContent = '✓ '+file.name
+  document.getElementById('sub-'+docType).textContent = formatBytes(file.size)+' · Listo para subir'
   hideErr()
 }
 
 async function goStep5() {
   const missing = []
-  if (!STATE.docs.rut.file)     missing.push('RUT de la empresa')
-  if (!STATE.docs.cedula.file)  missing.push('Cédula del representante legal')
-  if (!STATE.docs.sarlaft.file) missing.push('Formulario SARLAFT')
-
-  if (missing.length) return showErr('Documentos faltantes: ' + missing.join(', ') + '.')
+  if (!STATE.docs.rut.file)    missing.push('RUT')
+  if (!STATE.docs.cedula.file) missing.push('Cédula')
+  if (!STATE.docs.sarlaft.file)missing.push('SARLAFT')
+  if (missing.length) return showErr('Documentos faltantes: '+missing.join(', ')+'.')
 
   const btn = document.querySelector('#panel-4 .btn-next')
-  btn.textContent = '⏳ Subiendo documentos…'; btn.disabled = true
-
+  btn.textContent='⏳ Subiendo…'; btn.disabled=true
   try {
-    // Subir archivos a Storage
-    const uploads = [
-      { key: 'rut',     type: 'rut',                  label: 'rut' },
-      { key: 'cedula',  type: 'cedula_representante',  label: 'cedula' },
-      { key: 'sarlaft', type: 'sarlaft_form',          label: 'sarlaft' },
-    ]
-
-    for (const u of uploads) {
-      const file = STATE.docs[u.key].file
+    for (const [key, type, label] of [['rut','rut','rut'],['cedula','cedula_representante','cedula'],['sarlaft','sarlaft_form','sarlaft']]) {
+      const file = STATE.docs[key].file
       const ext  = file.name.split('.').pop()
-      const path = `${STATE.onboardingId}/${u.label}.${ext}`
-
-      const { error: upErr } = await db.storage.from('kyc-documents').upload(path, file, { upsert: true })
-      if (upErr) throw new Error('Error subiendo ' + u.label + ': ' + upErr.message)
-
-      STATE.docs[u.key].path = path
-
-      // Registrar en kyc_documents
+      const path = `${STATE.onboardingId}/${label}.${ext}`
+      const {error} = await db.storage.from('kyc-documents').upload(path, file, {upsert:true})
+      if (error) throw new Error('Error subiendo '+label+': '+error.message)
+      STATE.docs[key].path = path
       await db.from('kyc_documents').upsert({
-        kyc_submission_id: STATE.kycSubmissionId,
-        doc_type:          u.type,
-        status:            'uploaded',
-        file_name:         file.name,
-        file_size_bytes:   file.size,
-        storage_path:      path,
-        uploaded_at:       new Date().toISOString(),
-      }, { onConflict: 'kyc_submission_id,doc_type' })
+        kyc_submission_id: STATE.kycSubmissionId, doc_type: type,
+        status:'uploaded', file_name: file.name, file_size_bytes: file.size,
+        storage_path: path, uploaded_at: new Date().toISOString(),
+      }, {onConflict:'kyc_submission_id,doc_type'})
     }
-
-    await db.from('kyc_submissions').update({ status:'submitted', submitted_at: new Date().toISOString() }).eq('id', STATE.kycSubmissionId)
-    await db.from('client_onboardings').update({ current_step: 5 }).eq('id', STATE.onboardingId)
-
-    buildConfirmation()
-    hideErr(); goTo(5)
-  } catch(e) {
-    showErr('Error al subir documentos: ' + e.message)
-  } finally {
-    btn.textContent = 'Continuar → Confirmación'; btn.disabled = false
-  }
+    await db.from('kyc_submissions').update({status:'submitted',submitted_at:new Date().toISOString()}).eq('id',STATE.kycSubmissionId)
+    await db.from('client_onboardings').update({current_step:5}).eq('id',STATE.onboardingId)
+    buildConfirmation(); hideErr(); goTo(5)
+  } catch(e) { showErr('Error: '+e.message) }
+  finally { btn.textContent='Continuar → Confirmación'; btn.disabled=false }
 }
 
-/* ══ PASO 5 — CONFIRMACIÓN ══ */
+/* ══ PASO 5 ══ */
 function buildConfirmation() {
-  document.getElementById('cv-name').textContent  = v('f-company-name') || '—'
-  document.getElementById('cv-nit').textContent   = v('f-nit') || '—'
-  document.getElementById('cv-type').textContent  = v('f-type') || '—'
-  document.getElementById('cv-city').textContent  = v('f-city') || '—'
-  document.getElementById('cv-rep').textContent   = v('f-rep-name') || '—'
-  document.getElementById('cv-email').textContent = v('f-rep-email') || '—'
-
-  const selected = STATE.services.filter(s => s.selected)
-  document.getElementById('cv-services').innerHTML = selected.length
-    ? selected.map(s => `<span class="svc-tag">${esc(s.name)}</span>`).join('')
+  document.getElementById('cv-name').textContent  = v('f-company-name')||'—'
+  document.getElementById('cv-nit').textContent   = v('f-nit')||'—'
+  document.getElementById('cv-type').textContent  = v('f-type')||'—'
+  document.getElementById('cv-city').textContent  = v('f-city')||'—'
+  document.getElementById('cv-rep').textContent   = v('f-rep-name')||'—'
+  document.getElementById('cv-email').textContent = v('f-rep-email')||'—'
+  const sel = STATE.services.filter(s=>s.selected)
+  document.getElementById('cv-services').innerHTML = sel.length
+    ? sel.map(s=>`<span class="svc-tag">${esc(s.name)}</span>`).join('')
     : '<span style="color:var(--g400)">—</span>'
-
-  document.getElementById('cv-policies').innerHTML = STATE.policies.map(p =>
-    `<div class="confirm-row">
-      <span class="confirm-lbl" style="font-size:.72rem">${esc(p.title)}</span>
-      <span class="confirm-val" style="color:var(--ok);font-size:.75rem">✓ Aceptada v${p.version}</span>
-    </div>`
+  document.getElementById('cv-policies').innerHTML = STATE.policies.map(p=>
+    `<div class="confirm-row"><span class="confirm-lbl" style="font-size:.72rem">${esc(p.title)}</span><span class="confirm-val" style="color:var(--ok);font-size:.75rem">✓ v${p.version}</span></div>`
   ).join('')
-
-  const fmtDoc = key => STATE.docs[key].file ? `✓ ${STATE.docs[key].file.name}` : '—'
+  const fmtDoc = k => STATE.docs[k].file ? '✓ '+STATE.docs[k].file.name : '—'
   document.getElementById('cv-rut').textContent    = fmtDoc('rut')
   document.getElementById('cv-cedula').textContent = fmtDoc('cedula')
   document.getElementById('cv-sarlaft').textContent= fmtDoc('sarlaft')
 }
 
-/* ══ SUBMIT FINAL ══ */
 async function submitOnboarding() {
   const btn = document.getElementById('btnSubmit')
-  btn.textContent = '⏳ Enviando…'; btn.disabled = true
-
+  btn.textContent='⏳ Enviando…'; btn.disabled=true
   try {
-    const { error } = await db.from('client_onboardings').update({
-      status:       'pending_review',
-      current_step: 5,
-      submitted_at: new Date().toISOString(),
-    }).eq('id', STATE.onboardingId)
-
+    const {error} = await db.from('client_onboardings').update({
+      status:'pending_review', current_step:5, submitted_at:new Date().toISOString()
+    }).eq('id',STATE.onboardingId)
     if (error) throw error
     goTo('success')
   } catch(e) {
-    showErr('Error al enviar: ' + e.message)
-    btn.textContent = '🚀 Enviar solicitud'; btn.disabled = false
+    showErr('Error al enviar: '+e.message)
+    btn.textContent='🚀 Enviar solicitud'; btn.disabled=false
   }
 }
 
 /* ══ NAVEGACIÓN ══ */
 function goTo(step) {
-  // Ocultar todos los paneles
-  document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'))
-
-  if (step === 'success') {
+  document.querySelectorAll('.step-panel').forEach(p=>p.classList.remove('active'))
+  if (step==='success') {
     document.getElementById('panel-success').classList.add('active')
-    // Marcar todos como done
-    for (let i = 1; i <= 5; i++) {
-      const n = document.getElementById('nav-' + i)
-      n.classList.remove('active')
-      n.classList.add('done')
-    }
-    document.getElementById('progressFill').style.width = '100%'
-    document.getElementById('progressTxt').textContent = 'Completado'
-    document.getElementById('stepBc').textContent = 'Solicitud enviada'
+    for(let i=1;i<=5;i++){const n=document.getElementById('nav-'+i);n.classList.remove('active');n.classList.add('done')}
+    document.getElementById('progressFill').style.width='100%'
+    document.getElementById('progressTxt').textContent='Completado'
+    document.getElementById('stepBc').textContent='Solicitud enviada'
     return
   }
-
-  STATE.step = step
-  document.getElementById('panel-' + step).classList.add('active')
-
-  // Actualizar nav sidebar
-  for (let i = 1; i <= 5; i++) {
-    const n = document.getElementById('nav-' + i)
-    n.classList.remove('active', 'done')
-    if (i < step)  n.classList.add('done')
-    if (i === step) n.classList.add('active')
+  STATE.step=step
+  document.getElementById('panel-'+step).classList.add('active')
+  for(let i=1;i<=5;i++){
+    const n=document.getElementById('nav-'+i)
+    n.classList.remove('active','done')
+    if(i<step) n.classList.add('done')
+    if(i===step) n.classList.add('active')
   }
+  document.getElementById('progressFill').style.width=(step/5*100)+'%'
+  document.getElementById('progressTxt').textContent=`Paso ${step} de 5`
+  document.getElementById('stepBc').textContent=STEP_LABELS[step]
+  window.scrollTo(0,0); hideErr()
+}
 
-  const pct = (step / 5 * 100) + '%'
-  document.getElementById('progressFill').style.width = pct
-  document.getElementById('progressTxt').textContent = `Paso ${step} de 5`
-  document.getElementById('stepBc').textContent = STEP_LABELS[step]
-  window.scrollTo(0, 0)
-  hideErr()
+/* ══ BLOCKED SCREEN ══ */
+function showBlocked(status) {
+  const cfg = {
+    pending_review:   {ico:'⏳', titulo:'Solicitud en revisión',   msg:'Su solicitud está siendo revisada por el equipo RS Back Office. Le notificaremos por correo en máximo 2 días hábiles.'},
+    approved:         {ico:'✅', titulo:'Solicitud aprobada',       msg:'Su vinculación fue aprobada. Revise su correo para encontrar las credenciales de acceso al portal.'},
+    needs_correction: {ico:'⚠️', titulo:'Se requieren correcciones', msg:'Su solicitud requiere ajustes. Revise el correo que le enviamos con las instrucciones específicas.'},
+  }
+  const c = cfg[status] || {ico:'ℹ️', titulo:'Solicitud registrada', msg:'Ya existe una solicitud activa para este NIT.'}
+  document.getElementById('panel-1').innerHTML = `
+    <div style="text-align:center;padding:3rem 1rem;animation:fadeUp .3s ease">
+      <div style="font-size:3rem;margin-bottom:1rem">${c.ico}</div>
+      <div style="font-family:var(--fd);font-size:1.8rem;font-weight:600;color:var(--ink);margin-bottom:.75rem">${c.titulo}</div>
+      <div style="font-size:.85rem;color:var(--g500);line-height:1.7;max-width:460px;margin:0 auto 2rem">${c.msg}</div>
+      <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap">
+        <a href="login.html" style="display:inline-flex;align-items:center;gap:.4rem;padding:.68rem 1.4rem;background:var(--ink);color:var(--gold-l);border-radius:var(--r);font-size:.82rem;font-weight:500;text-decoration:none">Ingresar al portal →</a>
+        <a href="mailto:soporte@rsbackoffice.co" style="display:inline-flex;align-items:center;gap:.4rem;padding:.68rem 1.4rem;background:transparent;color:var(--g500);border:1px solid var(--g200);border-radius:var(--r);font-size:.82rem;text-decoration:none">Contactar soporte</a>
+      </div>
+      ${status==='needs_correction'?`<div style="margin-top:2rem;background:var(--warn-bg);border:1px solid rgba(212,137,10,.2);border-radius:var(--r);padding:1rem 1.25rem;max-width:460px;margin-left:auto;margin-right:auto;text-align:left"><div style="font-size:.75rem;font-weight:600;color:var(--warn);margin-bottom:.3rem">¿Cómo corregir?</div><div style="font-size:.75rem;color:var(--g700);line-height:1.6">Revise el correo registrado. Su asesor RS le indicó exactamente qué documentos o información actualizar.</div></div>`:''}
+    </div>`
 }
 
 /* ══ HELPERS ══ */
-function v(id) { return document.getElementById(id)?.value?.trim() || '' }
-function isEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) }
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
-function formatBytes(b) { if (b < 1024*1024) return (b/1024).toFixed(0)+'KB'; return (b/(1024*1024)).toFixed(1)+'MB' }
+function v(id){return document.getElementById(id)?.value?.trim()||''}
+function isEmail(e){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function formatBytes(b){return b<1024*1024?(b/1024).toFixed(0)+'KB':(b/(1024*1024)).toFixed(1)+'MB'}
 
 function showErr(msg) {
-  const el = document.getElementById('alertErr')
-  document.getElementById('alertErrMsg').textContent = msg
+  const el=document.getElementById('alertErr')
+  document.getElementById('alertIcon').textContent='⚠️'
+  document.getElementById('alertErrMsg').textContent=msg
+  el.style.cssText=''
   el.classList.add('on')
-  el.scrollIntoView({ behavior:'smooth', block:'nearest' })
+  el.scrollIntoView({behavior:'smooth',block:'nearest'})
 }
-function hideErr() { document.getElementById('alertErr').classList.remove('on') }
+function showInfo(msg) {
+  const el=document.getElementById('alertErr')
+  document.getElementById('alertIcon').textContent='ℹ️'
+  document.getElementById('alertErrMsg').textContent=msg
+  el.style.background='var(--info-bg)'
+  el.style.borderColor='rgba(36,113,163,.2)'
+  el.style.color='var(--info)'
+  el.classList.add('on')
+}
+function hideErr(){document.getElementById('alertErr').classList.remove('on')}
 
-/* INIT */
 init()
 </script>
 </body>
