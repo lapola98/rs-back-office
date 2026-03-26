@@ -1,11 +1,18 @@
-#260325
+HIGH:
 - Cron:
     * Actividades por servicio
+- Onboarding:
+    * Soporte
+    * Link final se rompe
+MEDIUM:
+- Loggin
+    * Recuperar clave
+LOW:
+- Cron:
     * Cierre de tareas
     * BI
 - Onboarding:
-    * Soporte
     * KYC
-    * Solicitud en revisión
-    * Gestión en admin
-    * BI
+- Dashboard onboarding:
+    * Ver documentos 
+    * Revisar botones de gestión -rechazar, aprobar-
