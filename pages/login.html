@@ -424,18 +424,35 @@ async function checkExistingSession() {
 /* ── Obtener rol del profile y redirigir ── */
 async function redirectByRole(user) {
   try {
-    const { data: profile } = await db
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+    // Intentar leer profile con reintento
+    let profile = null
+    let attempts = 0
+    
+    while (!profile && attempts < 3) {
+      const { data } = await db
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle()
+      
+      if (data) {
+        profile = data
+      } else {
+        attempts++
+        await new Promise(r => setTimeout(r, 500))
+      }
+    }
 
     const role = profile?.role || 'client_user'
     const dest = ADMIN_ROLES.includes(role) ? DEST_ADMIN : DEST_CLIENT
     window.location.href = dest
+
   } catch(e) {
-    /* Si falla la lectura del perfil, enviar al portal cliente */
-    window.location.href = DEST_CLIENT
+    console.error('[RS] redirectByRole error:', e)
+    // Fallback: leer metadata del usuario
+    const role = user.user_metadata?.role || 'client_user'
+    const dest = ADMIN_ROLES.includes(role) ? DEST_ADMIN : DEST_CLIENT
+    window.location.href = dest
   }
 }
 

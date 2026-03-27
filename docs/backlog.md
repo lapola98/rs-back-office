@@ -16,3 +16,6 @@ LOW:
 - Dashboard onboarding:
     * Ver documentos 
     * Revisar botones de gestión -rechazar, aprobar-
+- Admin:
+    * Usuarios adm pegado "Laura"
+- Actualización de datos
