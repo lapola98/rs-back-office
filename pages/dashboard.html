@@ -340,6 +340,9 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
     <div class="sb-div"></div>
     <div class="sb-lbl">Soporte</div>
     <div class="sb-link" onclick="go('solicitudes')"><span class="sb-icon">📝</span> Solicitudes</div>
+    <div class="sb-div"></div>
+    <div class="sb-lbl" id="sbTeamLbl" style="display:none">Mi empresa</div>
+    <div class="sb-link" id="sbTeamLink" onclick="go('equipo')" style="display:none"><span class="sb-icon">👥</span> Mi equipo</div>
     <div class="sb-link" onclick="go('chat')"><span class="sb-icon">💬</span> Chat RS</div>
   </nav>
   <div class="sb-foot">
@@ -493,6 +496,63 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
     </div>
   </div>
 
+</div>
+
+<!-- ── EQUIPO ── -->
+<div id="s-equipo" style="display:none">
+
+  <!-- Header + botón invitar -->
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-hd">
+      <div>
+        <div class="stag">Mi empresa</div>
+        <div class="card-title">Gestión de equipo</div>
+        <div class="card-sub" id="teamSub">Cargando…</div>
+      </div>
+      <button class="btn-p" onclick="openInviteModal()">+ Invitar usuario</button>
+    </div>
+
+    <!-- Tabla de miembros -->
+    <div id="teamEl">
+      <div class="sk" style="height:44px;border-radius:8px;margin-bottom:.5rem"></div>
+      <div class="sk" style="height:44px;border-radius:8px"></div>
+    </div>
+  </div>
+
+  <!-- Invitaciones pendientes -->
+  <div class="card">
+    <div class="card-hd">
+      <div>
+        <div class="stag">Pendientes</div>
+        <div class="card-title">Invitaciones enviadas</div>
+      </div>
+    </div>
+    <div id="invitationsEl">
+      <div class="sk" style="height:36px;border-radius:8px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL INVITAR -->
+<div id="inviteModal" style="display:none;position:fixed;inset:0;background:rgba(13,17,23,.55);backdrop-filter:blur(4px);z-index:500;align-items:center;justify-content:center">
+  <div style="background:var(--white);border-radius:var(--r-lg);padding:1.75rem;width:100%;max-width:420px;box-shadow:0 24px 60px rgba(13,17,23,.18);animation:fadeUp .25s ease">
+    <div style="font-family:var(--fd);font-size:1.3rem;font-weight:600;color:var(--ink);margin-bottom:.3rem">Invitar usuario</div>
+    <div style="font-size:.78rem;color:var(--g500);margin-bottom:1.25rem">Recibirá un correo con el enlace de activación.</div>
+
+    <div style="margin-bottom:1rem">
+      <label style="font-size:.62rem;font-weight:600;color:var(--g500);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:.3rem">Correo electrónico *</label>
+      <input type="email" id="inviteEmail" placeholder="nombre@empresa.com"
+        style="width:100%;border:1.5px solid var(--g200);border-radius:var(--r);padding:.65rem .9rem;font-family:var(--fu);font-size:.82rem;color:var(--ink);outline:none;background:var(--g50);transition:all .18s"
+        onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--g200)'">
+    </div>
+
+    <div id="inviteMsg" style="display:none;padding:.6rem .85rem;border-radius:var(--r);font-size:.78rem;margin-bottom:.85rem"></div>
+
+    <div style="display:flex;gap:.6rem;justify-content:flex-end">
+      <button class="btn-s" onclick="closeInviteModal()">Cancelar</button>
+      <button class="btn-p" id="inviteBtn" onclick="sendInvitation()">Enviar invitación →</button>
+    </div>
+  </div>
 </div>
 
       <!-- ── CHAT ── -->
@@ -870,6 +930,11 @@ function renderUser() {
   document.getElementById('uName').textContent = name
   document.getElementById('uCo').textContent   = c?.name || '—'
   document.getElementById('tbTitle').textContent = c?.name || 'Mi empresa'
+  // Mostrar sección equipo solo para client_owner
+  if (p.role === 'client_owner') {
+  document.getElementById('sbTeamLbl').style.display = 'block'
+  document.getElementById('sbTeamLink').style.display = 'flex'
+  }
 }
 
 /* ══ WELCOME BAND ══ */
@@ -1058,8 +1123,8 @@ function sendMsgBtn() {
 }
 
 /* ══ NAVEGACIÓN ══ */
-const SECS = ['dashboard','tareas','documentos','bi','solicitudes','chat']
-const SEC_LBL = {dashboard:'Dashboard',tareas:'Mis tareas',documentos:'Documentos',bi:'Dashboards BI',solicitudes:'Solicitudes',chat:'Chat RS'}
+const SECS = ['dashboard','tareas','documentos','bi','solicitudes','equipo','chat']
+const SEC_LBL = {dashboard:'Dashboard',tareas:'Mis tareas',documentos:'Documentos',bi:'Dashboards BI',solicitudes:'Solicitudes',equipo:'Mi equipo',chat:'Chat RS'}
 
 function go(id) {
   SECS.forEach(s=>{ const el=document.getElementById('s-'+s); if(el) el.style.display=s===id?'block':'none' })
@@ -1067,6 +1132,7 @@ function go(id) {
   document.querySelectorAll('.sb-link').forEach(l=>{ if(l.getAttribute('onclick')?.includes(`'${id}'`)) l.classList.add('active') })
   document.getElementById('tbSec').textContent = SEC_LBL[id]||id
   document.getElementById('pg').scrollTop = 0
+  if (id === 'equipo') loadTeam()
 }
 
 /* ══ AUTH ══ */
@@ -1103,6 +1169,131 @@ function emptyEl(ic,t,s){ return `<div class="empty"><div class="empty-icon">${i
 function setDate(){
   document.getElementById('tbDate').textContent=new Date().toLocaleDateString('es-CO',{weekday:'short',year:'numeric',month:'short',day:'numeric'})
   document.getElementById('chatSep').textContent='Hoy — '+new Date().toLocaleDateString('es-CO',{day:'numeric',month:'long',year:'numeric'})
+}
+
+/* ══ EQUIPO ══ */
+async function loadTeam() {
+  if (S.profile?.role !== 'client_owner') return
+  try {
+    const { data: team } = await db
+      .from('company_team_view')
+      .select('*')
+      .eq('company_id', S.company.id)
+
+    const members     = (team||[]).filter(r => r.source === 'member')
+    const invitations = (team||[]).filter(r => r.source === 'invitation')
+
+    // Subtítulo
+    const { data: co } = await db
+      .from('companies')
+      .select('max_users')
+      .eq('id', S.company.id)
+      .single()
+    const max = co?.max_users || 5
+    document.getElementById('teamSub').textContent =
+      `${members.length} usuario${members.length!==1?'s':''} activo${members.length!==1?'s':''} · límite ${max}`
+
+    // Tabla miembros
+    const teamEl = document.getElementById('teamEl')
+    if (!members.length) {
+      teamEl.innerHTML = emptyEl('👥', 'Sin usuarios aún', 'Invita a tu equipo usando el botón de arriba.')
+    } else {
+      const roleLbl = { client_owner: '⭐ Representante', client_user: '👤 Usuario' }
+      teamEl.innerHTML = `<table class="tbl">
+        <thead><tr><th>Usuario</th><th>Correo</th><th>Rol</th><th>Estado</th></tr></thead>
+        <tbody>${members.map(m => `<tr>
+          <td><div class="td-w">${esc(m.full_name || '—')}</div></td>
+          <td class="td-m">${esc(m.email || '—')}</td>
+          <td class="td-m">${roleLbl[m.role] || m.role}</td>
+          <td><span class="badge ${m.active ? 'b-ok' : 'b-n'}">${m.active ? 'Activo' : 'Inactivo'}</span></td>
+        </tr>`).join('')}</tbody>
+      </table>`
+    }
+
+    // Invitaciones pendientes
+    const invEl = document.getElementById('invitationsEl')
+    if (!invitations.length) {
+      invEl.innerHTML = `<div style="font-size:.78rem;color:var(--g400);padding:.5rem 0">Sin invitaciones pendientes.</div>`
+    } else {
+      invEl.innerHTML = `<table class="tbl">
+        <thead><tr><th>Correo</th><th>Estado</th><th></th></tr></thead>
+        <tbody>${invitations.map(i => `<tr>
+          <td><div class="td-w">${esc(i.email)}</div></td>
+          <td><span class="badge b-warn">⏳ Pendiente</span></td>
+          <td><button class="btn-g" onclick="cancelInvitation('${i.email}')">Cancelar</button></td>
+        </tr>`).join('')}</tbody>
+      </table>`
+    }
+  } catch(e) {
+    console.error('[RS equipo]', e)
+  }
+}
+
+async function cancelInvitation(email) {
+  if (!confirm(`¿Cancelar la invitación a ${email}?`)) return
+  await db.from('company_invitations')
+    .update({ status: 'cancelled' })
+    .eq('company_id', S.company.id)
+    .eq('email', email)
+  await loadTeam()
+}
+
+function openInviteModal() {
+  document.getElementById('inviteEmail').value = ''
+  document.getElementById('inviteMsg').style.display = 'none'
+  document.getElementById('inviteModal').style.display = 'flex'
+  setTimeout(() => document.getElementById('inviteEmail').focus(), 100)
+}
+
+function closeInviteModal() {
+  document.getElementById('inviteModal').style.display = 'none'
+}
+
+async function sendInvitation() {
+  const email = document.getElementById('inviteEmail').value.trim().toLowerCase()
+  const btn   = document.getElementById('inviteBtn')
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showInviteMsg('⚠️ Ingresa un correo válido.', 'err'); return
+  }
+
+  btn.textContent = '⏳ Enviando…'; btn.disabled = true
+
+  try {
+    const { data: { session } } = await db.auth.getSession()
+    const res = await fetch(
+      'https://doauzsmkoeyvllbmbdda.supabase.co/functions/v1/invite-user',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': 'Bearer ' + session.access_token,
+        },
+        body: JSON.stringify({ email, company_id: S.company.id }),
+      }
+    )
+    const result = await res.json()
+    if (!res.ok || result.error) {
+      showInviteMsg('❌ ' + (result.error || 'Error al enviar'), 'err')
+    } else {
+      showInviteMsg('✅ Invitación enviada a ' + email, 'ok')
+      document.getElementById('inviteEmail').value = ''
+      setTimeout(() => { closeInviteModal(); loadTeam() }, 1800)
+    }
+  } catch(e) {
+    showInviteMsg('❌ Error de conexión: ' + e.message, 'err')
+  } finally {
+    btn.textContent = 'Enviar invitación →'; btn.disabled = false
+  }
+}
+
+function showInviteMsg(msg, type) {
+  const el = document.getElementById('inviteMsg')
+  el.textContent = msg
+  el.style.display = 'block'
+  el.style.background = type === 'ok' ? 'var(--ok-bg)' : 'var(--err-bg)'
+  el.style.color      = type === 'ok' ? 'var(--ok)'    : 'var(--err)'
+  el.style.border     = `1px solid ${type === 'ok' ? 'var(--ok)' : 'var(--err)'}`
 }
 
 /* Auto-refresh silencioso cada 90s */
