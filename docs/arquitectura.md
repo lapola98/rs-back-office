@@ -20,6 +20,7 @@ Arquitectura orientada a MVP:
 - Maneja la interfaz de usuario
 - Consume directamente servicios de Supabase
 - Contiene lógica de presentación y parte de la lógica operativa
+- Desplegado en Vercel (hosting, CDN y despliegue continuo)
 
 **Nota:** La lógica crítica no debería depender completamente del frontend (a mejorar progresivamente)
 

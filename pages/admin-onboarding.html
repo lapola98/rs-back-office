@@ -585,11 +585,58 @@ async function saveStatus(){
   btn.textContent='Guardar cambios';btn.disabled=false
 }
 
-async function quickApprove(){
-  if(!currentId||!confirm('¿Confirma la aprobación?'))return
-  const {error}=await db.from('client_onboardings').update({status:'approved',approved_at:new Date().toISOString(),reviewed_at:new Date().toISOString()}).eq('id',currentId)
-  if(error)showToast('err','⚠️ '+error.message)
-  else{showToast('ok','✅ Solicitud aprobada');await loadData();closeDrawer()}
+async function quickApprove() {
+  if (!currentId || !confirm('¿Confirmas la aprobación?')) return
+
+  const btn = document.getElementById('drApproveBtn')
+  btn.textContent = 'Aprobando...'; btn.disabled = true
+
+  try {
+    const { error: updateError } = await db.from('client_onboardings')
+      .update({
+        status:      'approved',
+        approved_at: new Date().toISOString(),
+        reviewed_at: new Date().toISOString()
+      })
+      .eq('id', currentId)
+
+    if (updateError) throw updateError
+
+    const sessionResp = await db.auth.getSession()
+    const session = sessionResp.data.session
+    console.log('token:', session?.access_token?.slice(0, 30))
+
+    const res = await fetch(
+      'https://doauzsmkoeyvllbmbdda.supabase.co/functions/v1/invite-owner',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': 'Bearer ' + session.access_token,
+        },
+        body: JSON.stringify({ onboarding_id: currentId }),
+      }
+    )
+
+    const result = await res.json()
+
+    if (!res.ok || result.error) {
+      showToast('ok', 'Empresa aprobada. Email: ' + (result.error || 'error al enviar'))
+    } else {
+      const accion = result.action === 'invited'
+        ? 'Invitación enviada a ' + result.email
+        : 'Usuario vinculado: ' + result.email
+      showToast('ok', 'Aprobado · ' + accion)
+    }
+
+    await loadData()
+    closeDrawer()
+
+  } catch(e) {
+    showToast('err', 'Error: ' + e.message)
+  } finally {
+    btn.textContent = 'Aprobar'; btn.disabled = false
+  }
 }
 
 async function quickReject(){

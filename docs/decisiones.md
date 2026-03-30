@@ -1,3 +1,39 @@
+## 2026-03-27
+
+- Decisión: Desplegar el frontend en Vercel como plataforma de hosting principal
+
+- Contexto:
+  La aplicación es un SaaS web con frontend desacoplado que consume directamente servicios de Supabase.
+
+- Motivo:
+  - Permite despliegue rápido y continuo (CI/CD integrado)
+  - Reduce necesidad de gestionar infraestructura
+  - Incluye CDN global (mejora performance)
+  - Simplifica manejo de entornos y variables
+
+- Alternativa considerada:
+  Hosting manual (VPS) o despliegue en AWS (S3 + CloudFront / Amplify)
+
+- Razón para no elegir alternativas:
+  - Mayor complejidad operativa
+  - Más tiempo de configuración y mantenimiento
+  - No aporta ventajas relevantes en etapa MVP
+
+- Riesgos:
+  - Dependencia de Vercel como proveedor
+  - Limitaciones en configuraciones avanzadas (edge cases)
+  - Posibles costos con alto tráfico
+
+- Mitigación:
+  - Mantener frontend desacoplado (estático / portable)
+  - Evitar features propietarias específicas de Vercel
+  - Controlar uso de ancho de banda y builds
+
+- Señales de revisión futura:
+  - Incremento significativo de tráfico
+  - Necesidad de control fino de infraestructura
+  - Requerimientos de backend server-side más complejos
+
 ## 2026-03-24
 
 - Decisión: Mantener Supabase como backend principal (DB, auth y storage) para el MVP y primeras etapas de crecimiento.
