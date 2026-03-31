@@ -388,10 +388,11 @@ async function goStep2() {
       }).select().single()
 
       if (error) {
-        if (error.code === '23505')
-          return showErr('Ya existe una solicitud activa con este NIT.')
-        throw error
-      }
+  console.log('Error completo:', JSON.stringify(error))
+  if (error.code === '23505')
+    return showErr('Ya existe una solicitud activa con este NIT.')
+  throw error
+}
       STATE.onboardingId = data.id
 
     } else {
