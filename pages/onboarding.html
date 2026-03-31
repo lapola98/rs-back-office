@@ -344,7 +344,7 @@ async function goStep2() {
   try {
     if (!STATE.onboardingId) {
       // Buscar cualquier onboarding con este NIT (no rechazado)
-      const {data: existing} = await db
+      const {data: existing, error: selectError} = await db
         .from('client_onboardings')
         .select('id, current_step, status')
         .eq('company_nit', nit)
@@ -352,6 +352,7 @@ async function goStep2() {
         .order('created_at', {ascending:false})
         .limit(1)
         .maybeSingle()
+        if (selectError) console.log('SELECT error:', JSON.stringify(selectError))
 
       if (existing) {
         if (ESTADOS_BLOQUEADOS.includes(existing.status)) {
