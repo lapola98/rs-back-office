@@ -489,7 +489,7 @@ function renderTable() {
     // Agregar después de: const done = t.status === 'completed'
     const today     = new Date()
     const createDate = new Date(today.getFullYear(), today.getMonth(), t.create_day || 1)
-    const isFuture  = t.create_day && createDate > today && !done
+    const isFuture = t.create_day && t.create_day > today.getDate() && !done
     const coInfo    = COMPANIES[t.company_id]
     const coName    = coInfo?.name || 'Sin empresa'
     const coColor   = coInfo?.color || 'var(--txt3)'
