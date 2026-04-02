@@ -375,7 +375,7 @@ async function loadData() {
     // Cargar tareas
     const { data: tasks, error } = await db
       .from('tasks')
-      .select('id, title, status, due_date, company_id, owner_type, created_at')
+      .select('id, title, status, due_date, company_id, owner_type, created_at, create_day')
       .order('due_date', { ascending: true, nullsFirst: false })
 
     if (error) throw error
@@ -433,7 +433,7 @@ function buildCoSelect(cos) {
 
 function setStatus(s, btn) {
   filterStatus = s
-  document.querySelectorAll('.toolbar .btn-g').forEach(b => b.classList.remove('on'))
+  document.querySelectorAll('.toolbar .btn-g[onclick*="setStatus"]').forEach(b => b.classList.remove('on'))
   btn.classList.add('on'); renderTable()
 }
 
@@ -452,16 +452,17 @@ function setCoFilter(coId, el) {
 function getFiltered() {
   const q = (document.getElementById('searchInput')?.value || '').toLowerCase()
   return ALL_TASKS.filter(t => {
-    const coName = (COMPANIES[t.company_id]?.name || '').toLowerCase()
-    const matchQ = !q || t.title.toLowerCase().includes(q) || coName.includes(q)
-    const matchCo = filterCo === 'todas' || t.company_id === filterCo
-    const matchS = filterStatus === 'todas'
+    const coName     = (COMPANIES[t.company_id]?.name || '').toLowerCase()
+    const matchQ     = !q || t.title.toLowerCase().includes(q) || coName.includes(q)
+    const matchCo    = filterCo === 'todas' || t.company_id === filterCo
     const matchOwner = filterOwner === 'todas' || t.owner_type === filterOwner
-      || (filterStatus === 'overdue'   && isOverdue(t))
-      || (filterStatus === 'pending'   && t.status === 'pending' && !isOverdue(t))
-      || (filterStatus === 'completed' && t.status === 'completed')
-    return matchQ && matchCo && matchS
-    return matchQ && matchCo && matchS && matchOwner
+    const matchS     =
+      filterStatus === 'todas'     ||
+      (filterStatus === 'overdue'   && isOverdue(t)) ||
+      (filterStatus === 'pending'   && t.status === 'pending' && !isOverdue(t)) ||
+      (filterStatus === 'completed' && t.status === 'completed')
+
+    return matchQ && matchCo && matchOwner && matchS
   })
 }
 
@@ -485,6 +486,10 @@ function renderTable() {
   tbody.innerHTML = tasks.map(t => {
     const overdue   = isOverdue(t)
     const done      = t.status === 'completed'
+    // Agregar después de: const done = t.status === 'completed'
+    const today     = new Date()
+    const createDate = new Date(today.getFullYear(), today.getMonth(), t.create_day || 1)
+    const isFuture  = t.create_day && createDate > today && !done
     const coInfo    = COMPANIES[t.company_id]
     const coName    = coInfo?.name || 'Sin empresa'
     const coColor   = coInfo?.color || 'var(--txt3)'
@@ -493,12 +498,13 @@ function renderTable() {
     let statusBadge
     if (done)         statusBadge = `<span class="badge b-ok">Completada</span>`
     else if (overdue) statusBadge = `<span class="badge b-err">🔴 Vencida</span>`
+    else if (isFuture) statusBadge = `<span class="badge b-n">Próximamente</span>`
     else              statusBadge = `<span class="badge b-warn">Pendiente</span>`
 
     const dueTxt = t.due_date ? fmtDate(t.due_date) : '—'
     const dueStyle = overdue ? 'color:var(--err);font-weight:500' : ''
 
-    return `<tr style="animation:fadeUp .2s ease both">
+    return `<tr style="animation:fadeUp .2s ease both;${isFuture ? 'opacity:0.45;' : ''}">
       <td>
         <div style="width:17px;height:17px;border-radius:4px;border:1.5px solid ${done?'var(--ok)':overdue?'var(--err)':'var(--border)'};
           background:${done?'var(--ok)':'transparent'};display:flex;align-items:center;justify-content:center;
