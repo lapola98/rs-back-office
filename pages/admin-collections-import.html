@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Importar Cartera Siigo — RS Back Office</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- SheetJS para leer Excel -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#0d1117;--bg2:#131920;--bg3:#1a2230;--bg4:#212c3d;
+  --panel:#16202e;--panel2:#1c2a3a;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.04);
+  --gold:#c9a84c;--gold-l:#e8c97a;--gold-pale:rgba(201,168,76,.12);
+  --white:#fff;--txt:rgba(255,255,255,.88);--txt2:rgba(255,255,255,.5);--txt3:rgba(255,255,255,.25);
+  --ok:#22a66a;--ok-bg:rgba(34,166,106,.12);
+  --warn:#e8a020;--warn-bg:rgba(232,160,32,.12);
+  --err:#e05c4b;--err-bg:rgba(224,92,75,.12);
+  --info:#4a9fd4;--info-bg:rgba(74,159,212,.12);
+  --fd:'Cormorant Garamond',Georgia,serif;--fu:'DM Sans',sans-serif;
+  --sbw:248px;--tbh:60px;--r:10px;--r-lg:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;background:var(--bg);color:var(--txt);-webkit-font-smoothing:antialiased}
+.app{display:flex;height:100vh;overflow:hidden}
+
+/* SIDEBAR */
+.sb{width:var(--sbw);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;height:100vh;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;position:relative}
+.sb::-webkit-scrollbar{display:none}
+.sb::before{content:'';position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(201,168,76,.03)1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.03)1px,transparent 1px);background-size:32px 32px}
+.sb-logo{padding:1.2rem 1.1rem;display:flex;align-items:center;gap:.7rem;text-decoration:none;border-bottom:1px solid var(--border);position:relative;z-index:1}
+.sb-mark{width:38px;height:38px;flex-shrink:0;background:linear-gradient(135deg,var(--gold),var(--gold-l));border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:1.05rem;font-weight:600;color:var(--bg);box-shadow:0 4px 16px rgba(201,168,76,.3)}
+.sb-wm strong{display:block;font-size:.82rem;font-weight:600;color:var(--white);letter-spacing:.04em;line-height:1.2}
+.sb-wm span{font-size:.58rem;color:var(--txt3);letter-spacing:.13em;text-transform:uppercase}
+.admin-pill{display:inline-flex;align-items:center;font-size:.55rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);background:var(--gold-pale);border:1px solid rgba(201,168,76,.2);border-radius:100px;padding:.15rem .5rem;margin-left:auto;flex-shrink:0}
+.sb-nav{flex:1;padding:.65rem 0;position:relative;z-index:1}
+.sb-lbl{font-size:.58rem;font-weight:600;color:var(--txt3);letter-spacing:.14em;text-transform:uppercase;padding:.85rem 1.1rem .3rem}
+.sb-link{display:flex;align-items:center;gap:.65rem;padding:.6rem 1.1rem;text-decoration:none;color:var(--txt2);font-size:.79rem;font-weight:400;transition:all .18s;border-left:2px solid transparent}
+.sb-link:hover{color:var(--txt);background:rgba(255,255,255,.04)}
+.sb-link.active{color:var(--gold-l);background:var(--gold-pale);border-left-color:var(--gold);font-weight:500}
+.sb-icon{font-size:.9rem;width:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sb-div{height:1px;background:var(--border2);margin:.45rem 1rem}
+.sb-foot{padding:.88rem 1.1rem;border-top:1px solid var(--border);position:relative;z-index:1}
+.u-pill{display:flex;align-items:center;gap:.65rem;padding:.58rem .78rem;background:rgba(255,255,255,.04);border-radius:var(--r);border:1px solid var(--border)}
+.u-av{width:32px;height:32px;background:linear-gradient(135deg,var(--gold),var(--gold-l));border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:.75rem;font-weight:600;color:var(--bg);flex-shrink:0}
+.u-name{font-size:.73rem;font-weight:500;color:var(--txt);display:block;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.u-role{font-size:.6rem;color:var(--gold);display:block}
+.u-out{background:none;border:none;cursor:pointer;color:var(--txt3);font-size:.82rem;padding:.2rem;transition:color .18s;margin-left:auto;flex-shrink:0}
+.u-out:hover{color:var(--err)}
+
+/* TOPBAR */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;height:100vh;overflow:hidden}
+.topbar{height:var(--tbh);background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 1.6rem;gap:1rem;flex-shrink:0}
+.tb-bc{font-size:.62rem;color:var(--txt3);letter-spacing:.04em}
+.tb-bc a{color:var(--gold);text-decoration:none;font-weight:500}
+.tb-bc span{color:var(--txt2)}
+.tb-title{font-family:var(--fd);font-size:1.22rem;font-weight:600;color:var(--white);line-height:1.2}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:.6rem}
+.tb-date{font-size:.7rem;color:var(--txt3);padding:.36rem .72rem;background:var(--bg3);border-radius:6px;border:1px solid var(--border)}
+.tb-ico{width:34px;height:34px;border-radius:var(--r);background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.88rem;cursor:pointer;transition:all .18s;color:var(--txt2);flex-shrink:0;text-decoration:none}
+.tb-ico:hover{background:var(--bg4);border-color:rgba(201,168,76,.25)}
+.tb-av{width:34px;height:34px;background:linear-gradient(135deg,var(--gold),var(--gold-l));border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:.78rem;font-weight:600;color:var(--bg);flex-shrink:0}
+
+/* PAGE */
+.content{flex:1;overflow:hidden}
+.page{height:100%;overflow-y:auto;padding:1.5rem 1.6rem;background:var(--bg);scrollbar-width:thin;scrollbar-color:var(--bg4) transparent}
+.page::-webkit-scrollbar{width:4px}
+.page::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:4px}
+
+/* CARD */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.25rem;margin-bottom:1.1rem}
+.card-hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem;gap:.5rem;flex-wrap:wrap}
+.card-title{font-family:var(--fd);font-size:1.05rem;font-weight:600;color:var(--white);line-height:1.25}
+.card-sub{font-size:.68rem;color:var(--txt3);margin-top:.12rem}
+.stag{display:inline-flex;align-items:center;gap:.5rem;font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem}
+.stag::before{content:'';width:16px;height:1px;background:var(--gold)}
+
+/* BTNS */
+.btn-p{display:inline-flex;align-items:center;gap:.35rem;padding:.5rem 1.1rem;border-radius:6px;border:1px solid rgba(201,168,76,.4);background:var(--gold-pale);font-family:var(--fu);font-size:.78rem;font-weight:500;color:var(--gold-l);cursor:pointer;white-space:nowrap;transition:all .2s}
+.btn-p:hover{background:var(--gold);color:var(--bg)}
+.btn-p:disabled{opacity:.4;cursor:not-allowed}
+.btn-s{display:inline-flex;align-items:center;gap:.35rem;padding:.5rem 1.1rem;border-radius:6px;border:1px solid var(--border);background:transparent;font-family:var(--fu);font-size:.78rem;color:var(--txt2);cursor:pointer;white-space:nowrap;transition:all .2s}
+.btn-s:hover{background:var(--bg3)}
+.btn-g{display:inline-flex;align-items:center;gap:.35rem;padding:.38rem .8rem;border-radius:6px;border:1px solid var(--border);background:var(--bg3);font-family:var(--fu);font-size:.72rem;color:var(--txt2);cursor:pointer;white-space:nowrap;transition:all .2s}
+.btn-g:hover{background:var(--gold-pale);color:var(--gold);border-color:rgba(201,168,76,.3)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:.2rem;padding:.18rem .52rem;border-radius:100px;font-size:.62rem;font-weight:600;white-space:nowrap}
+.badge::before{content:'●';font-size:.44rem}
+.b-ok{background:var(--ok-bg);color:var(--ok)}
+.b-warn{background:var(--warn-bg);color:var(--warn)}
+.b-err{background:var(--err-bg);color:var(--err)}
+.b-info{background:var(--info-bg);color:var(--info)}
+.b-n{background:rgba(255,255,255,.06);color:var(--txt2)}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:.6rem;font-weight:600;color:var(--txt3);letter-spacing:.09em;text-transform:uppercase;padding:0 .68rem .66rem;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+.tbl td{padding:.55rem .68rem;font-size:.76rem;border-bottom:1px solid var(--border2);color:var(--txt2);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:rgba(255,255,255,.02)}
+.td-w{font-weight:500;color:var(--txt)!important}
+.td-m{font-size:.68rem!important;color:var(--txt3)!important}
+
+/* FIELD */
+.field{margin-bottom:.88rem}
+.field label{display:block;font-size:.7rem;font-weight:600;color:var(--txt3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.32rem}
+.field select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:.62rem .88rem;font-family:var(--fu);font-size:.8rem;color:var(--txt);outline:none;transition:all .18s;-webkit-appearance:none;cursor:pointer}
+.field select:focus{border-color:rgba(201,168,76,.4);box-shadow:0 0 0 3px rgba(201,168,76,.07)}
+.field select option{background:var(--bg3)}
+
+/* DROPZONE */
+.dropzone{border:2px dashed var(--border);border-radius:var(--r-lg);padding:3rem 2rem;text-align:center;cursor:pointer;transition:all .25s;position:relative;background:var(--bg2)}
+.dropzone:hover,.dropzone.drag{border-color:var(--gold);background:var(--gold-pale)}
+.dropzone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.dz-icon{font-size:2.5rem;margin-bottom:.75rem;display:block;opacity:.5}
+.dz-title{font-family:var(--fd);font-size:1.15rem;font-weight:600;color:var(--white);margin-bottom:.3rem}
+.dz-sub{font-size:.75rem;color:var(--txt3);line-height:1.5}
+.dz-chip{display:inline-flex;align-items:center;gap:.4rem;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:.3rem .7rem;font-size:.7rem;color:var(--txt2);margin-top:.75rem}
+
+/* STEPS */
+.steps{display:flex;align-items:center;gap:0;margin-bottom:1.5rem}
+.step{display:flex;align-items:center;gap:.5rem;font-size:.72rem;color:var(--txt3);flex:1}
+.step-n{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:600;flex-shrink:0;transition:all .25s}
+.step.active .step-n{border-color:var(--gold);background:var(--gold-pale);color:var(--gold-l)}
+.step.done .step-n{border-color:var(--ok);background:var(--ok-bg);color:var(--ok)}
+.step.active .step-lbl{color:var(--txt)}
+.step.done .step-lbl{color:var(--ok)}
+.step-lbl{white-space:nowrap}
+.step-line{flex:1;height:1px;background:var(--border);margin:0 .5rem;min-width:20px}
+.step-line.done{background:var(--ok)}
+
+/* SUMMARY CARDS */
+.sum-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-bottom:1.1rem}
+.sum-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:.9rem 1rem}
+.sum-lbl{font-size:.6rem;font-weight:600;color:var(--txt3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.3rem}
+.sum-val{font-family:var(--fd);font-size:1.6rem;font-weight:600;line-height:1}
+
+/* ALERTS */
+.alert{display:flex;align-items:flex-start;gap:.75rem;border-radius:var(--r);padding:.82rem 1rem;margin-bottom:.75rem;font-size:.78rem}
+.alert-warn{background:rgba(232,160,32,.06);border:1px solid rgba(232,160,32,.18);border-left:3px solid var(--warn)}
+.alert-ok{background:var(--ok-bg);border:1px solid rgba(34,166,106,.2);border-left:3px solid var(--ok)}
+.alert-err{background:var(--err-bg);border:1px solid rgba(224,92,75,.2);border-left:3px solid var(--err)}
+.alert p{color:var(--txt2);flex:1;line-height:1.55}
+.alert strong{color:inherit}
+
+/* PROGRESS */
+.prog-wrap{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.25rem;margin-bottom:1rem}
+.prog-title{font-size:.82rem;font-weight:500;color:var(--txt);margin-bottom:.75rem}
+.prog-bar-wrap{height:8px;background:var(--bg4);border-radius:4px;overflow:hidden;margin-bottom:.5rem}
+.prog-bar{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--gold),var(--gold-l));transition:width .3s ease}
+.prog-detail{font-size:.7rem;color:var(--txt3)}
+
+/* NO CONTACT WARNING */
+.no-contact-row td{background:rgba(232,160,32,.04)!important}
+.warn-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warn);margin-right:.35rem;flex-shrink:0}
+
+/* LOADING */
+.loading-ov{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;gap:1.2rem;transition:opacity .4s}
+.loading-ov.gone{opacity:0;pointer-events:none}
+.l-mark{width:52px;height:52px;background:linear-gradient(135deg,var(--gold),var(--gold-l));border-radius:13px;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:1.4rem;font-weight:600;color:var(--bg);animation:lp 2s infinite}
+@keyframes lp{0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,.4)}70%{box-shadow:0 0 0 14px rgba(201,168,76,0)}}
+.l-txt{font-size:.78rem;color:var(--txt3);letter-spacing:.06em}
+.l-bar{width:160px;height:2px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.l-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-l));animation:lb 1.8s ease-in-out infinite}
+@keyframes lb{0%{width:0;margin-left:0}50%{width:100%;margin-left:0}100%{width:0;margin-left:100%}}
+
+@media(max-width:900px){.sum-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:768px){.sb{display:none}}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-ov" id="loader">
+  <div class="l-mark">RS</div>
+  <div class="l-txt" id="lTxt">Cargando…</div>
+  <div class="l-bar"><div class="l-fill"></div></div>
+</div>
+
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="sb">
+  <a href="admin-dashboard.html" class="sb-logo">
+    <div class="sb-mark">RS</div>
+    <div class="sb-wm"><strong>RS Back Office</strong><span>Panel admin</span></div>
+    <span class="admin-pill">⚙ Admin</span>
+  </a>
+  <nav class="sb-nav">
+    <div class="sb-lbl">Principal</div>
+    <a href="admin-dashboard.html" class="sb-link"><span class="sb-icon">🏠</span> Dashboard</a>
+    <a href="admin-companies.html" class="sb-link"><span class="sb-icon">🏢</span> Empresas</a>
+    <a href="admin-onboarding.html" class="sb-link"><span class="sb-icon">🚀</span> Onboarding</a>
+    <a href="admin-tasks.html" class="sb-link"><span class="sb-icon">✅</span> Tareas</a>
+    <a href="admin-documents.html" class="sb-link"><span class="sb-icon">📁</span> Documentos</a>
+    <a href="admin-requests.html" class="sb-link"><span class="sb-icon">📝</span> Solicitudes</a>
+    <a href="admin-dashboards.html" class="sb-link"><span class="sb-icon">📊</span> Dashboards BI</a>
+    <div class="sb-div"></div>
+    <div class="sb-lbl">Módulos</div>
+    <a href="admin-collections.html" class="sb-link active"><span class="sb-icon">💰</span> Cobranza</a>
+    <a href="#" class="sb-link"><span class="sb-icon">🧾</span> Facturación y Cartera</a>
+    <a href="#" class="sb-link"><span class="sb-icon">📋</span> Contabilidad</a>
+    <a href="#" class="sb-link"><span class="sb-icon">🏦</span> Tesorería</a>
+    <a href="#" class="sb-link"><span class="sb-icon">👥</span> Gestión de Personal</a>
+    <div class="sb-div"></div>
+    <div class="sb-lbl">Sistema</div>
+    <a href="#" class="sb-link"><span class="sb-icon">👤</span> Usuarios</a>
+    <a href="#" class="sb-link"><span class="sb-icon">⚙️</span> Configuración</a>
+    <a href="../index.html" class="sb-link"><span class="sb-icon">🌐</span> Ver sitio web</a>
+  </nav>
+  <div class="sb-foot">
+    <div class="u-pill">
+      <div class="u-av" id="uAv">—</div>
+      <div style="flex:1;min-width:0">
+        <span class="u-name" id="uName">Cargando…</span>
+        <span class="u-role">Administrador RS</span>
+      </div>
+      <button class="u-out" onclick="signOut()">⎋</button>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <div>
+      <div class="tb-bc"><a href="admin-collections.html">Cobranza</a> / <span>Importar cartera</span></div>
+      <div class="tb-title">Importar reporte Siigo</div>
+    </div>
+    <div class="tb-right">
+      <div class="tb-date" id="tbDate">—</div>
+      <a href="admin-collections.html" class="tb-ico" title="Volver">←</a>
+      <div class="tb-av" id="tbAv">—</div>
+    </div>
+  </header>
+
+  <div class="content">
+    <div class="page">
+
+      <!-- PASOS -->
+      <div class="steps" id="stepsBar">
+        <div class="step active" id="step1">
+          <div class="step-n">1</div>
+          <span class="step-lbl">Seleccionar empresa</span>
+        </div>
+        <div class="step-line" id="line1"></div>
+        <div class="step" id="step2">
+          <div class="step-n">2</div>
+          <span class="step-lbl">Cargar archivo</span>
+        </div>
+        <div class="step-line" id="line2"></div>
+        <div class="step" id="step3">
+          <div class="step-n">3</div>
+          <span class="step-lbl">Previsualizar</span>
+        </div>
+        <div class="step-line" id="line3"></div>
+        <div class="step" id="step4">
+          <div class="step-n">4</div>
+          <span class="step-lbl">Importar</span>
+        </div>
+      </div>
+
+      <!-- PASO 1: Empresa -->
+      <div id="panel1">
+        <div class="card">
+          <div class="card-hd">
+            <div>
+              <div class="stag">Paso 1</div>
+              <div class="card-title">¿Para qué empresa es este reporte?</div>
+              <div class="card-sub">Selecciona la empresa cliente antes de cargar el archivo de Siigo</div>
+            </div>
+          </div>
+          <div class="field" style="max-width:400px">
+            <label>Empresa cliente *</label>
+            <select id="companySelect">
+              <option value="">Seleccionar empresa…</option>
+            </select>
+          </div>
+          <button class="btn-p" onclick="goStep2()" id="btnStep2" disabled>
+            Continuar → Cargar archivo
+          </button>
+        </div>
+      </div>
+
+      <!-- PASO 2: Archivo -->
+      <div id="panel2" style="display:none">
+        <div class="card">
+          <div class="card-hd">
+            <div>
+              <div class="stag">Paso 2</div>
+              <div class="card-title">Cargar reporte de cartera por edades</div>
+              <div class="card-sub" id="companyLabel">—</div>
+            </div>
+            <button class="btn-s" onclick="goStep1()">← Cambiar empresa</button>
+          </div>
+
+          <!-- Info columnas esperadas -->
+          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:.9rem 1rem;margin-bottom:1.1rem;font-size:.75rem;color:var(--txt3);line-height:1.8">
+            <div style="font-weight:600;color:var(--txt2);margin-bottom:.4rem">Columnas que debe tener el archivo Excel de Siigo:</div>
+            <div style="display:flex;flex-wrap:wrap;gap:.3rem">
+              ${['Identificación','Cliente','Sucursal','Documento','Fecha vencimiento','Centro de costo','Cobrador','Vendedor','Ciudad','Vencido 1 a 30','Vencido 31 a 60','Vencido 61 a 90','Vencido más de 91','Saldo por vencer','Saldo a favor','Total cartera'].map(c=>`<span style="background:var(--bg4);border:1px solid var(--border);border-radius:4px;padding:.1rem .45rem;font-family:monospace;font-size:.68rem;color:var(--txt2)">${c}</span>`).join('')}
+            </div>
+          </div>
+
+          <div class="dropzone" id="dropzone">
+            <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFile(this.files[0])">
+            <span class="dz-icon">📊</span>
+            <div class="dz-title">Arrastra el archivo aquí</div>
+            <div class="dz-sub">o haz clic para seleccionarlo<br>Solo archivos Excel (.xlsx)</div>
+            <div class="dz-chip" id="fileChip" style="display:none">
+              <span>📄</span><span id="fileName">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 3: Preview -->
+      <div id="panel3" style="display:none">
+        <div class="card">
+          <div class="card-hd">
+            <div>
+              <div class="stag">Paso 3</div>
+              <div class="card-title">Previsualización</div>
+              <div class="card-sub" id="previewSub">—</div>
+            </div>
+            <div style="display:flex;gap:.5rem">
+              <button class="btn-s" onclick="goStep2()">← Cambiar archivo</button>
+              <button class="btn-p" onclick="goStep4()" id="btnImport">
+                Importar a Supabase →
+              </button>
+            </div>
+          </div>
+
+          <!-- Resumen -->
+          <div class="sum-grid" id="sumGrid"></div>
+
+          <!-- Alertas -->
+          <div id="alertsBox"></div>
+
+          <!-- Tabla preview -->
+          <div style="overflow-x:auto;max-height:420px;overflow-y:auto;scrollbar-width:thin">
+            <table class="tbl" id="previewTable">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Documento</th>
+                  <th>Cliente</th>
+                  <th>Ciudad</th>
+                  <th>Factura</th>
+                  <th>Vencimiento</th>
+                  <th>1–30</th>
+                  <th>31–60</th>
+                  <th>61–90</th>
+                  <th>91+</th>
+                  <th>Por vencer</th>
+                  <th>Total</th>
+                  <th>Contacto</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody id="previewBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 4: Progreso de importación -->
+      <div id="panel4" style="display:none">
+        <div class="prog-wrap" id="progWrap">
+          <div class="prog-title" id="progTitle">Importando…</div>
+          <div class="prog-bar-wrap">
+            <div class="prog-bar" id="progBar" style="width:0%"></div>
+          </div>
+          <div class="prog-detail" id="progDetail">Iniciando…</div>
+        </div>
+        <div id="resultBox"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   IMPORTADOR SIIGO — admin-collections-import.html
+
+   Flujo:
+   1. Seleccionar empresa
+   2. Cargar Excel de Siigo
+   3. Parsear + validar + preview con alertas sin contacto
+   4. Upsert en collection_debtors + collection_debts
+      - Deudor nuevo → INSERT
+      - Deudor existente → UPDATE nombre/ciudad (NO contacto)
+      - Factura nueva → INSERT
+      - Factura existente → UPDATE montos
+      - Factura con total=0 → marcar status='paid'
+══════════════════════════════════════════════════════ */
+const SUPABASE_URL = 'https://doauzsmkoeyvllbmbdda.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvYXV6c21rb2V5dmxsYm1iZGRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MjIwNDcsImV4cCI6MjA4ODk5ODA0N30.gytRSeyMQsVAU-I3DowiqkW_Nfpuk8mU5TgrXbkcBQU'
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+
+/* ── Mapeo exacto de columnas del reporte Siigo ── */
+const COL = {
+  document    : 'Identificación',
+  name        : 'Cliente',
+  branch      : 'Sucursal',
+  invoice     : 'Documento',
+  due_date    : 'Fecha vencimiento',
+  cost_center : 'Centro de costo',
+  collector   : 'Cobrador',
+  seller      : 'Vendedor',
+  city        : 'Ciudad',
+  ov_1_30     : 'Vencido 1 a 30',
+  ov_31_60    : 'Vencido 31 a 60',
+  ov_61_90    : 'Vencido 61 a 90',
+  ov_91       : 'Vencido más de 91',
+  not_due     : 'Saldo por vencer',
+  credit      : 'Saldo a favor',
+  total       : 'Total cartera',
+}
+
+/* Estado global */
+let COMPANIES       = []
+let selectedCompany = null
+let parsedRows      = []       // filas parseadas del Excel
+let existingDebtors = {}       // {document: {id, phone, email, whatsapp}}
+let currentStep     = 1
+
+/* ── INIT ── */
+async function init() {
+  setDate()
+  try {
+    const { data:{ session } } = await db.auth.getSession()
+    if (!session) { window.location.href = 'login.html'; return }
+    renderUser(session.user)
+    const { data, error } = await db.from('companies').select('id, name').order('name')
+    if (error) throw error
+    COMPANIES = data || []
+    const sel = document.getElementById('companySelect')
+    COMPANIES.forEach(c => {
+      const o = document.createElement('option')
+      o.value = c.id; o.textContent = c.name
+      sel.appendChild(o)
+    })
+    sel.addEventListener('change', () => {
+      selectedCompany = COMPANIES.find(c => c.id === sel.value) || null
+      document.getElementById('btnStep2').disabled = !selectedCompany
+    })
+  } catch(e) {
+    console.error('[IMP] init:', e)
+  } finally { hideLoader() }
+}
+
+/* ══ NAVEGACIÓN POR PASOS ══ */
+function showPanel(n) {
+  [1,2,3,4].forEach(i => {
+    document.getElementById('panel'+i).style.display = i===n ? '' : 'none'
+  })
+  currentStep = n
+  updateSteps()
+}
+
+function updateSteps() {
+  [1,2,3,4].forEach(i => {
+    const el = document.getElementById('step'+i)
+    el.className = 'step ' + (i < currentStep ? 'done' : i === currentStep ? 'active' : '')
+    el.querySelector('.step-n').textContent = i < currentStep ? '✓' : i
+    if (i < 4) {
+      const line = document.getElementById('line'+i)
+      line.className = 'step-line ' + (i < currentStep ? 'done' : '')
+    }
+  })
+}
+
+function goStep1() { showPanel(1) }
+
+function goStep2() {
+  if (!selectedCompany) return
+  document.getElementById('companyLabel').textContent =
+    'Empresa: ' + selectedCompany.name
+  showPanel(2)
+}
+
+function goStep4() {
+  if (!parsedRows.length) return
+  showPanel(4)
+  runImport()
+}
+
+/* ══ DRAG & DROP ══ */
+const dz = document.getElementById('dropzone')
+dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('drag') })
+dz.addEventListener('dragleave', () => dz.classList.remove('drag'))
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag')
+  const file = e.dataTransfer.files[0]
+  if (file) handleFile(file)
+})
+
+/* ══ LEER EXCEL ══ */
+function handleFile(file) {
+  if (!file) return
+  if (!file.name.match(/\.xlsx?$/i)) {
+    alert('Solo se aceptan archivos Excel (.xlsx)')
+    return
+  }
+  document.getElementById('fileChip').style.display = 'inline-flex'
+  document.getElementById('fileName').textContent = file.name
+
+  const reader = new FileReader()
+  reader.onload = e => {
+    try {
+      const wb   = XLSX.read(e.target.result, { type:'array', cellDates:true })
+      const ws   = wb.Sheets[wb.SheetNames[0]]
+      const json = XLSX.utils.sheet_to_json(ws, { defval:'' })
+
+      if (!json.length) { alert('El archivo está vacío.'); return }
+
+      // Verificar columnas obligatorias
+      const firstRow  = json[0]
+      const missing   = Object.values(COL).filter(c => !(c in firstRow))
+      if (missing.length) {
+        alert('Faltan columnas en el archivo:\n\n' + missing.join('\n') +
+              '\n\nVerifica que el archivo sea el reporte de Cartera por Edades de Siigo.')
+        return
+      }
+
+      parsedRows = json.map((r, i) => parseRow(r, i))
+        .filter(r => r !== null)
+
+      buildPreview()
+      showPanel(3)
+    } catch(err) {
+      alert('Error al leer el archivo: ' + err.message)
+      console.error('[IMP] parse:', err)
+    }
+  }
+  reader.readAsArrayBuffer(file)
+}
+
+/* ══ PARSEAR FILA ══ */
+function parseRow(r, idx) {
+  const document_id = String(r[COL.document] || '').trim()
+  const name        = String(r[COL.name]     || '').trim()
+  const invoice     = String(r[COL.invoice]  || '').trim()
+
+  // Ignorar filas vacías o de totales
+  if (!document_id || !name || !invoice) return null
+  if (name.toLowerCase().includes('total')) return null
+
+  // Fecha: puede venir como Date (SheetJS con cellDates:true) o como string DD/MM/YYYY
+  let due_date = null
+  const rawDate = r[COL.due_date]
+  if (rawDate instanceof Date) {
+    due_date = rawDate.toISOString().slice(0,10)
+  } else if (typeof rawDate === 'string' && rawDate.includes('/')) {
+    const [d,m,y] = rawDate.split('/')
+    due_date = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
+  } else if (typeof rawDate === 'number') {
+    // Número de serie de Excel
+    const d = XLSX.SSF.parse_date_code(rawDate)
+    due_date = `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`
+  }
+
+  const ov_1_30  = parseMoney(r[COL.ov_1_30])
+  const ov_31_60 = parseMoney(r[COL.ov_31_60])
+  const ov_61_90 = parseMoney(r[COL.ov_61_90])
+  const ov_91    = parseMoney(r[COL.ov_91])
+  const not_due  = parseMoney(r[COL.not_due])
+  const credit   = parseMoney(r[COL.credit])
+  const total    = parseMoney(r[COL.total])
+  const outstanding = ov_1_30 + ov_31_60 + ov_61_90 + ov_91
+
+  return {
+    _row        : idx + 2,   // número de fila en Excel (para mensajes de error)
+    document_id,
+    name,
+    branch      : String(r[COL.branch]      || '').trim(),
+    invoice,
+    due_date,
+    cost_center : String(r[COL.cost_center] || '').trim(),
+    collector   : String(r[COL.collector]   || '').trim(),
+    seller      : String(r[COL.seller]      || '').trim(),
+    city        : String(r[COL.city]        || '').trim(),
+    ov_1_30, ov_31_60, ov_61_90, ov_91,
+    not_due, credit, total,
+    outstanding,
+    isPaid      : total === 0,
+  }
+}
+
+function parseMoney(v) {
+  if (v === '' || v === null || v === undefined) return 0
+  if (typeof v === 'number') return v
+  // "2.280.573,17" → 2280573.17
+  return parseFloat(String(v).replace(/\./g,'').replace(',','.')) || 0
+}
+
+/* ══ BUILD PREVIEW ══ */
+async function buildPreview() {
+  // Cargar deudores existentes para saber cuáles tienen contacto
+  const { data } = await db.from('collection_debtors')
+    .select('debtor_document, id, phone, email, whatsapp')
+    .eq('company_id', selectedCompany.id)
+  existingDebtors = {}
+  ;(data || []).forEach(d => { existingDebtors[d.debtor_document] = d })
+
+  // Agrupar por deudor para resumen
+  const debtorMap = {}
+  parsedRows.forEach(r => {
+    if (!debtorMap[r.document_id]) debtorMap[r.document_id] = { ...r, invoices: 0 }
+    debtorMap[r.document_id].invoices++
+  })
+  const uniqueDebtors  = Object.keys(debtorMap).length
+  const totalInvoices  = parsedRows.length
+  const noContact      = Object.keys(debtorMap).filter(d =>
+    !existingDebtors[d] || (!existingDebtors[d].phone && !existingDebtors[d].email && !existingDebtors[d].whatsapp)
+  ).length
+  const willBePaid     = parsedRows.filter(r => r.isPaid).length
+  const totalOut       = parsedRows.reduce((s,r) => s + r.outstanding, 0)
+
+  // Summary cards
+  document.getElementById('sumGrid').innerHTML = `
+    <div class="sum-card">
+      <div class="sum-lbl">Clientes</div>
+      <div class="sum-val" style="color:var(--gold-l)">${uniqueDebtors}</div>
+      <div style="font-size:.67rem;color:var(--txt3);margin-top:.2rem">${totalInvoices} facturas</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-lbl">Saldo vencido total</div>
+      <div class="sum-val" style="color:var(--err);font-size:1.3rem">${fmt(totalOut)}</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-lbl">Sin datos de contacto</div>
+      <div class="sum-val" style="color:${noContact>0?'var(--warn)':'var(--ok)'}">${noContact}</div>
+      <div style="font-size:.67rem;color:var(--txt3);margin-top:.2rem">clientes</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-lbl">Se marcarán pagadas</div>
+      <div class="sum-val" style="color:var(--ok)">${willBePaid}</div>
+      <div style="font-size:.67rem;color:var(--txt3);margin-top:.2rem">total = $0</div>
+    </div>`
+
+  // Alertas
+  let alerts = ''
+  if (noContact > 0) {
+    alerts += `<div class="alert alert-warn">
+      <span style="font-size:1rem;flex-shrink:0">⚠️</span>
+      <p><strong>${noContact} cliente${noContact>1?'s':''} sin datos de contacto</strong> — marcados con ⚠️ en la tabla. Después de importar puedes enriquecer su información en la ficha del deudor.</p>
+    </div>`
+  }
+  if (willBePaid > 0) {
+    alerts += `<div class="alert alert-ok">
+      <span style="font-size:1rem;flex-shrink:0">✅</span>
+      <p><strong>${willBePaid} factura${willBePaid>1?'s':''} con total $0</strong> — se importarán con estado <em>pagado</em> automáticamente.</p>
+    </div>`
+  }
+  document.getElementById('alertsBox').innerHTML = alerts
+  document.getElementById('previewSub').textContent =
+    `${totalInvoices} filas del archivo · ${uniqueDebtors} clientes únicos`
+
+  // Tabla
+  const tbody = document.getElementById('previewBody')
+  tbody.innerHTML = ''
+  parsedRows.forEach(r => {
+    const existing  = existingDebtors[r.document_id]
+    const hasContact = existing && (existing.phone || existing.email || existing.whatsapp)
+    const isNew      = !existing
+    const tr = document.createElement('tr')
+    if (!hasContact) tr.className = 'no-contact-row'
+    tr.innerHTML = `
+      <td style="text-align:center">
+        ${!hasContact ? '<span class="warn-dot" title="Sin contacto"></span>' : '<span style="color:var(--ok);font-size:.8rem">✓</span>'}
+      </td>
+      <td class="td-w">${esc(r.document_id)}</td>
+      <td>
+        <div class="td-w">${esc(r.name)}</div>
+        ${r.city ? `<div class="td-m">${esc(r.city)}</div>` : ''}
+      </td>
+      <td class="td-m">${esc(r.city||'—')}</td>
+      <td class="td-w">${esc(r.invoice)}</td>
+      <td class="td-m">${r.due_date||'—'}</td>
+      <td class="td-m" style="color:${r.ov_1_30>0?'var(--warn)':'var(--txt3)'}">${r.ov_1_30>0?fmt(r.ov_1_30):'—'}</td>
+      <td class="td-m" style="color:${r.ov_31_60>0?'var(--warn)':'var(--txt3)'}">${r.ov_31_60>0?fmt(r.ov_31_60):'—'}</td>
+      <td class="td-m" style="color:${r.ov_61_90>0?'var(--err)':'var(--txt3)'}">${r.ov_61_90>0?fmt(r.ov_61_90):'—'}</td>
+      <td class="td-m" style="color:${r.ov_91>0?'var(--err)':'var(--txt3)'}">${r.ov_91>0?fmt(r.ov_91):'—'}</td>
+      <td class="td-m">${r.not_due>0?fmt(r.not_due):'—'}</td>
+      <td class="td-w">${fmt(r.total)}</td>
+      <td>
+        ${hasContact
+          ? `<span class="badge b-ok">Con contacto</span>`
+          : isNew
+            ? `<span class="badge b-warn">Nuevo · sin contacto</span>`
+            : `<span class="badge b-warn">Sin contacto</span>`
+        }
+      </td>
+      <td>
+        ${r.isPaid
+          ? `<span class="badge b-ok">→ Pagado</span>`
+          : isNew
+            ? `<span class="badge b-info">→ Nuevo</span>`
+            : `<span class="badge b-n">→ Actualizar</span>`
+        }
+      </td>`
+    tbody.appendChild(tr)
+  })
+}
+
+/* ══ IMPORTAR ══ */
+async function runImport() {
+  const total   = parsedRows.length
+  let done      = 0
+  let newDebtors = 0, updDebtors = 0, newInvoices = 0, updInvoices = 0, paidInvoices = 0
+  const errors  = []
+
+  setProgress(0, `Preparando ${total} filas…`)
+
+  // Agrupar filas por deudor para hacer un upsert de deudores primero
+  const debtorMap = {}
+  parsedRows.forEach(r => {
+    if (!debtorMap[r.document_id]) {
+      debtorMap[r.document_id] = { document_id: r.document_id, name: r.name, city: r.city }
+    }
+  })
+
+  // ── FASE 1: Upsert deudores (por lotes de 50) ──
+  const debtorList = Object.values(debtorMap)
+  setProgress(5, `Sincronizando ${debtorList.length} clientes…`)
+
+  for (let i = 0; i < debtorList.length; i += 50) {
+    const batch = debtorList.slice(i, i + 50)
+
+    // Para cada deudor: INSERT si nuevo, UPDATE solo nombre/ciudad si existe
+    for (const deb of batch) {
+      const existing = existingDebtors[deb.document_id]
+      if (existing) {
+        // Actualizar solo campos no-sensibles — NO tocar contacto
+        const { error } = await db.from('collection_debtors')
+          .update({ debtor_name: deb.name, city: deb.city || null })
+          .eq('id', existing.id)
+        if (error) { errors.push(`Deudor ${deb.document_id}: ${error.message}`); continue }
+        updDebtors++
+      } else {
+        // Nuevo deudor
+        const { data, error } = await db.from('collection_debtors').insert({
+          company_id      : selectedCompany.id,
+          debtor_document : deb.document_id,
+          debtor_name     : deb.name,
+          city            : deb.city || null,
+          status          : 'pending',
+        }).select('id, debtor_document').single()
+        if (error) { errors.push(`Deudor nuevo ${deb.document_id}: ${error.message}`); continue }
+        existingDebtors[deb.document_id] = { id: data.id, phone:null, email:null, whatsapp:null }
+        newDebtors++
+      }
+    }
+    setProgress(5 + Math.round((i / debtorList.length) * 35), `Clientes: ${i+batch.length} de ${debtorList.length}…`)
+  }
+
+  // ── FASE 2: Upsert facturas (por lotes de 100) ──
+  setProgress(40, `Sincronizando ${total} facturas…`)
+
+  for (let i = 0; i < parsedRows.length; i += 100) {
+    const batch = parsedRows.slice(i, i + 100)
+
+    for (const r of batch) {
+      const debtor = existingDebtors[r.document_id]
+      if (!debtor) { errors.push(`Fila ${r._row}: no se encontró el deudor ${r.document_id}`); continue }
+
+      const outstanding = r.ov_1_30 + r.ov_31_60 + r.ov_61_90 + r.ov_91
+      const invoiceStatus = r.isPaid ? 'paid' : 'pending'
+
+      const payload = {
+        company_id        : selectedCompany.id,
+        debtor_id         : debtor.id,
+        siigo_document    : r.invoice,
+        due_date          : r.due_date || null,
+        branch            : r.branch || null,
+        cost_center       : r.cost_center || null,
+        seller            : r.seller || null,
+        overdue_1_30      : r.ov_1_30,
+        overdue_31_60     : r.ov_31_60,
+        overdue_61_90     : r.ov_61_90,
+        overdue_91_plus   : r.ov_91,
+        not_yet_due       : r.not_due,
+        credit_balance    : r.credit,
+        total_balance     : r.total,
+        outstanding_amount: outstanding,
+        status            : invoiceStatus,
+        last_sync_at      : new Date().toISOString(),
+      }
+
+      // Upsert: si ya existe la factura (mismo siigo_document + company_id) actualiza
+      const { error, data } = await db.from('collection_debts')
+        .upsert(payload, { onConflict: 'company_id,siigo_document' })
+        .select('id')
+      if (error) {
+        errors.push(`Fila ${r._row} (${r.invoice}): ${error.message}`)
+        continue
+      }
+
+      if (r.isPaid) paidInvoices++
+      // Determinar si fue insert o update (aproximación: si no estaba en existingDebtors antes era nuevo)
+      newInvoices++ // lo contamos simplificado; Supabase no distingue en upsert fácilmente
+      done++
+    }
+
+    const pct = 40 + Math.round((i / parsedRows.length) * 55)
+    setProgress(pct, `Facturas: ${Math.min(i+100, parsedRows.length)} de ${total}…`)
+  }
+
+  // ── RESULTADO ──
+  setProgress(100, 'Importación completada')
+
+  // Actualizar status del deudor si todas sus facturas están pagadas
+  await updateDebtorStatuses()
+
+  renderResult({ total, newDebtors, updDebtors, newInvoices, paidInvoices, errors })
+}
+
+async function updateDebtorStatuses() {
+  // Marcar deudor como 'paid' solo si TODAS sus facturas en ESTE ARCHIVO tienen total=0
+  // No consultamos Supabase para evitar falsos positivos con facturas de meses anteriores
+
+  // Agrupar facturas del archivo por deudor
+  const debtorInvoices = {}
+  parsedRows.forEach(r => {
+    const did = existingDebtors[r.document_id]?.id
+    if (!did) return
+    if (!debtorInvoices[did]) debtorInvoices[did] = []
+    debtorInvoices[did].push(r)
+  })
+
+  for (const [did, rows] of Object.entries(debtorInvoices)) {
+    // Solo marcar paid si TODAS las filas del archivo para este deudor tienen total=0
+    const allPaidInFile = rows.every(r => r.isPaid)
+    if (allPaidInFile) {
+      await db.from('collection_debtors')
+        .update({ status: 'paid' })
+        .eq('id', did)
+        // Solo si no tiene un estado de gestión activo que queramos preservar
+        .in('status', ['pending', 'in_collection', 'uncontactable'])
+    }
+  }
+}
+
+/* ── PROGRESS ── */
+function setProgress(pct, msg) {
+  document.getElementById('progBar').style.width   = pct + '%'
+  document.getElementById('progDetail').textContent = msg
+  document.getElementById('progTitle').textContent  =
+    pct < 100 ? `Importando… ${pct}%` : '✅ Importación completada'
+}
+
+/* ── RESULTADO ── */
+function renderResult({ total, newDebtors, updDebtors, newInvoices, paidInvoices, errors }) {
+  const hasErrors = errors.length > 0
+  document.getElementById('resultBox').innerHTML = `
+    <div class="sum-grid" style="margin-bottom:1rem">
+      <div class="sum-card">
+        <div class="sum-lbl">Clientes nuevos</div>
+        <div class="sum-val" style="color:var(--ok)">${newDebtors}</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-lbl">Clientes actualizados</div>
+        <div class="sum-val" style="color:var(--info)">${updDebtors}</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-lbl">Facturas procesadas</div>
+        <div class="sum-val" style="color:var(--gold-l)">${total}</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-lbl">Marcadas pagadas</div>
+        <div class="sum-val" style="color:var(--ok)">${paidInvoices}</div>
+      </div>
+    </div>
+    ${hasErrors ? `
+      <div class="alert alert-err">
+        <span style="font-size:1rem;flex-shrink:0">⚠️</span>
+        <div style="flex:1">
+          <strong style="color:var(--err)">${errors.length} error${errors.length>1?'es':''} durante la importación:</strong>
+          <ul style="margin-top:.4rem;padding-left:1.1rem;font-size:.73rem;color:var(--txt2);line-height:1.8">
+            ${errors.slice(0,10).map(e=>`<li>${esc(e)}</li>`).join('')}
+            ${errors.length>10?`<li>…y ${errors.length-10} más</li>`:''}
+          </ul>
+        </div>
+      </div>` : `
+      <div class="alert alert-ok">
+        <span style="font-size:1rem;flex-shrink:0">✅</span>
+        <p><strong>Importación exitosa</strong> — todos los registros se procesaron sin errores.</p>
+      </div>`}
+    <div style="display:flex;gap:.75rem;margin-top:.5rem">
+      <a href="admin-collections.html" class="btn-p">Ver cartera →</a>
+      <button class="btn-s" onclick="resetImporter()">Importar otro archivo</button>
+    </div>`
+}
+
+/* ── RESET ── */
+function resetImporter() {
+  parsedRows      = []
+  existingDebtors = {}
+  document.getElementById('fileInput').value    = ''
+  document.getElementById('fileChip').style.display = 'none'
+  document.getElementById('previewBody').innerHTML  = ''
+  document.getElementById('alertsBox').innerHTML    = ''
+  document.getElementById('resultBox').innerHTML    = ''
+  document.getElementById('progBar').style.width    = '0%'
+  showPanel(1)
+}
+
+/* ── HELPERS ── */
+const fmt = n => '$' + Number(n||0).toLocaleString('es-CO', {minimumFractionDigits:0,maximumFractionDigits:0})
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+
+function renderUser(user) {
+  const initials = (user.email||'').slice(0,2).toUpperCase()
+  document.getElementById('uAv').textContent   = initials
+  document.getElementById('uName').textContent = user.email || ''
+  document.getElementById('tbAv').textContent  = initials
+}
+function setDate() {
+  document.getElementById('tbDate').textContent =
+    new Date().toLocaleDateString('es-CO',{weekday:'short',year:'numeric',month:'short',day:'numeric'})
+}
+function hideLoader() {
+  setTimeout(() => document.getElementById('loader').classList.add('gone'), 300)
+}
+async function signOut() { await db.auth.signOut(); window.location.href = 'login.html' }
+
+init()
+</script>
+</body>
+</html>
