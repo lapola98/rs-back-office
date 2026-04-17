@@ -145,6 +145,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
 .alert-warn{background:rgba(232,160,32,.06);border:1px solid rgba(232,160,32,.18);border-left:3px solid var(--warn)}
 .alert-ok{background:var(--ok-bg);border:1px solid rgba(34,166,106,.2);border-left:3px solid var(--ok)}
 .alert-err{background:var(--err-bg);border:1px solid rgba(224,92,75,.2);border-left:3px solid var(--err)}
+.alert-info{background:var(--info-bg);border:1px solid rgba(74,159,212,.2);border-left:3px solid var(--info)}
 .alert p{color:var(--txt2);flex:1;line-height:1.55}
 .alert strong{color:inherit}
 
@@ -340,31 +341,37 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
           <div class="sum-grid" id="sumGrid"></div>
 
           <!-- Alertas -->
-          <div id="alertsBox"></div>
+          <div id="debugPanel" style="display:none"></div>
+        <div id="alertsBox"></div>
 
           <!-- Tabla preview -->
-          <div style="overflow-x:auto;max-height:420px;overflow-y:auto;scrollbar-width:thin">
-            <table class="tbl" id="previewTable">
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>Documento</th>
-                  <th>Cliente</th>
-                  <th>Ciudad</th>
-                  <th>Factura</th>
-                  <th>Vencimiento</th>
-                  <th>1–30</th>
-                  <th>31–60</th>
-                  <th>61–90</th>
-                  <th>91+</th>
-                  <th>Por vencer</th>
-                  <th>Total</th>
-                  <th>Contacto</th>
-                  <th>Acción</th>
-                </tr>
-              </thead>
-              <tbody id="previewBody"></tbody>
-            </table>
+          <div style="margin-top:.5rem">
+            <button class="btn-g" onclick="togglePreviewTable(this)" id="btnToggleTable">
+              📋 Ver detalle de cambios
+            </button>
+            <div id="previewTableWrap" style="display:none;margin-top:.75rem;overflow-x:auto;max-height:380px;overflow-y:auto;scrollbar-width:thin">
+              <table class="tbl" id="previewTable">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>Documento</th>
+                    <th>Cliente</th>
+                    <th>Ciudad</th>
+                    <th>Factura</th>
+                    <th>Vencimiento</th>
+                    <th>1–30</th>
+                    <th>31–60</th>
+                    <th>61–90</th>
+                    <th>91+</th>
+                    <th>Por vencer</th>
+                    <th>Total</th>
+                    <th>Contacto</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="previewBody"></tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -429,7 +436,8 @@ const COL = {
 let COMPANIES       = []
 let selectedCompany = null
 let parsedRows      = []       // filas parseadas del Excel
-let existingDebtors = {}       // {document: {id, phone, email, whatsapp}}
+let existingDebtors = {}       // {document: {id, phone, email, whatsapp, prev_max_tramo}}
+let novedades       = { nuevos:[], pagados:[], subieron:[] }  // resultado de cambios
 let currentStep     = 1
 
 /* ── INIT ── */
@@ -591,7 +599,7 @@ function parseRow(r, idx) {
     ov_1_30, ov_31_60, ov_61_90, ov_91,
     not_due, credit, total,
     outstanding,
-    isPaid      : total === 0,
+    isPaid      : (ov_1_30 + ov_31_60 + ov_61_90 + ov_91) === 0,  // pagado = sin mora vencida
   }
 }
 
@@ -602,226 +610,527 @@ function parseMoney(v) {
   return parseFloat(String(v).replace(/\./g,'').replace(',','.')) || 0
 }
 
-/* ══ BUILD PREVIEW ══ */
-async function buildPreview() {
-  // Cargar deudores existentes para saber cuáles tienen contacto
-  const { data } = await db.from('collection_debtors')
-    .select('debtor_document, id, phone, email, whatsapp')
-    .eq('company_id', selectedCompany.id)
-  existingDebtors = {}
-  ;(data || []).forEach(d => { existingDebtors[d.debtor_document] = d })
+/* ══ BUILD PREVIEW ══
+   Carga deudores Y facturas actuales de Supabase,
+   compara contra el archivo, y clasifica cada fila en:
+     - sin_cambio  : montos idénticos → NO se escribirá
+     - modificado  : montos cambiaron → se actualizará
+     - nuevo       : no existe en Supabase → se insertará
+     - pagado      : total pasó a 0 → se marcará paid
+     - sube_tramo  : tramo máximo aumentó
+══════════════════════════════════════════════════ */
+let existingInvoices = {}  // {siigo_document: {ov_1_30, ov_31_60, ov_61_90, ov_91_plus, total_balance}}
+let diffResult = {
+  sin_cambio : 0,
+  modificados: [],   // [{row, old, new}]
+  nuevos_inv : [],   // filas de facturas nuevas
+  pagados    : [],   // deudores que pasan a paid
+  nuevos_deb : [],   // deudores nuevos
+  sube_tramo : [],   // [{name, doc, prev, nuevo}]
+}
 
-  // Agrupar por deudor para resumen
-  const debtorMap = {}
-  parsedRows.forEach(r => {
-    if (!debtorMap[r.document_id]) debtorMap[r.document_id] = { ...r, invoices: 0 }
-    debtorMap[r.document_id].invoices++
+async function buildPreview() {
+  document.getElementById('btnImport').disabled = true
+  document.getElementById('btnImport').textContent = 'Analizando…'
+
+  // ── 1. Cargar estado actual de Supabase en memoria (2 queries) ──
+  const [r1, r2] = await Promise.all([
+    db.from('collection_debtors')
+      .select('debtor_document, id, phone, email, whatsapp, prev_max_tramo, status, debtor_name, city, last_import_at')
+      .eq('company_id', selectedCompany.id),
+    db.from('collection_debts')
+      .select('siigo_document, overdue_1_30, overdue_31_60, overdue_61_90, overdue_91_plus, total_balance, outstanding_amount, debtor_id')
+      .eq('company_id', selectedCompany.id),
+  ])
+
+  existingDebtors  = {}
+  existingInvoices = {}
+  ;(r1.data||[]).forEach(d => { existingDebtors[d.debtor_document] = d })
+  ;(r2.data||[]).forEach(f => { existingInvoices[f.debtor_id + '|' + f.siigo_document] = f })
+
+  // DIAGNÓSTICO VISIBLE — mostrar cuántos registros cargó de Supabase
+  const diagDiv = document.createElement('div')
+  diagDiv.style.cssText = 'background:#1a2230;border:1px solid rgba(74,159,212,.4);border-radius:8px;padding:.75rem 1rem;margin-bottom:.75rem;font-size:.75rem;font-family:monospace'
+  diagDiv.innerHTML = `
+    <div style="color:var(--info);font-weight:600;margin-bottom:.35rem">🔍 Diagnóstico — datos cargados de Supabase:</div>
+    <div style="color:var(--txt2)">Deudores en BD: <strong style="color:var(--gold-l)">${r1.data?.length ?? 'ERROR'}</strong>
+      ${r1.error ? '<span style="color:var(--err)"> ← ERROR: '+r1.error.message+'</span>' : ''}</div>
+    <div style="color:var(--txt2)">Facturas en BD: <strong style="color:var(--gold-l)">${r2.data?.length ?? 'ERROR'}</strong>
+      ${r2.error ? '<span style="color:var(--err)"> ← ERROR: '+r2.error.message+'</span>' : ''}</div>
+    <div style="color:var(--txt3);margin-top:.3rem;font-size:.68rem">company_id consultado: ${selectedCompany.id}</div>`
+  // Insertar antes de alertsBox
+  const alertsBox = document.getElementById('alertsBox')
+  if (alertsBox && alertsBox.parentNode) {
+    alertsBox.parentNode.insertBefore(diagDiv, alertsBox)
+  }
+
+  // ── 2. Comparar archivo vs Supabase ──
+  diffResult = { sin_cambio:0, modificados:[], nuevos_inv:[], pagados:[], nuevos_deb:[], sube_tramo:[], desaparecidos:[] }
+
+  // Documentos que aparecen en el archivo
+  const docsEnArchivo = new Set(parsedRows.map(r => r.document_id))
+
+  // Deudores activos en Supabase que NO aparecen en el archivo → pagaron
+  Object.values(existingDebtors).forEach(d => {
+    if (!docsEnArchivo.has(d.debtor_document) && !['paid','cancelled'].includes(d.status)) {
+      diffResult.desaparecidos.push({ id: d.id, name: d.debtor_name, document_id: d.debtor_document })
+    }
   })
-  const uniqueDebtors  = Object.keys(debtorMap).length
-  const totalInvoices  = parsedRows.length
-  const noContact      = Object.keys(debtorMap).filter(d =>
-    !existingDebtors[d] || (!existingDebtors[d].phone && !existingDebtors[d].email && !existingDebtors[d].whatsapp)
-  ).length
-  const willBePaid     = parsedRows.filter(r => r.isPaid).length
-  const totalOut       = parsedRows.reduce((s,r) => s + r.outstanding, 0)
+
+  // Calcular tramo nuevo por deudor desde el archivo
+  const debtorNewTramo = {}
+  const debtorAllPaid  = {}
+  parsedRows.forEach(r => {
+    if (!debtorNewTramo[r.document_id]) {
+      debtorNewTramo[r.document_id] = 0
+      debtorAllPaid[r.document_id]  = true
+    }
+    const t = r.ov_91>0?91:r.ov_61_90>0?61:r.ov_31_60>0?31:r.ov_1_30>0?1:0
+    if (t > debtorNewTramo[r.document_id]) debtorNewTramo[r.document_id] = t
+    if (!r.isPaid) debtorAllPaid[r.document_id] = false
+  })
+
+  // Clasificar facturas
+  parsedRows.forEach(r => {
+    const debtorId = existingDebtors[r.document_id]?.id || ''
+    const existF = existingInvoices[debtorId + '|' + r.invoice]
+    if (!existF) {
+      // Factura nueva
+      diffResult.nuevos_inv.push(r)
+    } else {
+      // Comparar montos — tolerancia de 1 peso para diferencias de redondeo
+      // Comparar solo parte entera (truncar centavos)
+      // Siigo exporta enteros, Supabase guarda con decimales → diferencia de centavos falsa
+      const trunc = n => Math.trunc(+n || 0)
+      const changed =
+        trunc(existF.overdue_1_30)    !== trunc(r.ov_1_30)   ||
+        trunc(existF.overdue_31_60)   !== trunc(r.ov_31_60)  ||
+        trunc(existF.overdue_61_90)   !== trunc(r.ov_61_90)  ||
+        trunc(existF.overdue_91_plus) !== trunc(r.ov_91)     ||
+        trunc(existF.total_balance)   !== trunc(r.total)
+      if (changed) {
+        // DEBUG: mostrar primeros 5 casos que detecta como cambiados
+        if (diffResult.modificados.length < 5) {
+          debugLog(`Factura ${r.invoice} (deudor: ${r.document_id}) | ` +
+            `1-30: DB=${trunc(existF.overdue_1_30)} XLS=${trunc(r.ov_1_30)} | ` +
+            `31-60: DB=${trunc(existF.overdue_31_60)} XLS=${trunc(r.ov_31_60)} | ` +
+            `61-90: DB=${trunc(existF.overdue_61_90)} XLS=${trunc(r.ov_61_90)} | ` +
+            `91+: DB=${trunc(existF.overdue_91_plus)} XLS=${trunc(r.ov_91)} | ` +
+            `total: DB=${trunc(existF.total_balance)} XLS=${trunc(r.total)}`)
+        }
+        diffResult.modificados.push({
+          row : r,
+          prev: existF,
+        })
+      } else {
+        diffResult.sin_cambio++
+      }
+    }
+  })
+
+  // Clasificar deudores
+  Object.entries(debtorNewTramo).forEach(([doc, newTramo]) => {
+    const existD = existingDebtors[doc]
+    if (!existD) {
+      // Deudor nuevo — no existe en Supabase
+      diffResult.nuevos_deb.push({ document_id: doc, name: parsedRows.find(r=>r.document_id===doc)?.name || doc })
+    } else {
+      const prevTramo    = existD.prev_max_tramo || 0
+      const esPrimeraVez = !existD.last_import_at  // nunca se ha importado antes
+
+      if (debtorAllPaid[doc] && existD.status !== 'paid') {
+        // Todos sus tramos son 0 → pagó
+        diffResult.pagados.push({ id: existD.id, name: existD.debtor_name, document_id: doc })
+      } else if (!esPrimeraVez && newTramo > prevTramo) {
+        // Solo detectar subida de tramo si hay una importación anterior con qué comparar
+        diffResult.sube_tramo.push({
+          id: existD.id, name: existD.debtor_name,
+          document_id: doc, prev: prevTramo, nuevo: newTramo
+        })
+      }
+      // Si es primera vez: no marcar como "subió de tramo" — es carga inicial
+    }
+  })
+
+  // ── 3. Renderizar preview ──
+  renderDiffPreview()
+  showDebugPanel()
+  document.getElementById('btnImport').disabled = false
+  document.getElementById('btnImport').textContent = 'Importar cambios →'
+}
+
+function togglePreviewTable(btn) {
+  const wrap = document.getElementById('previewTableWrap')
+  const visible = wrap.style.display !== 'none'
+  wrap.style.display = visible ? 'none' : ''
+  btn.textContent = visible ? '📋 Ver detalle de cambios' : '📋 Ocultar detalle'
+}
+
+/* ── DEBUG PANEL ── */
+let debugLines = []
+function debugLog(msg) {
+  debugLines.push(msg)
+}
+function showDebugPanel() {
+  const panel = document.getElementById('debugPanel')
+  if (!panel) return
+  if (!debugLines.length) { panel.style.display = 'none'; return }
+  panel.style.display = ''
+  panel.innerHTML = `
+    <div style="background:#0a0f14;border:1px solid rgba(74,159,212,.3);border-radius:8px;padding:.85rem 1rem;margin-bottom:.75rem;font-family:monospace;font-size:.7rem;color:var(--info)">
+      <div style="font-weight:600;margin-bottom:.5rem;color:var(--txt2)">🔍 Debug — primeros 5 casos detectados como CAMBIADOS:</div>
+      ${debugLines.map(l=>`<div style="margin-bottom:.3rem;line-height:1.5">${esc(l)}</div>`).join('')}
+      <div style="margin-top:.5rem;color:var(--txt3);font-size:.65rem">Si DB y XLS son iguales pero aparece aquí, hay un problema de formato.</div>
+    </div>`
+}
+
+function renderDiffPreview() {
+  const tl = t => t===91?'91+ días':t===61?'61–90 días':t===31?'31–60 días':t===1?'1–30 días':'Al día'
+  const tc = t => t>=91?'var(--err)':t>=31?'var(--warn)':t>=1?'var(--gold)':'var(--ok)'
+  const totalRows   = parsedRows.length
+  const toWrite     = diffResult.modificados.length + diffResult.nuevos_inv.length + diffResult.desaparecidos.length
+  const noContact   = Object.keys(diffResult.nuevos_deb.reduce((m,d)=>{m[d.document_id]=1;return m},{})).length +
+    Object.keys(existingDebtors).filter(doc =>
+      parsedRows.some(r=>r.document_id===doc) &&
+      !existingDebtors[doc].phone && !existingDebtors[doc].email && !existingDebtors[doc].whatsapp
+    ).length
 
   // Summary cards
   document.getElementById('sumGrid').innerHTML = `
     <div class="sum-card">
-      <div class="sum-lbl">Clientes</div>
-      <div class="sum-val" style="color:var(--gold-l)">${uniqueDebtors}</div>
-      <div style="font-size:.67rem;color:var(--txt3);margin-top:.2rem">${totalInvoices} facturas</div>
+      <div class="sum-lbl">Sin cambio</div>
+      <div class="sum-val" style="color:var(--ok)">${diffResult.sin_cambio}</div>
+      <div style="font-size:.65rem;color:var(--txt3);margin-top:.2rem">no se escriben</div>
     </div>
     <div class="sum-card">
-      <div class="sum-lbl">Saldo vencido total</div>
-      <div class="sum-val" style="color:var(--err);font-size:1.3rem">${fmt(totalOut)}</div>
+      <div class="sum-lbl">Se actualizan</div>
+      <div class="sum-val" style="color:var(--gold-l)">${diffResult.modificados.length}</div>
+      <div style="font-size:.65rem;color:var(--txt3);margin-top:.2rem">montos cambiaron</div>
     </div>
     <div class="sum-card">
-      <div class="sum-lbl">Sin datos de contacto</div>
-      <div class="sum-val" style="color:${noContact>0?'var(--warn)':'var(--ok)'}">${noContact}</div>
-      <div style="font-size:.67rem;color:var(--txt3);margin-top:.2rem">clientes</div>
+      <div class="sum-lbl">Nuevas facturas</div>
+      <div class="sum-val" style="color:var(--info)">${diffResult.nuevos_inv.length}</div>
+      <div style="font-size:.65rem;color:var(--txt3);margin-top:.2rem">${diffResult.nuevos_deb.length} deudores nuevos</div>
     </div>
     <div class="sum-card">
-      <div class="sum-lbl">Se marcarán pagadas</div>
-      <div class="sum-val" style="color:var(--ok)">${willBePaid}</div>
-      <div style="font-size:.67rem;color:var(--txt3);margin-top:.2rem">total = $0</div>
+      <div class="sum-lbl">Queries a BD</div>
+      <div class="sum-val" style="color:${toWrite<=50?'var(--ok)':toWrite<=200?'var(--warn)':'var(--err)'}">${toWrite}</div>
+      <div style="font-size:.65rem;color:var(--txt3);margin-top:.2rem">de ${totalRows} filas del archivo</div>
     </div>`
 
-  // Alertas
-  let alerts = ''
-  if (noContact > 0) {
-    alerts += `<div class="alert alert-warn">
-      <span style="font-size:1rem;flex-shrink:0">⚠️</span>
-      <p><strong>${noContact} cliente${noContact>1?'s':''} sin datos de contacto</strong> — marcados con ⚠️ en la tabla. Después de importar puedes enriquecer su información en la ficha del deudor.</p>
+  // Alertas de novedades
+  let alertsHtml = ''
+
+  if (diffResult.nuevos_deb.length) {
+    alertsHtml += `<div class="alert alert-info" style="margin-bottom:.6rem">
+      <span style="font-size:1rem;flex-shrink:0">🆕</span>
+      <p><strong>${diffResult.nuevos_deb.length} deudor${diffResult.nuevos_deb.length>1?'es':''} nuevo${diffResult.nuevos_deb.length>1?'s':''}</strong> — se crearán en la cartera.</p>
     </div>`
   }
-  if (willBePaid > 0) {
-    alerts += `<div class="alert alert-ok">
+  if (diffResult.pagados.length) {
+    alertsHtml += `<div class="alert alert-ok" style="margin-bottom:.6rem">
       <span style="font-size:1rem;flex-shrink:0">✅</span>
-      <p><strong>${willBePaid} factura${willBePaid>1?'s':''} con total $0</strong> — se importarán con estado <em>pagado</em> automáticamente.</p>
+      <p><strong>${diffResult.pagados.length} deudor${diffResult.pagados.length>1?'es':''} pagaron</strong> (tramos en cero) — se moverán al tab Pagados.</p>
     </div>`
   }
-  document.getElementById('alertsBox').innerHTML = alerts
-  document.getElementById('previewSub').textContent =
-    `${totalInvoices} filas del archivo · ${uniqueDebtors} clientes únicos`
+  if (diffResult.desaparecidos.length) {
+    alertsHtml += `<div class="alert alert-ok" style="margin-bottom:.6rem">
+      <span style="font-size:1rem;flex-shrink:0">✅</span>
+      <p><strong>${diffResult.desaparecidos.length} deudor${diffResult.desaparecidos.length>1?'es no aparecen':'  no aparece'} en este archivo</strong> — se marcarán como pagados (salieron de la cartera de Siigo).</p>
+    </div>`
+  }
+  if (diffResult.sube_tramo.length) {
+    alertsHtml += `<div class="alert alert-warn" style="margin-bottom:.6rem">
+      <span style="font-size:1rem;flex-shrink:0">🔴</span>
+      <p><strong>${diffResult.sube_tramo.length} deudor${diffResult.sube_tramo.length>1?'es subieron':'  subió'} de tramo</strong> —
+        ${diffResult.sube_tramo.slice(0,3).map(d=>`<strong>${esc(d.name)}</strong>: <span style="color:${tc(d.prev)}">${tl(d.prev)}</span> → <span style="color:${tc(d.nuevo)}">${tl(d.nuevo)}</span>`).join(', ')}
+        ${diffResult.sube_tramo.length>3?` y ${diffResult.sube_tramo.length-3} más`:''}.</p>
+    </div>`
+  }
+  if (toWrite === 0) {
+    alertsHtml += `<div class="alert alert-ok" style="margin-bottom:.6rem">
+      <span style="font-size:1rem;flex-shrink:0">✅</span>
+      <p><strong>Sin cambios detectados</strong> — el archivo es idéntico al estado actual. No se escribirá nada en la base de datos.</p>
+    </div>`
+  }
+  document.getElementById('alertsBox').innerHTML = alertsHtml
 
-  // Tabla
+  // Tabla de cambios (solo filas que cambian o son nuevas)
+  const rowsToShow = [
+    ...diffResult.modificados.map(m => ({ ...m.row, _tipo: 'mod', _prev: m.prev })),
+    ...diffResult.nuevos_inv.map(r => ({ ...r, _tipo: 'new' })),
+  ]
+
+  // Reset debug lines for fresh comparison
+  debugLines = []
+  document.getElementById('previewSub').textContent =
+    `${totalRows} filas en el archivo · ${toWrite} se escribirán · ${diffResult.sin_cambio} sin cambio`
+
   const tbody = document.getElementById('previewBody')
   tbody.innerHTML = ''
-  parsedRows.forEach(r => {
-    const existing  = existingDebtors[r.document_id]
-    const hasContact = existing && (existing.phone || existing.email || existing.whatsapp)
-    const isNew      = !existing
+
+  if (!rowsToShow.length) {
     const tr = document.createElement('tr')
-    if (!hasContact) tr.className = 'no-contact-row'
+    tr.innerHTML = `<td colspan="14" style="text-align:center;color:var(--txt3);padding:1.5rem">
+      Sin cambios que mostrar — todos los valores son idénticos al estado actual
+    </td>`
+    tbody.appendChild(tr)
+    return
+  }
+
+  rowsToShow.forEach(r => {
+    const existing  = existingDebtors[r.document_id]
+    const hasContact= existing && (existing.phone || existing.email || existing.whatsapp)
+    const isNew     = r._tipo === 'new'
+    const tr = document.createElement('tr')
+    if (!hasContact) tr.style.background = 'rgba(232,160,32,.04)'
+
+    // Para modificados, mostrar diff de montos
+    let montoCells = ''
+    if (isNew) {
+      montoCells = `
+        <td style="font-size:.7rem;color:${r.ov_1_30>0?'var(--warn)':'var(--txt3)'}">${r.ov_1_30>0?fmt(r.ov_1_30):'—'}</td>
+        <td style="font-size:.7rem;color:${r.ov_31_60>0?'var(--warn)':'var(--txt3)'}">${r.ov_31_60>0?fmt(r.ov_31_60):'—'}</td>
+        <td style="font-size:.7rem;color:${r.ov_61_90>0?'var(--err)':'var(--txt3)'}">${r.ov_61_90>0?fmt(r.ov_61_90):'—'}</td>
+        <td style="font-size:.7rem;color:${r.ov_91>0?'var(--err)':'var(--txt3)'}">${r.ov_91>0?fmt(r.ov_91):'—'}</td>
+        <td style="font-weight:500;color:var(--txt)">${fmt(r.total)}</td>`
+    } else {
+      const p = r._prev
+      const diffCell = (nv, ov, col) => {
+        const changed = Math.abs((+ov||0) - nv) > 1
+        if (!changed) return `<td style="font-size:.7rem;color:var(--txt3)">${nv>0?fmt(nv):'—'}</td>`
+        return `<td style="font-size:.7rem">
+          <span style="color:var(--txt3);text-decoration:line-through">${(+ov||0)>0?fmt(+ov||0):'—'}</span>
+          <span style="color:${col};margin-left:.3rem">→ ${nv>0?fmt(nv):'—'}</span>
+        </td>`
+      }
+      montoCells =
+        diffCell(r.ov_1_30,  p.overdue_1_30,   'var(--warn)') +
+        diffCell(r.ov_31_60, p.overdue_31_60,  'var(--warn)') +
+        diffCell(r.ov_61_90, p.overdue_61_90,  'var(--err)')  +
+        diffCell(r.ov_91,    p.overdue_91_plus, 'var(--err)')  +
+        `<td style="font-weight:500;color:var(--txt)">${fmt(r.total)}</td>`
+    }
+
     tr.innerHTML = `
-      <td style="text-align:center">
-        ${!hasContact ? '<span class="warn-dot" title="Sin contacto"></span>' : '<span style="color:var(--ok);font-size:.8rem">✓</span>'}
-      </td>
-      <td class="td-w">${esc(r.document_id)}</td>
-      <td>
-        <div class="td-w">${esc(r.name)}</div>
-        ${r.city ? `<div class="td-m">${esc(r.city)}</div>` : ''}
-      </td>
-      <td class="td-m">${esc(r.city||'—')}</td>
-      <td class="td-w">${esc(r.invoice)}</td>
-      <td class="td-m">${r.due_date||'—'}</td>
-      <td class="td-m" style="color:${r.ov_1_30>0?'var(--warn)':'var(--txt3)'}">${r.ov_1_30>0?fmt(r.ov_1_30):'—'}</td>
-      <td class="td-m" style="color:${r.ov_31_60>0?'var(--warn)':'var(--txt3)'}">${r.ov_31_60>0?fmt(r.ov_31_60):'—'}</td>
-      <td class="td-m" style="color:${r.ov_61_90>0?'var(--err)':'var(--txt3)'}">${r.ov_61_90>0?fmt(r.ov_61_90):'—'}</td>
-      <td class="td-m" style="color:${r.ov_91>0?'var(--err)':'var(--txt3)'}">${r.ov_91>0?fmt(r.ov_91):'—'}</td>
-      <td class="td-m">${r.not_due>0?fmt(r.not_due):'—'}</td>
-      <td class="td-w">${fmt(r.total)}</td>
-      <td>
-        ${hasContact
-          ? `<span class="badge b-ok">Con contacto</span>`
-          : isNew
-            ? `<span class="badge b-warn">Nuevo · sin contacto</span>`
-            : `<span class="badge b-warn">Sin contacto</span>`
-        }
-      </td>
-      <td>
-        ${r.isPaid
-          ? `<span class="badge b-ok">→ Pagado</span>`
-          : isNew
-            ? `<span class="badge b-info">→ Nuevo</span>`
-            : `<span class="badge b-n">→ Actualizar</span>`
-        }
-      </td>`
+      <td style="text-align:center">${!hasContact ? '<span style="color:var(--warn);font-size:.9rem">⚠</span>' : '<span style="color:var(--ok)">✓</span>'}</td>
+      <td style="font-weight:500;color:var(--txt)">${esc(r.document_id)}</td>
+      <td><div style="font-weight:500;color:var(--txt)">${esc(r.name)}</div>${r.city?`<div style="font-size:.68rem;color:var(--txt3)">${esc(r.city)}</div>`:''}</td>
+      <td style="font-size:.7rem;color:var(--txt3)">${esc(r.city||'—')}</td>
+      <td style="font-weight:500;color:var(--txt)">${esc(r.invoice)}</td>
+      <td style="font-size:.7rem;color:var(--txt3)">${r.due_date||'—'}</td>
+      ${montoCells}
+      <td><span class="badge ${!hasContact?'b-warn':isNew?'b-info':'b-n'}">${!hasContact?'⚠ Sin contacto':isNew?'Nuevo':'Actualizar'}</span></td>
+      <td><span class="badge ${r.isPaid?'b-ok':isNew?'b-info':'b-warn'}">${r.isPaid?'→ Pagado':isNew?'→ Insertar':'→ Actualizar'}</span></td>`
     tbody.appendChild(tr)
   })
 }
 
-/* ══ IMPORTAR ══ */
+/* ══ IMPORTAR — solo escribe lo que cambió ══ */
 async function runImport() {
-  const total   = parsedRows.length
-  let done      = 0
-  let newDebtors = 0, updDebtors = 0, newInvoices = 0, updInvoices = 0, paidInvoices = 0
-  const errors  = []
+  const toWrite  = diffResult.modificados.length + diffResult.nuevos_inv.length
+  const now      = new Date().toISOString()
+  let written    = 0
+  let newDebtors = 0
+  let paidCount  = 0
+  const errors   = []
 
-  setProgress(0, `Preparando ${total} filas…`)
+  if (toWrite === 0 && diffResult.nuevos_deb.length === 0 && diffResult.pagados.length === 0) {
+    setProgress(100, 'Sin cambios — nada que escribir')
+    renderResult({ written:0, newDebtors:0, paidCount:0, errors:[] })
+    return
+  }
 
-  // Agrupar filas por deudor para hacer un upsert de deudores primero
-  const debtorMap = {}
+  setProgress(0, 'Iniciando importación inteligente…')
+
+  // ── FASE 1: Insertar deudores nuevos ──
+  const newDebList = diffResult.nuevos_deb
+  if (newDebList.length) {
+    setProgress(5, `Creando ${newDebList.length} deudores nuevos…`)
+    for (const deb of newDebList) {
+      const row = parsedRows.find(r => r.document_id === deb.document_id)
+      if (!row) continue
+      const { data, error } = await db.from('collection_debtors').insert({
+        company_id     : selectedCompany.id,
+        debtor_document: deb.document_id,
+        debtor_name    : deb.name,
+        city           : row.city || null,
+        status         : 'pending',
+        prev_max_tramo : 0,
+        last_import_at : now,
+      }).select('id, debtor_document').single()
+      if (error) { errors.push(`Deudor ${deb.document_id}: ${error.message}`); continue }
+      // Agregar al mapa para que Fase 2 pueda usarlo
+      existingDebtors[deb.document_id] = {
+        id: data.id, phone:null, email:null, whatsapp:null,
+        prev_max_tramo:0, status:'pending'
+      }
+      newDebtors++
+    }
+  }
+
+  // ── FASE 2: Actualizar prev_max_tramo para deudores que suben de tramo ──
+  if (diffResult.sube_tramo.length) {
+    setProgress(15, `Actualizando ${diffResult.sube_tramo.length} deudores con cambio de tramo…`)
+    for (const d of diffResult.sube_tramo) {
+      const { error } = await db.from('collection_debtors').update({
+        prev_max_tramo : d.prev,
+        last_import_at : now,
+      }).eq('id', d.id)
+      if (error) errors.push(`Tramo ${d.document_id}: ${error.message}`)
+    }
+  }
+
+  // ── FASE 3: Upsert facturas modificadas y nuevas (los que cambiaron) ──
+  const invoicesToWrite = [
+    ...diffResult.modificados.map(m => m.row),
+    ...diffResult.nuevos_inv,
+  ]
+
+  if (invoicesToWrite.length) {
+    setProgress(25, `Escribiendo ${invoicesToWrite.length} facturas con cambios…`)
+
+    // Lote de 100 upserts
+    for (let i = 0; i < invoicesToWrite.length; i += 100) {
+      const batch = invoicesToWrite.slice(i, i + 100)
+      for (const r of batch) {
+        const debtor = existingDebtors[r.document_id]
+        if (!debtor) { errors.push(`Fila ${r._row}: deudor no encontrado`); continue }
+
+        const outstanding = r.ov_1_30 + r.ov_31_60 + r.ov_61_90 + r.ov_91
+        // Buscar si ya existe esta factura para decidir INSERT o UPDATE
+        const existKey = debtor.id + '|' + r.invoice
+        const existF   = existingInvoices[existKey]
+        let error
+        if (existF) {
+          // UPDATE — factura ya existe
+          ;({ error } = await db.from('collection_debts').update({
+            overdue_1_30      : r.ov_1_30,
+            overdue_31_60     : r.ov_31_60,
+            overdue_61_90     : r.ov_61_90,
+            overdue_91_plus   : r.ov_91,
+            not_yet_due       : r.not_due,
+            credit_balance    : r.credit,
+            total_balance     : r.total,
+            outstanding_amount: outstanding,
+            status            : r.isPaid ? 'paid' : 'pending',
+            last_sync_at      : now,
+            due_date          : r.due_date || null,
+            branch            : r.branch || null,
+            cost_center       : r.cost_center || null,
+            seller            : r.seller || null,
+          }).eq('debtor_id', debtor.id).eq('siigo_document', r.invoice))
+        } else {
+          // INSERT — factura nueva
+          ;({ error } = await db.from('collection_debts').insert({
+            company_id        : selectedCompany.id,
+            debtor_id         : debtor.id,
+            siigo_document    : r.invoice,
+            due_date          : r.due_date || null,
+            branch            : r.branch || null,
+            cost_center       : r.cost_center || null,
+            seller            : r.seller || null,
+            overdue_1_30      : r.ov_1_30,
+            overdue_31_60     : r.ov_31_60,
+            overdue_61_90     : r.ov_61_90,
+            overdue_91_plus   : r.ov_91,
+            not_yet_due       : r.not_due,
+            credit_balance    : r.credit,
+            total_balance     : r.total,
+            outstanding_amount: outstanding,
+            status            : r.isPaid ? 'paid' : 'pending',
+            last_sync_at      : now,
+          }))
+        }
+        // Si falla por duplicado en la misma importación → hacer UPDATE
+        if (error) {
+          if (error.message.includes('duplicate key') || error.message.includes('unique constraint')) {
+            const { error: updErr } = await db.from('collection_debts').update({
+              overdue_1_30      : r.ov_1_30,
+              overdue_31_60     : r.ov_31_60,
+              overdue_61_90     : r.ov_61_90,
+              overdue_91_plus   : r.ov_91,
+              not_yet_due       : r.not_due,
+              credit_balance    : r.credit,
+              total_balance     : r.total,
+              outstanding_amount: outstanding,
+              status            : r.isPaid ? 'paid' : 'pending',
+              last_sync_at      : now,
+            }).eq('debtor_id', debtor.id).eq('siigo_document', r.invoice)
+            if (updErr) { errors.push(`Factura ${r.invoice}: ${updErr.message}`); continue }
+          } else {
+            errors.push(`Factura ${r.invoice}: ${error.message}`); continue
+          }
+        }
+        if (r.isPaid) paidCount++
+        written++
+      }
+      const pct = 25 + Math.round((i / invoicesToWrite.length) * 55)
+      setProgress(pct, `Facturas: ${Math.min(i+100, invoicesToWrite.length)} de ${invoicesToWrite.length}…`)
+    }
+  }
+
+  // ── FASE 4a: Marcar deudores con tramos en 0 como pagados ──
+  if (diffResult.pagados.length) {
+    setProgress(80, `Marcando ${diffResult.pagados.length} deudores (tramos=0) como pagados…`)
+    for (const d of diffResult.pagados) {
+      const { error } = await db.from('collection_debtors')
+        .update({ status: 'paid', last_import_at: now })
+        .eq('id', d.id)
+        .in('status', ['pending','in_collection','uncontactable'])
+      if (error) errors.push(`Pagado ${d.document_id}: ${error.message}`)
+    }
+  }
+
+  // ── FASE 4b: Marcar desaparecidos como pagados (no están en el archivo) ──
+  if (diffResult.desaparecidos.length) {
+    setProgress(85, `Marcando ${diffResult.desaparecidos.length} deudores que salieron del reporte…`)
+    for (const d of diffResult.desaparecidos) {
+      const { error } = await db.from('collection_debtors')
+        .update({ status: 'paid', last_import_at: now })
+        .eq('id', d.id)
+        .in('status', ['pending','in_collection','uncontactable','defaulted'])
+      if (error) errors.push(`Desaparecido ${d.document_id}: ${error.message}`)
+    }
+  }
+
+  // ── FASE 5: Actualizar last_import_at y new_tramo para todos los del archivo ──
+  // Solo para deudores que SÍ aparecen en el archivo (independiente de si cambiaron)
+  setProgress(90, 'Actualizando registro de importación…')
+  const debtorNewTramo = {}
   parsedRows.forEach(r => {
-    if (!debtorMap[r.document_id]) {
-      debtorMap[r.document_id] = { document_id: r.document_id, name: r.name, city: r.city }
-    }
+    const t = r.ov_91>0?91:r.ov_61_90>0?61:r.ov_31_60>0?31:r.ov_1_30>0?1:0
+    if (!debtorNewTramo[r.document_id] || t > debtorNewTramo[r.document_id])
+      debtorNewTramo[r.document_id] = t
   })
-
-  // ── FASE 1: Upsert deudores (por lotes de 50) ──
-  const debtorList = Object.values(debtorMap)
-  setProgress(5, `Sincronizando ${debtorList.length} clientes…`)
-
-  for (let i = 0; i < debtorList.length; i += 50) {
-    const batch = debtorList.slice(i, i + 50)
-
-    // Para cada deudor: INSERT si nuevo, UPDATE solo nombre/ciudad si existe
-    for (const deb of batch) {
-      const existing = existingDebtors[deb.document_id]
-      if (existing) {
-        // Actualizar solo campos no-sensibles — NO tocar contacto
-        const { error } = await db.from('collection_debtors')
-          .update({ debtor_name: deb.name, city: deb.city || null })
-          .eq('id', existing.id)
-        if (error) { errors.push(`Deudor ${deb.document_id}: ${error.message}`); continue }
-        updDebtors++
-      } else {
-        // Nuevo deudor
-        const { data, error } = await db.from('collection_debtors').insert({
-          company_id      : selectedCompany.id,
-          debtor_document : deb.document_id,
-          debtor_name     : deb.name,
-          city            : deb.city || null,
-          status          : 'pending',
-        }).select('id, debtor_document').single()
-        if (error) { errors.push(`Deudor nuevo ${deb.document_id}: ${error.message}`); continue }
-        existingDebtors[deb.document_id] = { id: data.id, phone:null, email:null, whatsapp:null }
-        newDebtors++
-      }
-    }
-    setProgress(5 + Math.round((i / debtorList.length) * 35), `Clientes: ${i+batch.length} de ${debtorList.length}…`)
+  // Solo actualizar prev_max_tramo a nuevo valor para deudores que subieron o son nuevos
+  for (const d of diffResult.sube_tramo) {
+    await db.from('collection_debtors')
+      .update({ prev_max_tramo: d.nuevo, last_import_at: now })
+      .eq('id', d.id)
+  }
+  // last_import_at para todos los del archivo (en lotes de 50 ids)
+  const allDebtorIds = Object.keys(debtorNewTramo)
+    .map(doc => existingDebtors[doc]?.id).filter(Boolean)
+  for (let i = 0; i < allDebtorIds.length; i += 50) {
+    await db.from('collection_debtors')
+      .update({ last_import_at: now })
+      .in('id', allDebtorIds.slice(i, i+50))
   }
 
-  // ── FASE 2: Upsert facturas (por lotes de 100) ──
-  setProgress(40, `Sincronizando ${total} facturas…`)
-
-  for (let i = 0; i < parsedRows.length; i += 100) {
-    const batch = parsedRows.slice(i, i + 100)
-
-    for (const r of batch) {
-      const debtor = existingDebtors[r.document_id]
-      if (!debtor) { errors.push(`Fila ${r._row}: no se encontró el deudor ${r.document_id}`); continue }
-
-      const outstanding = r.ov_1_30 + r.ov_31_60 + r.ov_61_90 + r.ov_91
-      const invoiceStatus = r.isPaid ? 'paid' : 'pending'
-
-      const payload = {
-        company_id        : selectedCompany.id,
-        debtor_id         : debtor.id,
-        siigo_document    : r.invoice,
-        due_date          : r.due_date || null,
-        branch            : r.branch || null,
-        cost_center       : r.cost_center || null,
-        seller            : r.seller || null,
-        overdue_1_30      : r.ov_1_30,
-        overdue_31_60     : r.ov_31_60,
-        overdue_61_90     : r.ov_61_90,
-        overdue_91_plus   : r.ov_91,
-        not_yet_due       : r.not_due,
-        credit_balance    : r.credit,
-        total_balance     : r.total,
-        outstanding_amount: outstanding,
-        status            : invoiceStatus,
-        last_sync_at      : new Date().toISOString(),
-      }
-
-      // Upsert: si ya existe la factura (mismo siigo_document + company_id) actualiza
-      const { error, data } = await db.from('collection_debts')
-        .upsert(payload, { onConflict: 'company_id,siigo_document' })
-        .select('id')
-      if (error) {
-        errors.push(`Fila ${r._row} (${r.invoice}): ${error.message}`)
-        continue
-      }
-
-      if (r.isPaid) paidInvoices++
-      // Determinar si fue insert o update (aproximación: si no estaba en existingDebtors antes era nuevo)
-      newInvoices++ // lo contamos simplificado; Supabase no distingue en upsert fácilmente
-      done++
-    }
-
-    const pct = 40 + Math.round((i / parsedRows.length) * 55)
-    setProgress(pct, `Facturas: ${Math.min(i+100, parsedRows.length)} de ${total}…`)
-  }
-
-  // ── RESULTADO ──
   setProgress(100, 'Importación completada')
+  renderResult({ written, newDebtors, paidCount, errors })
+}
 
-  // Actualizar status del deudor si todas sus facturas están pagadas
-  await updateDebtorStatuses()
-
-  renderResult({ total, newDebtors, updDebtors, newInvoices, paidInvoices, errors })
+async function updateNewTramos(debtorMap) {
+  // Actualiza prev_max_tramo al tramo actual (para que la próxima importación lo use como "anterior")
+  for (const deb of Object.values(debtorMap)) {
+    const existing = existingDebtors[deb.document_id]
+    if (!existing?.id) continue
+    await db.from('collection_debtors')
+      .update({ prev_max_tramo: deb.new_tramo })
+      .eq('id', existing.id)
+  }
 }
 
 async function updateDebtorStatuses() {
@@ -859,29 +1168,106 @@ function setProgress(pct, msg) {
 }
 
 /* ── RESULTADO ── */
-function renderResult({ total, newDebtors, updDebtors, newInvoices, paidInvoices, errors }) {
+function renderResult({ written, newDebtors, paidCount, errors }) {
   const hasErrors = errors.length > 0
+  const tramoLabel = t => t===91?'91+ días':t===61?'61–90 días':t===31?'31–60 días':t===1?'1–30 días':'Al día'
+  const tramoColor = t => t>=91?'var(--err)':t>=31?'var(--warn)':t>=1?'var(--gold)':'var(--ok)'
+
+  // Sección novedades
+  let novedadesHtml = ''
+
+  if (novedades.nuevos.length) {
+    novedadesHtml += `
+      <div style="margin-bottom:.75rem">
+        <div style="font-size:.7rem;font-weight:600;color:var(--info);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.45rem">
+          🆕 Nuevos en cartera (${novedades.nuevos.length})
+        </div>
+        <div style="display:flex;flex-direction:column;gap:.3rem;max-height:160px;overflow-y:auto;scrollbar-width:thin">
+          ${novedades.nuevos.map(d=>`
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:.35rem .6rem;background:var(--bg3);border-radius:6px;font-size:.75rem">
+              <span style="color:var(--txt)">${esc(d.name)}</span>
+              <span style="color:var(--txt3)">${esc(d.document_id)}</span>
+              <a href="admin-collections-detail.html?id=${d.id}" style="color:var(--info);font-size:.68rem">Ver →</a>
+            </div>`).join('')}
+        </div>
+      </div>`
+  }
+
+  if (novedades.pagados.length) {
+    novedadesHtml += `
+      <div style="margin-bottom:.75rem">
+        <div style="font-size:.7rem;font-weight:600;color:var(--ok);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.45rem">
+          ✅ Pagaron este mes (${novedades.pagados.length})
+        </div>
+        <div style="display:flex;flex-direction:column;gap:.3rem;max-height:160px;overflow-y:auto;scrollbar-width:thin">
+          ${novedades.pagados.map(d=>`
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:.35rem .6rem;background:var(--bg3);border-radius:6px;font-size:.75rem">
+              <span style="color:var(--txt)">${esc(d.name||d.debtor_name)}</span>
+              <span class="badge b-ok">Pagado</span>
+              <a href="admin-collections-detail.html?id=${d.id}" style="color:var(--ok);font-size:.68rem">Ver →</a>
+            </div>`).join('')}
+        </div>
+      </div>`
+  }
+
+  if (novedades.subieron.length) {
+    novedadesHtml += `
+      <div style="margin-bottom:.75rem">
+        <div style="font-size:.7rem;font-weight:600;color:var(--warn);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.45rem">
+          🔴 Subieron de tramo (${novedades.subieron.length})
+        </div>
+        <div style="display:flex;flex-direction:column;gap:.3rem;max-height:200px;overflow-y:auto;scrollbar-width:thin">
+          ${novedades.subieron.map(d=>`
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:.35rem .6rem;background:var(--bg3);border-radius:6px;font-size:.75rem;gap:.5rem">
+              <span style="color:var(--txt);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(d.name||d.debtor_name)}</span>
+              <span style="display:flex;align-items:center;gap:.3rem;flex-shrink:0">
+                <span style="color:var(--txt3);font-size:.65rem">${tramoLabel(d.prev_tramo)}</span>
+                <span style="color:var(--txt3)">→</span>
+                <span style="color:${tramoColor(d.new_tramo)};font-weight:600;font-size:.7rem">${tramoLabel(d.new_tramo)}</span>
+              </span>
+              <a href="admin-collections-detail.html?id=${d.id}" style="color:var(--warn);font-size:.68rem;flex-shrink:0">Ver →</a>
+            </div>`).join('')}
+        </div>
+      </div>`
+  }
+
+  if (!novedadesHtml) {
+    novedadesHtml = `<div style="font-size:.75rem;color:var(--txt3);padding:.5rem 0">Sin cambios de tramo ni nuevos deudores en este archivo.</div>`
+  }
+
   document.getElementById('resultBox').innerHTML = `
-    <div class="sum-grid" style="margin-bottom:1rem">
+    <!-- Resumen numérico -->
+    <div class="sum-grid" style="margin-bottom:1.1rem">
       <div class="sum-card">
-        <div class="sum-lbl">Clientes nuevos</div>
-        <div class="sum-val" style="color:var(--ok)">${newDebtors}</div>
+        <div class="sum-lbl">Facturas escritas</div>
+        <div class="sum-val" style="color:var(--gold-l)">${written}</div>
+        <div style="font-size:.65rem;color:var(--txt3);margin-top:.2rem">${diffResult.sin_cambio} sin cambio</div>
       </div>
       <div class="sum-card">
-        <div class="sum-lbl">Clientes actualizados</div>
-        <div class="sum-val" style="color:var(--info)">${updDebtors}</div>
+        <div class="sum-lbl">Deudores nuevos</div>
+        <div class="sum-val" style="color:var(--info)">${newDebtors}</div>
       </div>
       <div class="sum-card">
-        <div class="sum-lbl">Facturas procesadas</div>
-        <div class="sum-val" style="color:var(--gold-l)">${total}</div>
+        <div class="sum-lbl">Subieron de tramo</div>
+        <div class="sum-val" style="color:${diffResult.sube_tramo.length>0?'var(--warn)':'var(--ok)'}">${diffResult.sube_tramo.length}</div>
       </div>
       <div class="sum-card">
-        <div class="sum-lbl">Marcadas pagadas</div>
-        <div class="sum-val" style="color:var(--ok)">${paidInvoices}</div>
+        <div class="sum-lbl">Pagaron / salieron</div>
+        <div class="sum-val" style="color:var(--ok)">${paidCount + diffResult.desaparecidos.length}</div>
+        <div style="font-size:.65rem;color:var(--txt3);margin-top:.2rem">${diffResult.desaparecidos.length} no aparecieron</div>
       </div>
     </div>
+
+    <!-- Novedades detalladas -->
+    <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.1rem;margin-bottom:.9rem">
+      <div style="font-family:var(--fd);font-size:1rem;font-weight:600;color:var(--white);margin-bottom:.85rem">
+        Novedades del mes
+      </div>
+      ${novedadesHtml}
+    </div>
+
     ${hasErrors ? `
-      <div class="alert alert-err">
+      <div class="alert alert-err" style="margin-bottom:.75rem">
         <span style="font-size:1rem;flex-shrink:0">⚠️</span>
         <div style="flex:1">
           <strong style="color:var(--err)">${errors.length} error${errors.length>1?'es':''} durante la importación:</strong>
@@ -891,11 +1277,12 @@ function renderResult({ total, newDebtors, updDebtors, newInvoices, paidInvoices
           </ul>
         </div>
       </div>` : `
-      <div class="alert alert-ok">
+      <div class="alert alert-ok" style="margin-bottom:.75rem">
         <span style="font-size:1rem;flex-shrink:0">✅</span>
-        <p><strong>Importación exitosa</strong> — todos los registros se procesaron sin errores.</p>
+        <p><strong>Importación exitosa</strong> — ${total} facturas procesadas sin errores.</p>
       </div>`}
-    <div style="display:flex;gap:.75rem;margin-top:.5rem">
+
+    <div style="display:flex;gap:.75rem">
       <a href="admin-collections.html" class="btn-p">Ver cartera →</a>
       <button class="btn-s" onclick="resetImporter()">Importar otro archivo</button>
     </div>`

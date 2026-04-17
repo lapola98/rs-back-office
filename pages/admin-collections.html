@@ -126,6 +126,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
 .tbl td{padding:.62rem .68rem;font-size:.78rem;border-bottom:1px solid var(--border2);color:var(--txt2);vertical-align:middle}
 .tbl tr:last-child td{border-bottom:none}
 .tbl tr:hover td{background:rgba(255,255,255,.02)}
+.row-selected td{background:rgba(201,168,76,.05)!important}
 .td-w{font-weight:500;color:var(--txt)!important}
 .td-m{font-size:.7rem!important;color:var(--txt3)!important}
 .act-btn{background:none;border:none;cursor:pointer;color:var(--txt3);font-size:.84rem;padding:.2rem .28rem;border-radius:4px;transition:all .18s}
@@ -165,6 +166,20 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
 .ce-save:hover{background:var(--gold);color:var(--bg)}
 .ce-cancel{background:none;border:none;color:var(--txt3);font-size:.8rem;cursor:pointer;padding:.2rem .4rem;transition:color .18s}
 .ce-cancel:hover{color:var(--err)}
+/* ── BULK ACTIONS ── */
+.bulk-bar{display:none;align-items:center;gap:.65rem;background:var(--bg2);border:1px solid rgba(201,168,76,.25);border-radius:var(--r);padding:.55rem 1rem;margin-bottom:.75rem;flex-wrap:wrap}
+.bulk-bar.on{display:flex;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.bulk-count{font-size:.78rem;font-weight:600;color:var(--gold-l)}
+.bulk-sep{width:1px;height:18px;background:var(--border);flex-shrink:0}
+.bulk-btn{display:inline-flex;align-items:center;gap:.3rem;padding:.35rem .75rem;border-radius:6px;border:1px solid var(--border);background:var(--bg3);font-family:var(--fu);font-size:.71rem;color:var(--txt2);cursor:pointer;white-space:nowrap;transition:all .2s}
+.bulk-btn:hover{background:var(--gold-pale);color:var(--gold);border-color:rgba(201,168,76,.3)}
+.bulk-btn.danger:hover{background:var(--err-bg);color:var(--err);border-color:rgba(224,92,75,.3)}
+.row-check{accent-color:var(--gold);cursor:pointer;width:14px;height:14px}
+.select-all-wrap{display:flex;align-items:center;gap:.4rem;font-size:.68rem;color:var(--txt3);padding-bottom:.5rem;border-bottom:1px solid var(--border2);margin-bottom:.25rem}
+/* ── MSG MODAL ── */
+.tpl-preview-box{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:.85rem 1rem;font-size:.78rem;color:var(--txt2);line-height:1.65;min-height:70px;white-space:pre-wrap;word-break:break-word;max-height:180px;overflow-y:auto}
+
 /* ── MORA BARS ── */
 .mora-bars{display:flex;gap:2px;align-items:flex-end;height:20px}
 .mora-bar{width:8px;border-radius:2px 2px 0 0;min-height:3px}
@@ -393,6 +408,57 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
 </div>
 </div>
 
+<!-- BULK ACTION BAR -->
+<div class="bulk-bar" id="bulkBar">
+  <span class="bulk-count" id="bulkCount">0 seleccionados</span>
+  <div class="bulk-sep"></div>
+  <button class="bulk-btn" onclick="openBulkMsg('whatsapp')">💬 WhatsApp masivo</button>
+  <button class="bulk-btn" onclick="openBulkMsg('email')">📧 Email masivo</button>
+  <button class="bulk-btn" onclick="openBulkMsg('sms')">📱 SMS masivo</button>
+  <div class="bulk-sep"></div>
+  <button class="bulk-btn" onclick="bulkAssign()">👤 Asignar gestor</button>
+  <button class="bulk-btn" onclick="bulkStatus()">⚡ Cambiar estado</button>
+  <div class="bulk-sep"></div>
+  <button class="bulk-btn danger" onclick="clearSelection()">✕ Limpiar selección</button>
+</div>
+
+<!-- MODAL: MENSAJE MASIVO -->
+<div class="modal-overlay" id="bulkMsgModal" onclick="closeModalOut(event,'bulkMsgModal')">
+  <div class="modal wide">
+    <div class="modal-hd">
+      <h3 id="bulkMsgTitle">Enviar mensaje masivo</h3>
+      <button class="modal-close" onclick="closeModal('bulkMsgModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:.7rem 1rem;font-size:.75rem;color:var(--txt2);margin-bottom:.85rem">
+        <span id="bulkMsgInfo">—</span>
+      </div>
+      <div class="field">
+        <label>Plantilla</label>
+        <select id="bm-template" onchange="previewBulkMsg()">
+          <option value="">Sin plantilla — mensaje libre</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Mensaje *
+          <span style="font-size:.64rem;color:var(--txt3);font-weight:400;margin-left:.4rem">
+            Variables: {{nombre}} {{saldo}} {{dias_mora}} {{empresa}} {{asesor}}
+          </span>
+        </label>
+        <textarea id="bm-body" rows="4" placeholder="Escribe el mensaje aquí…" oninput="previewBulkMsg()"></textarea>
+      </div>
+      <div class="field">
+        <label>Vista previa (con datos del primer deudor seleccionado)</label>
+        <div class="tpl-preview-box" id="bm-preview">—</div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-s" onclick="closeModal('bulkMsgModal')">Cancelar</button>
+      <button class="btn-p" id="bulkMsgSendBtn" onclick="sendBulkMsg()">✉️ Enviar a <span id="bulkMsgCount">0</span> deudores</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL DEUDOR -->
 <div class="modal-overlay" id="debtorModal" onclick="closeModalOut(event,'debtorModal')">
   <div class="modal">
@@ -477,10 +543,13 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
 let S          = { debtors:[], companies:{}, users:[], agreements:[], tasks:[] }
-let sortField  = 'max_days'
-let sortDir    = 'desc'
-let editingId  = null
-let currentTab = 'active'  // 'active' | 'paid'
+let sortField    = 'max_days'
+let sortDir      = 'desc'
+let editingId    = null
+let currentTab   = 'active'  // 'active' | 'paid'
+let selectedIds  = new Set()  // IDs seleccionados para acciones masivas
+let bulkChannel  = 'whatsapp' // canal activo en modal masivo
+let TEMPLATES    = []         // plantillas de mensaje
 
 const STATUS_MAP = {
   pending       :{label:'Pendiente',    cls:'b-n'},
@@ -513,7 +582,7 @@ async function init() {
 async function loadAll() {
   conn('loading')
   try {
-    const [r1,r2,r3,r4,r5] = await Promise.all([
+    const [r1,r2,r3,r4,r5,r6] = await Promise.all([
       db.from('collection_debtors').select(`
         id,company_id,debtor_document,debtor_name,city,
         phone,email,whatsapp,preferred_channel,
@@ -526,6 +595,7 @@ async function loadAll() {
       db.from('profiles').select('id,full_name,role').in('role',['rs_staff','rs_admin','admin']),
       db.from('collection_agreements').select('id,debtor_id,status,first_due_date'),
       db.from('collection_tasks').select('id,debtor_id,status,due_date,priority'),
+      db.from('collection_templates').select('id,name,channel,body').eq('is_active',true),
     ])
     if (r1.error) throw r1.error
     if (r2.error) throw r2.error
@@ -555,6 +625,7 @@ async function loadAll() {
     S.users      = r3.data||[]
     S.agreements = r4.data||[]
     S.tasks      = r5.data||[]
+    TEMPLATES    = r6.data||[]
 
     populateFilters(); renderStats(); renderKpis(); renderTable(); checkAlerts(); updateTabCounts()
     conn('ok'); hideErr()
@@ -652,6 +723,7 @@ function renderTable() {
 
   document.getElementById('tableWrap').innerHTML = `<div style="overflow-x:auto">
   <table class="tbl"><thead><tr>
+    <th style="width:32px"><input type="checkbox" class="row-check" id="checkAll" onchange="toggleSelectAll(this)" title="Seleccionar todos"></th>
     <th>Deudor</th><th>Empresa</th>
     <th style="text-align:center">Facturas</th>
     <th onclick="toggleSort('max_days')" class="${sortField==='max_days'?'sort-'+sortDir:''}">Antigüedad</th>
@@ -686,7 +758,9 @@ function renderTable() {
              </div>
            </div>
          </div>`
-    return `<tr>
+    const isChecked = selectedIds.has(d.id)
+    return `<tr class="${isChecked?'row-selected':''}">
+      <td><input type="checkbox" class="row-check" ${isChecked?'checked':''} onchange="toggleRow('${d.id}',this)"></td>
       <td><div style="font-weight:500;color:var(--txt)">${esc(d.debtor_name)}</div><div style="font-size:.7rem;color:var(--txt3)">${esc(d.debtor_document||'—')}</div></td>
       <td style="font-size:.7rem;color:var(--txt3)">${esc(co)}</td>
       <td style="text-align:center"><span style="font-family:var(--fd);font-size:1.1rem;font-weight:600;color:var(--txt)">${d.invoice_count}</span></td>
@@ -943,6 +1017,184 @@ async function reactivateDebtor(id, name) {
   const { error } = await db.from('collection_debtors').update({ status: 'pending' }).eq('id', id)
   if (error) { alert('Error: ' + error.message); return }
   await loadAll()
+}
+
+
+/* ══ SELECCIÓN Y ACCIONES MASIVAS ══ */
+
+function toggleRow(id, el) {
+  if (el.checked) selectedIds.add(id)
+  else selectedIds.delete(id)
+  updateBulkBar()
+}
+
+function toggleSelectAll(el) {
+  const visibleIds = getVisibleDebtors().map(d => d.id)
+  if (el.checked) visibleIds.forEach(id => selectedIds.add(id))
+  else visibleIds.forEach(id => selectedIds.delete(id))
+  renderTable()
+  updateBulkBar()
+}
+
+function clearSelection() {
+  selectedIds.clear()
+  updateBulkBar()
+  renderTable()
+}
+
+function updateBulkBar() {
+  const bar = document.getElementById('bulkBar')
+  const n   = selectedIds.size
+  if (n > 0) {
+    bar.classList.add('on')
+    document.getElementById('bulkCount').textContent = `${n} deudor${n!==1?'es':''} seleccionado${n!==1?'s':''}`
+    document.getElementById('bulkMsgCount').textContent = n
+  } else {
+    bar.classList.remove('on')
+  }
+}
+
+function getVisibleDebtors() {
+  return S.debtors.filter(d => d.status !== 'paid')
+}
+
+function getSelectedDebtors() {
+  return S.debtors.filter(d => selectedIds.has(d.id))
+}
+
+/* ── ENVÍO MASIVO ── */
+function openBulkMsg(channel) {
+  bulkChannel = channel
+  const chLabel = { whatsapp:'WhatsApp', email:'Email', sms:'SMS' }
+  document.getElementById('bulkMsgTitle').textContent = `Enviar ${chLabel[channel]} masivo`
+  document.getElementById('bulkMsgInfo').innerHTML =
+    `<strong style="color:var(--gold-l)">${selectedIds.size} deudores</strong> recibirán este mensaje por <strong>${chLabel[channel]}</strong>.`
+  document.getElementById('bulkMsgCount').textContent = selectedIds.size
+
+  // Poblar plantillas del canal
+  const tplSel = document.getElementById('bm-template')
+  tplSel.innerHTML = '<option value="">Sin plantilla — mensaje libre</option>' +
+    TEMPLATES.filter(t => t.channel === channel)
+      .map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('')
+
+  document.getElementById('bm-body').value = ''
+  document.getElementById('bm-preview').textContent = '—'
+  openModal('bulkMsgModal')
+}
+
+function previewBulkMsg() {
+  // Tomar primer deudor seleccionado para la preview
+  const tplId = document.getElementById('bm-template').value
+  if (tplId) {
+    const tpl = TEMPLATES.find(t => t.id === tplId)
+    if (tpl) document.getElementById('bm-body').value = tpl.body
+  }
+  const body    = document.getElementById('bm-body').value
+  const sample  = getSelectedDebtors()[0]
+  if (!sample || !body) { document.getElementById('bm-preview').textContent = body || '—'; return }
+
+  const co      = S.companies[sample.company_id]?.name || '—'
+  const preview = body
+    .replace(/\{\{nombre\}\}/g,    sample.debtor_name || '—')
+    .replace(/\{\{saldo\}\}/g,     fmt(sample.total_outstanding))
+    .replace(/\{\{dias_mora\}\}/g, String(sample.max_days || 0))
+    .replace(/\{\{empresa\}\}/g,   co)
+    .replace(/\{\{asesor\}\}/g,    S.users.find(u=>u.id===sample.assigned_user_id)?.full_name || 'Gestor RS')
+  document.getElementById('bm-preview').textContent = preview
+}
+
+async function sendBulkMsg() {
+  const body = document.getElementById('bm-body').value.trim()
+  if (!body) { alert('El mensaje no puede estar vacío.'); return }
+  const btn = document.getElementById('bulkMsgSendBtn')
+  btn.textContent = 'Enviando…'; btn.disabled = true
+
+  const debtors  = getSelectedDebtors()
+  const { data:{ user } } = await db.auth.getUser()
+  const errors   = []
+  let sent       = 0
+
+  for (const d of debtors) {
+    const co     = S.companies[d.company_id]?.name || '—'
+    const gestor = S.users.find(u=>u.id===d.assigned_user_id)?.full_name || 'Gestor RS'
+    const msg    = body
+      .replace(/\{\{nombre\}\}/g,    d.debtor_name || '')
+      .replace(/\{\{saldo\}\}/g,     fmt(d.total_outstanding))
+      .replace(/\{\{dias_mora\}\}/g, String(d.max_days || 0))
+      .replace(/\{\{empresa\}\}/g,   co)
+      .replace(/\{\{asesor\}\}/g,    gestor)
+
+    // Registrar la gestión en collection_actions
+    const { error } = await db.from('collection_actions').insert({
+      company_id : d.company_id,
+      debtor_id  : d.id,
+      user_id    : user?.id || null,
+      channel    : bulkChannel,
+      result     : 'contacted',   // simulado — con Twilio real actualizaremos según respuesta
+      notes      : `[Envío masivo] ${msg}`,
+    })
+    if (error) { errors.push(d.debtor_name + ': ' + error.message); continue }
+    sent++
+
+    // Actualizar estado a in_collection si estaba pending
+    if (d.status === 'pending') {
+      await db.from('collection_debtors')
+        .update({ status: 'in_collection' })
+        .eq('id', d.id)
+    }
+  }
+
+  btn.textContent = `✉️ Enviar a ${selectedIds.size} deudores`
+  btn.disabled = false
+  closeModal('bulkMsgModal')
+
+  const chLabel = { whatsapp:'WhatsApp', email:'Email', sms:'SMS' }
+  alert(`✅ ${sent} mensajes registrados por ${chLabel[bulkChannel]}.
+${errors.length > 0 ? errors.length + ' errores.' : 'Sin errores.'}`)
+
+  clearSelection()
+  await loadAll()
+}
+
+/* ── ASIGNAR GESTOR MASIVO ── */
+async function bulkAssign() {
+  if (!S.users.length) { alert('No hay gestores disponibles.'); return }
+  const opts  = S.users.map((u,i) => `${i+1}. ${u.full_name}`).join('\n')
+  const idx   = parseInt(prompt(`Selecciona gestor:\n${opts}\n\nEscribe el número:`)) - 1
+  if (isNaN(idx) || !S.users[idx]) return
+  const gestor = S.users[idx]
+  const ids    = [...selectedIds]
+  let ok = 0
+  for (const id of ids) {
+    const d = S.debtors.find(x => x.id === id)
+    if (!d) continue
+    const { error } = await db.from('collection_debtors')
+      .update({ assigned_user_id: gestor.id })
+      .eq('id', id)
+    if (!error) ok++
+  }
+  alert(`✅ ${ok} deudores asignados a ${gestor.full_name}.`)
+  clearSelection(); await loadAll()
+}
+
+/* ── CAMBIAR ESTADO MASIVO ── */
+async function bulkStatus() {
+  const opts = Object.entries({
+    pending:'Pendiente', in_collection:'En gestión', promised:'Con promesa',
+    agreement:'Con acuerdo', defaulted:'Incumplido', uncontactable:'Incontactable'
+  }).map(([v,l],i) => `${i+1}. ${l} (${v})`).join('\n')
+  const estadoMap = ['pending','in_collection','promised','agreement','defaulted','uncontactable']
+  const idx = parseInt(prompt(`Nuevo estado para ${selectedIds.size} deudores:\n${opts}\n\nEscribe el número:`)) - 1
+  if (isNaN(idx) || !estadoMap[idx]) return
+  const newStatus = estadoMap[idx]
+  const ids = [...selectedIds]
+  let ok = 0
+  for (const id of ids) {
+    const { error } = await db.from('collection_debtors').update({ status: newStatus }).eq('id', id)
+    if (!error) ok++
+  }
+  alert(`✅ ${ok} deudores actualizados a "${newStatus}".`)
+  clearSelection(); await loadAll()
 }
 
 async function signOut(){ await db.auth.signOut(); window.location.href='login.html' }
