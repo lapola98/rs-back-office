@@ -167,6 +167,16 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
 .ce-cancel{background:none;border:none;color:var(--txt3);font-size:.8rem;cursor:pointer;padding:.2rem .4rem;transition:color .18s}
 .ce-cancel:hover{color:var(--err)}
 /* ── BULK ACTIONS ── */
+/* ENVIO CHANNEL BUTTONS */
+.envio-ch{display:inline-flex;align-items:center;gap:.4rem;padding:.45rem 1rem;border-radius:var(--r);border:1px solid var(--border);background:var(--bg3);font-family:var(--fu);font-size:.75rem;color:var(--txt2);cursor:pointer;transition:all .2s}
+.envio-ch:hover{border-color:rgba(201,168,76,.3);background:var(--bg4)}
+.envio-ch.active{background:var(--gold-pale);border-color:rgba(201,168,76,.4);color:var(--gold-l);font-weight:500}
+.pending-tbl{width:100%;border-collapse:collapse}
+.pending-tbl th{font-size:.6rem;font-weight:600;color:var(--txt3);letter-spacing:.09em;text-transform:uppercase;padding:0 .65rem .55rem;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+.pending-tbl td{padding:.55rem .65rem;font-size:.77rem;border-bottom:1px solid var(--border2);color:var(--txt2);vertical-align:middle}
+.pending-tbl tr:last-child td{border-bottom:none}
+.pending-tbl tr.urgent td{border-left:2px solid var(--err)}
+.pending-tbl tr.urgent{background:rgba(224,92,75,.03)}
 .bulk-bar{display:none;align-items:center;gap:.65rem;background:var(--bg2);border:1px solid rgba(201,168,76,.25);border-radius:var(--r);padding:.55rem 1rem;margin-bottom:.75rem;flex-wrap:wrap}
 .bulk-bar.on{display:flex;animation:fadeIn .2s ease}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -284,8 +294,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
         <span id="cTxt">Conectando…</span>
       </div>
       <div class="tb-date" id="tbDate">—</div>
-      <button class="tb-ico" onclick="loadAll()" title="Actualizar">🔄</button>
-      <a href="admin-collections-campaigns.html" class="tb-ico" title="Campañas">📣</a>
+      <a href="admin-collections-campaigns.html" class="btn-g" style="font-size:.72rem" title="Plantillas">📄 Plantillas</a>
       <div class="tb-av" id="tbAv">—</div>
     </div>
   </header>
@@ -302,9 +311,10 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
 
       <div class="alert-w" id="promAlert">
         <span style="font-size:1rem;flex-shrink:0">⚠️</span>
-        <p><strong id="promAlertTxt">Promesas vencidas</strong> requieren seguimiento inmediato.</p>
+        <p><strong id="promAlertTxt">Promesas vencidas</strong> requieren seguimiento inmediata.</p>
         <button onclick="this.closest('.alert-w').classList.remove('on')">✕</button>
       </div>
+
 
       <!-- STAT CARDS -->
       <div class="stats-row" id="statsRow">
@@ -338,13 +348,31 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
           </div>
         </div>
 
-        <!-- TABS: Activa / Pagados -->
+        <!-- FILTRO EMPRESA GLOBAL -->
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem">
+          <span style="font-size:.7rem;color:var(--txt3);font-weight:500">Empresa:</span>
+          <select id="globalCompany" onchange="onGlobalCompanyChange()"
+            style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:.35rem .7rem;font-family:var(--fu);font-size:.74rem;color:var(--txt2);outline:none;-webkit-appearance:none;cursor:pointer;min-width:200px">
+            <option value="">Todas las empresas</option>
+          </select>
+        </div>
+
+        <!-- TABS: Activa / Pagados / Gestión / Envío -->
         <div class="tab-bar">
           <button class="tab-btn active" id="tabActive" onclick="switchTab('active',this)">
-            Cartera activa <span class="tab-count" id="tabActiveCount">—</span>
+            💰 Cartera activa <span class="tab-count" id="tabActiveCount">—</span>
           </button>
           <button class="tab-btn" id="tabPaid" onclick="switchTab('paid',this)">
             Pagados <span class="tab-count" id="tabPaidCount">—</span>
+          </button>
+          <button class="tab-btn" id="tabGestion" onclick="switchTab('gestion',this)">
+            📞 Gestión del día <span class="tab-count" id="tabGestionCount" style="display:none"></span>
+          </button>
+          <button class="tab-btn" id="tabEnvio" onclick="switchTab('envio',this)">
+            📣 Envío masivo
+          </button>
+          <button class="tab-btn" id="tabPlantillas" onclick="switchTab('plantillas',this)">
+            📄 Plantillas
           </button>
         </div>
 
@@ -401,11 +429,224 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
           <div class="sk" style="height:14px;border-radius:4px;width:80%;margin-bottom:.55rem"></div>
           <div class="sk" style="height:14px;border-radius:4px;width:60%"></div>
         </div>
+
+        <!-- TAB: GESTIÓN DEL DÍA -->
+        <div id="tabGestionWrap" style="display:none">
+          <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.1rem 1.25rem">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem;flex-wrap:wrap;gap:.5rem">
+              <div>
+                <div style="font-family:var(--fd);font-size:1.05rem;font-weight:600;color:var(--white)">Pendientes de llamada hoy</div>
+                <div style="font-size:.68rem;color:var(--txt3);margin-top:.1rem" id="gestionSub">Deudores que subieron de tramo sin gestión hoy</div>
+              </div>
+              <button class="btn-g" onclick="renderGestion()">🔄 Actualizar</button>
+            </div>
+            <div id="gestionWrap"></div>
+          </div>
+        </div>
+
+        <!-- TAB: ENVÍO MASIVO -->
+        <div id="tabEnvioWrap" style="display:none">
+
+          <!-- PASO 1: Segmento -->
+          <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.1rem 1.25rem;margin-bottom:.75rem">
+            <div style="font-family:var(--fd);font-size:1rem;font-weight:600;color:var(--white);margin-bottom:.75rem">
+              <span style="color:var(--gold);margin-right:.5rem">1</span> Segmento
+            </div>
+            <div style="display:flex;gap:.65rem;flex-wrap:wrap;margin-bottom:.75rem">
+              <select class="filter-sel" id="envioTramo" onchange="updateEnvioSegment()"
+                style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:.45rem .75rem;font-family:var(--fu);font-size:.75rem;color:var(--txt2);outline:none;-webkit-appearance:none;cursor:pointer">
+                <option value="">Todos los tramos</option>
+                <option value="91">91+ días</option>
+                <option value="61">61–90 días</option>
+                <option value="31">31–60 días</option>
+                <option value="1">1–30 días</option>
+              </select>
+              <select class="filter-sel" id="envioStatus" onchange="updateEnvioSegment()"
+                style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:.45rem .75rem;font-family:var(--fu);font-size:.75rem;color:var(--txt2);outline:none;-webkit-appearance:none;cursor:pointer">
+                <option value="">Todos los estados</option>
+                <option value="pending">Pendiente</option>
+                <option value="in_collection">En gestión</option>
+                <option value="promised">Con promesa</option>
+                <option value="defaulted">Incumplido</option>
+                <option value="uncontactable">Incontactable</option>
+              </select>
+            </div>
+            <!-- Lista de deudores -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.45rem">
+              <label style="font-size:.72rem;color:var(--txt3);cursor:pointer;display:flex;align-items:center;gap:.35rem">
+                <input type="checkbox" id="envioSelAll" onchange="toggleEnvioAll(this)" style="accent-color:var(--gold)">
+                Seleccionar todos
+              </label>
+              <span id="envioSelCount" style="font-size:.72rem;color:var(--gold);font-weight:500">0 seleccionados</span>
+            </div>
+            <div id="envioDebtorsList" style="max-height:260px;overflow-y:auto;scrollbar-width:thin;display:flex;flex-direction:column;gap:.3rem"></div>
+          </div>
+
+          <!-- PASO 2: Canal -->
+          <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.1rem 1.25rem;margin-bottom:.75rem">
+            <div style="font-family:var(--fd);font-size:1rem;font-weight:600;color:var(--white);margin-bottom:.75rem">
+              <span style="color:var(--gold);margin-right:.5rem">2</span> Canal
+            </div>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+              <button class="envio-ch active" data-ch="whatsapp" onclick="selectEnvioChannel('whatsapp',this)">💬 WhatsApp</button>
+              <button class="envio-ch" data-ch="sms" onclick="selectEnvioChannel('sms',this)">📱 SMS</button>
+              <button class="envio-ch" data-ch="email" onclick="selectEnvioChannel('email',this)">📧 Email</button>
+            </div>
+          </div>
+
+          <!-- PASO 3: Plantilla -->
+          <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.1rem 1.25rem;margin-bottom:.75rem">
+            <div style="font-family:var(--fd);font-size:1rem;font-weight:600;color:var(--white);margin-bottom:.75rem">
+              <span style="color:var(--gold);margin-right:.5rem">3</span> Mensaje
+            </div>
+            <select id="envioTemplate" onchange="loadEnvioTemplate()"
+              style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:.5rem .75rem;font-family:var(--fu);font-size:.76rem;color:var(--txt2);outline:none;-webkit-appearance:none;cursor:pointer;margin-bottom:.65rem">
+              <option value="">— Seleccionar plantilla —</option>
+            </select>
+            <textarea id="envioMsg" rows="3"
+              style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:.6rem .8rem;font-family:var(--fu);font-size:.78rem;color:var(--txt);outline:none;resize:vertical;line-height:1.6;margin-bottom:.5rem"
+              placeholder="Escribe o selecciona una plantilla…"
+              oninput="updateEnvioPreview()"></textarea>
+            <div style="font-size:.68rem;color:var(--txt3);margin-bottom:.25rem">Vista previa (primer deudor seleccionado)</div>
+            <div id="envioPreview" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:.6rem .8rem;font-size:.76rem;color:var(--txt2);line-height:1.65;min-height:50px;white-space:pre-wrap">—</div>
+          </div>
+
+          <!-- PASO 4: Enviar -->
+          <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.1rem 1.25rem">
+            <div style="font-family:var(--fd);font-size:1rem;font-weight:600;color:var(--white);margin-bottom:.75rem">
+              <span style="color:var(--gold);margin-right:.5rem">4</span> Confirmar y enviar
+            </div>
+            <div id="envioSummary" style="font-size:.78rem;color:var(--txt3);margin-bottom:.75rem">Completa los pasos anteriores.</div>
+            <div style="display:flex;align-items:center;gap:.65rem;flex-wrap:wrap">
+              <button class="btn-p" id="envioSendBtn" onclick="executeEnvio()" disabled>✉️ Aprobar y enviar</button>
+              <span style="font-size:.7rem;background:var(--warn-bg);border:1px solid rgba(232,160,32,.15);border-radius:6px;padding:.3rem .7rem;color:var(--warn)">⚡ Twilio simulado</span>
+            </div>
+            <div id="envioProg" style="display:none;margin-top:.75rem">
+              <div id="envioProgTitle" style="font-size:.78rem;font-weight:500;color:var(--txt);margin-bottom:.4rem">Enviando…</div>
+              <div style="height:6px;background:var(--bg4);border-radius:3px;overflow:hidden;margin-bottom:.35rem">
+                <div id="envioProgBar" style="height:100%;border-radius:3px;background:linear-gradient(90deg,var(--gold),var(--gold-l));transition:width .3s;width:0%"></div>
+              </div>
+              <div id="envioProgDetail" style="font-size:.68rem;color:var(--txt3)">—</div>
+            </div>
+          </div>
+
+          <!-- HISTORIAL DE ENVÍOS -->
+          <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.1rem 1.25rem;margin-top:.75rem">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem">
+              <div>
+                <div style="font-family:var(--fd);font-size:1rem;font-weight:600;color:var(--white)">Historial de envíos masivos</div>
+                <div style="font-size:.68rem;color:var(--txt3);margin-top:.1rem" id="logSub">Últimas gestiones masivas registradas</div>
+              </div>
+              <button class="btn-g" onclick="loadEnvioLogs()">🔄</button>
+            </div>
+            <div id="envioLogsWrap">
+              <div class="sk" style="height:12px;border-radius:4px;margin-bottom:.4rem"></div>
+              <div class="sk" style="height:12px;border-radius:4px;width:75%;margin-bottom:.4rem"></div>
+              <div class="sk" style="height:12px;border-radius:4px;width:55%"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- TAB: PLANTILLAS -->
+        <div id="tabPlantillasWrap" style="display:none">
+          <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.1rem 1.25rem">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem">
+              <div>
+                <div style="font-family:var(--fd);font-size:1.05rem;font-weight:600;color:var(--white)">Plantillas de mensajes</div>
+                <div style="font-size:.68rem;color:var(--txt3);margin-top:.1rem" id="tplSub2">Cargando…</div>
+              </div>
+              <button class="btn-p" onclick="openTplModal2()">+ Nueva plantilla</button>
+            </div>
+            <!-- Variables -->
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:.75rem 1rem;margin-bottom:.85rem">
+              <div style="font-size:.68rem;font-weight:600;color:var(--txt3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.45rem">Variables disponibles — clic para copiar</div>
+              <div style="display:flex;flex-wrap:wrap;gap:.35rem">
+                ${['{{nombre}}','{{saldo}}','{{dias_mora}}','{{empresa}}','{{asesor}}','{{fecha_limite}}'].map(v=>
+                  `<span onclick="navigator.clipboard.writeText('${v}');this.style.background='var(--ok-bg)';setTimeout(()=>this.style.background='',800)"
+                    style="font-family:monospace;font-size:.72rem;background:var(--bg4);border:1px solid var(--border);border-radius:5px;padding:.2rem .55rem;cursor:pointer;color:var(--gold-l);transition:background .2s">${v}</span>`
+                ).join('')}
+              </div>
+            </div>
+            <div id="tplGrid2" style="display:flex;flex-direction:column;gap:.65rem">
+              <div class="sk" style="height:80px;border-radius:10px"></div>
+              <div class="sk" style="height:80px;border-radius:10px;width:85%"></div>
+            </div>
+          </div>
+        </div>
       </div>
 
     </div>
   </div>
 </div>
+</div>
+
+<!-- MODAL: PLANTILLA -->
+<div class="modal-overlay" id="tplModal2" onclick="closeModalOut(event,'tplModal2')">
+  <div class="modal">
+    <div class="modal-hd">
+      <h3 id="tpl2ModalTitle">Nueva plantilla</h3>
+      <button class="modal-close" onclick="closeModal('tplModal2')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Nombre *</label>
+        <input type="text" id="tpl2-name" placeholder="Ej: Recordatorio mora 31-60 WhatsApp">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Canal *</label>
+          <select id="tpl2-channel" onchange="tpl2ToggleSubject()">
+            <option value="whatsapp">💬 WhatsApp</option>
+            <option value="sms">📱 SMS</option>
+            <option value="email">📧 Email</option>
+            <option value="manual">📝 Manual</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Tramo de mora</label>
+          <select id="tpl2-tramo">
+            <option value="">Sin tramo específico</option>
+            <option value="1">1–30 días</option>
+            <option value="31">31–60 días</option>
+            <option value="61">61–90 días</option>
+            <option value="91">91+ días</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Empresa</label>
+        <select id="tpl2-company">
+          <option value="">🌐 Global (todas las empresas)</option>
+        </select>
+      </div>
+      <div class="field" id="tpl2SubjectRow" style="display:none">
+        <label>Asunto del email</label>
+        <input type="text" id="tpl2-subject" placeholder="Aviso de obligación vencida — {{nombre}}">
+      </div>
+      <div class="field">
+        <label>Variables — clic para insertar</label>
+        <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.5rem">
+          ${['{{nombre}}','{{saldo}}','{{dias_mora}}','{{empresa}}','{{asesor}}','{{fecha_limite}}'].map(v=>
+            `<span onclick="insertVar2('${v}')"
+              style="font-family:monospace;font-size:.7rem;background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:.18rem .5rem;cursor:pointer;color:var(--gold-l)">${v}</span>`
+          ).join('')}
+        </div>
+      </div>
+      <div class="field">
+        <label>Mensaje *</label>
+        <textarea id="tpl2-body" rows="5" placeholder="Hola {{nombre}}, tiene una obligación vencida por {{saldo}}…"></textarea>
+      </div>
+      <div class="field" style="display:flex;align-items:center;gap:.5rem">
+        <input type="checkbox" id="tpl2-active" checked style="width:auto;accent-color:var(--gold)">
+        <label for="tpl2-active" style="text-transform:none;letter-spacing:0;font-size:.78rem;color:var(--txt2);cursor:pointer;margin-bottom:0">Plantilla activa</label>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-s" onclick="closeModal('tplModal2')">Cancelar</button>
+      <button class="btn-p" id="tpl2SaveBtn" onclick="saveTpl2()">Guardar</button>
+    </div>
+  </div>
 </div>
 
 <!-- BULK ACTION BAR -->
@@ -586,7 +827,7 @@ async function loadAll() {
       db.from('collection_debtors').select(`
         id,company_id,debtor_document,debtor_name,city,
         phone,email,whatsapp,preferred_channel,
-        status,assigned_user_id,notes,created_at,
+        status,assigned_user_id,notes,created_at,prev_max_tramo,last_import_at,
         collection_debts(id,siigo_document,due_date,
           overdue_1_30,overdue_31_60,overdue_61_90,overdue_91_plus,
           not_yet_due,total_balance,outstanding_amount,status)
@@ -627,16 +868,53 @@ async function loadAll() {
     S.tasks      = r5.data||[]
     TEMPLATES    = r6.data||[]
 
-    populateFilters(); renderStats(); renderKpis(); renderTable(); checkAlerts(); updateTabCounts()
+    populateFilters(); populateGlobalCompany(); renderStats(); renderKpis(); renderTable(); checkAlerts(); updateTabCounts()
+
+    // Cargar plantillas para envío masivo
+    const { data: tplData } = await db.from('collection_templates')
+      .select('*')
+      .order('tramo').order('channel').order('name')
+    ENVIO_TEMPLATES = tplData || []
+    ALL_TEMPLATES   = tplData || []
+
+    // Cargar gestiones de hoy
+    await loadActionsToday()
+
+    // Actualizar badge de gestión del día
+    const coId = document.getElementById('globalCompany').value
+    const subieron = S.debtors.filter(d =>
+      d.status !== 'paid' &&
+      d.max_days > (d.prev_max_tramo || 0) && d.max_days > 0 &&
+      (!coId || d.company_id === coId)
+    )
+    const sinGestion = subieron.filter(d => !ACTIONS_TODAY[d.id]).length
+    const badge = document.getElementById('tabGestionCount')
+    if (badge) {
+      badge.textContent = sinGestion
+      badge.style.display = sinGestion > 0 ? 'inline-flex' : 'none'
+      badge.style.cssText += ';background:var(--err);color:#fff;border-radius:100px;padding:.05rem .35rem;font-size:.6rem;font-weight:700'
+    }
+
+    // Contador en quick access
+    const el = document.getElementById('quickPendingTxt')
+    if (el) {
+      el.textContent = sinGestion > 0
+        ? sinGestion + ' sin gestionar hoy'
+        : subieron.length > 0 ? subieron.length + ' gestionados ✓' : 'Sin cambios de tramo'
+      el.style.color = sinGestion > 0 ? 'var(--err)' : 'var(--ok)'
+    }
+
     conn('ok'); hideErr()
   } catch(e) { conn('err'); showErr(e.message); console.error(e) }
 }
 
 function renderStats() {
-  const d = S.debtors
+  const coId = document.getElementById('globalCompany')?.value || ''
+  const d = coId ? S.debtors.filter(x => x.company_id === coId) : S.debtors
   const totalAmt  = d.reduce((s,x)=>s+x.total_outstanding,0)
   const noContact = d.filter(x=>!x.has_contact&&x.status!=='paid').length
-  const agrActive = S.agreements.filter(a=>a.status==='active').length
+  const filteredIds = new Set(d.map(x=>x.id))
+  const agrActive = S.agreements.filter(a=>a.status==='active'&&filteredIds.has(a.debtor_id)).length
   document.getElementById('statsRow').innerHTML = `
     <div class="stat-card" style="--kc:var(--gold)">
       <div class="s-top"><div><div class="s-lbl">Total deudores</div><div class="s-val">${d.length}</div></div><div class="s-icon">📋</div></div>
@@ -652,23 +930,25 @@ function renderStats() {
     </div>
     <div class="stat-card" style="--kc:var(--gold)">
       <div class="s-top"><div><div class="s-lbl">Acuerdos activos</div><div class="s-val">${agrActive}</div></div><div class="s-icon">🤝</div></div>
-      <div class="s-sub">${S.agreements.filter(a=>a.status==='breached').length} incumplidos</div>
+      <div class="s-sub">${S.agreements.filter(a=>a.status==='breached'&&filteredIds.has(a.debtor_id)).length} incumplidos</div>
     </div>
     <div class="stat-card" style="--kc:var(--info)">
-      <div class="s-top"><div><div class="s-lbl">Tareas hoy</div><div class="s-val">${S.tasks.filter(t=>t.status==='pending'&&t.due_date===today()).length}</div></div><div class="s-icon" style="--kic:var(--info-bg)">📅</div></div>
-      <div class="s-sub">${S.tasks.filter(t=>t.status==='pending'&&t.due_date&&t.due_date<today()).length} vencidas</div>
+      <div class="s-top"><div><div class="s-lbl">Tareas hoy</div><div class="s-val">${S.tasks.filter(t=>t.status==='pending'&&t.due_date===today()&&filteredIds.has(t.debtor_id)).length}</div></div><div class="s-icon" style="--kic:var(--info-bg)">📅</div></div>
+      <div class="s-sub">${S.tasks.filter(t=>t.status==='pending'&&t.due_date&&t.due_date<today()&&filteredIds.has(t.debtor_id)).length} vencidas</div>
     </div>`
 }
 
 function renderKpis() {
-  const d = S.debtors
+  const coId = document.getElementById('globalCompany')?.value || ''
+  const d = coId ? S.debtors.filter(x => x.company_id === coId) : S.debtors
   const gestionados = d.filter(x=>x.status!=='pending').length
   const contactados = d.filter(x=>['promised','agreement','partially_paid'].includes(x.status)).length
   const pagados     = d.filter(x=>x.status==='paid').length
   const contact  = gestionados>0?Math.round(contactados/gestionados*100):0
   const efectiv  = (contactados+pagados)>0?Math.round(pagados/(contactados+pagados)*100):0
-  const promA    = S.agreements.filter(a=>a.status==='active').length
-  const promB    = S.agreements.filter(a=>a.status==='breached').length
+  const filteredIds = new Set(d.map(x=>x.id))
+  const promA    = S.agreements.filter(a=>a.status==='active'&&filteredIds.has(a.debtor_id)).length
+  const promB    = S.agreements.filter(a=>a.status==='breached'&&filteredIds.has(a.debtor_id)).length
   const cumplim  = (promA+promB)>0?Math.round(promA/(promA+promB)*100):0
   document.getElementById('kpiRow').innerHTML = `
     <div class="kpi-card"><div class="kpi-lbl">Contactabilidad</div><div class="kpi-val" style="color:${contact>=60?'var(--ok)':contact>=40?'var(--warn)':'var(--err)'}">${contact}%</div><div class="kpi-sub">${contactados} de ${gestionados} gestionados</div></div>
@@ -897,6 +1177,29 @@ function setDate()  { document.getElementById('tbDate').textContent=new Date().t
 
 /* ══ TABS ══ */
 function switchTab(tab, btn) {
+  // Hide/show new tab panels
+  document.getElementById('tabGestionWrap').style.display    = tab === 'gestion'    ? '' : 'none'
+  document.getElementById('tabEnvioWrap').style.display      = tab === 'envio'      ? '' : 'none'
+  document.getElementById('tabPlantillasWrap').style.display = tab === 'plantillas' ? '' : 'none'
+  // Hide toolbars for new tabs
+  if (tab === 'gestion' || tab === 'envio' || tab === 'plantillas') {
+    document.getElementById('activeToolbar').style.display = 'none'
+    document.getElementById('paidToolbar').style.display   = 'none'
+    document.getElementById('tableWrap').style.display     = 'none'
+    document.getElementById('bulkBar').style.display       = 'none'
+    document.getElementById('bulkBar').classList.remove('on')
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
+    btn.classList.add('active')
+    if (tab === 'gestion')    renderGestion()
+    if (tab === 'envio')      { updateEnvioSegment(); loadEnvioLogs() }
+    if (tab === 'plantillas') renderPlantillas2()
+    return
+  }
+  document.getElementById('tabGestionWrap').style.display    = 'none'
+  document.getElementById('tabEnvioWrap').style.display      = 'none'
+  document.getElementById('tabPlantillasWrap').style.display = 'none'
+  document.getElementById('tableWrap').style.display         = ''
+  document.getElementById('bulkBar').classList.remove('on')
   currentTab = tab
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
   btn.classList.add('active')
@@ -1197,7 +1500,572 @@ async function bulkStatus() {
   clearSelection(); await loadAll()
 }
 
+/* ══ PLANTILLAS ══ */
+let TPL_EDITING_ID = null
+let ALL_TEMPLATES  = []
+
+async function loadPlantillas2() {
+  const { data } = await db.from('collection_templates')
+    .select('*')
+    .order('tramo').order('channel').order('name')
+  ALL_TEMPLATES = data || []
+  // Also update ENVIO_TEMPLATES
+  ENVIO_TEMPLATES = ALL_TEMPLATES
+}
+
+function renderPlantillas2() {
+  const coId = document.getElementById('globalCompany').value
+  const sub  = document.getElementById('tplSub2')
+  const grid = document.getElementById('tplGrid2')
+  if (!sub || !grid) return
+
+  const filtered = ALL_TEMPLATES.filter(t =>
+    !coId || t.is_global || !t.company_id || t.company_id === coId
+  )
+  sub.textContent = `${filtered.length} plantillas`
+
+  const tramoLabel = t => t===91?'91+ días':t===61?'61–90 días':t===31?'31–60 días':t===1?'1–30 días':'Sin tramo'
+  const chIcon = { whatsapp:'💬', email:'📧', sms:'📱', manual:'📝' }
+
+  if (!filtered.length) {
+    grid.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--txt3)"><div style="font-size:1.5rem;opacity:.4;margin-bottom:.5rem">📄</div><div style="font-size:.78rem">No hay plantillas. Crea la primera.</div></div>`
+    return
+  }
+
+  grid.innerHTML = filtered.map(t => {
+    const co     = t.is_global ? '🌐 Global' : (S.companies[t.company_id]?.name || '—')
+    const tramo  = t.tramo ? tramoLabel(t.tramo) : '—'
+    return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:.85rem 1rem;display:flex;align-items:flex-start;gap:.75rem">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem;flex-wrap:wrap">
+          <span style="font-weight:600;color:var(--txt);font-size:.83rem">${esc(t.name)}</span>
+          <span style="font-size:.65rem;color:var(--txt3)">${chIcon[t.channel]||'📝'} ${esc(t.channel)}</span>
+          ${tramo !== '—' ? `<span style="font-size:.63rem;background:var(--gold-pale);color:var(--gold);padding:.08rem .4rem;border-radius:100px">${tramo}</span>` : ''}
+          <span style="font-size:.63rem;color:var(--txt3)">${esc(co)}</span>
+          ${!t.is_active ? '<span style="font-size:.63rem;color:var(--err)">Inactiva</span>' : ''}
+        </div>
+        <div style="font-size:.74rem;color:var(--txt2);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${esc(t.body)}</div>
+      </div>
+      <div style="display:flex;gap:.25rem;flex-shrink:0">
+        <button class="act-btn" onclick="editTpl2('${t.id}')" title="Editar">✏️</button>
+        ${!t.is_global ? `<button class="act-btn danger" onclick="deleteTpl2('${t.id}')" title="Eliminar">🗑</button>` : ''}
+      </div>
+    </div>`
+  }).join('')
+}
+
+function openTplModal2() {
+  TPL_EDITING_ID = null
+  document.getElementById('tpl2-name').value    = ''
+  document.getElementById('tpl2-body').value    = ''
+  document.getElementById('tpl2-subject').value = ''
+  document.getElementById('tpl2-channel').value = 'whatsapp'
+  document.getElementById('tpl2-tramo').value   = ''
+  document.getElementById('tpl2-company').innerHTML = '<option value="">🌐 Global (todas las empresas)</option>' +
+    Object.values(S.companies).map(co=>`<option value="${co.id}">${esc(co.name)}</option>`).join('')
+  document.getElementById('tpl2-active').checked = true
+  document.getElementById('tpl2ModalTitle').textContent = 'Nueva plantilla'
+  document.getElementById('tpl2SubjectRow').style.display = 'none'
+  openModal('tplModal2')
+}
+
+function editTpl2(id) {
+  const t = ALL_TEMPLATES.find(x => x.id === id)
+  if (!t) return
+  TPL_EDITING_ID = id
+  document.getElementById('tpl2-name').value    = t.name || ''
+  document.getElementById('tpl2-body').value    = t.body || ''
+  document.getElementById('tpl2-subject').value = t.subject || ''
+  document.getElementById('tpl2-channel').value = t.channel || 'whatsapp'
+  document.getElementById('tpl2-tramo').value   = t.tramo || ''
+  document.getElementById('tpl2-active').checked = t.is_active !== false
+  document.getElementById('tpl2-company').innerHTML = '<option value="">🌐 Global (todas las empresas)</option>' +
+    Object.values(S.companies).map(co=>`<option value="${co.id}"${co.id===t.company_id?' selected':''}>${esc(co.name)}</option>`).join('')
+  document.getElementById('tpl2ModalTitle').textContent = 'Editar plantilla'
+  document.getElementById('tpl2SubjectRow').style.display = t.channel === 'email' ? '' : 'none'
+  openModal('tplModal2')
+}
+
+async function saveTpl2() {
+  const btn  = document.getElementById('tpl2SaveBtn')
+  const name = document.getElementById('tpl2-name').value.trim()
+  const body = document.getElementById('tpl2-body').value.trim()
+  if (!name || !body) { alert('Nombre y mensaje son obligatorios.'); return }
+  btn.textContent = 'Guardando…'; btn.disabled = true
+  try {
+    const coId = document.getElementById('tpl2-company').value || null
+    const payload = {
+      name,
+      body,
+      channel   : document.getElementById('tpl2-channel').value,
+      subject   : document.getElementById('tpl2-subject').value.trim() || null,
+      tramo     : parseInt(document.getElementById('tpl2-tramo').value) || null,
+      is_active : document.getElementById('tpl2-active').checked,
+      is_global : !coId,
+      company_id: coId,
+    }
+    let err
+    if (TPL_EDITING_ID) {
+      ;({ error: err } = await db.from('collection_templates').update(payload).eq('id', TPL_EDITING_ID))
+    } else {
+      ;({ error: err } = await db.from('collection_templates').insert(payload))
+    }
+    if (err) throw err
+    closeModal('tplModal2')
+    await loadPlantillas2()
+    renderPlantillas2()
+    // Reload envio templates options
+    loadEnvioTemplateOptions()
+  } catch(e) {
+    alert('Error: ' + e.message)
+  } finally { btn.textContent = 'Guardar'; btn.disabled = false }
+}
+
+async function deleteTpl2(id) {
+  if (!confirm('¿Eliminar esta plantilla?')) return
+  const { error } = await db.from('collection_templates').delete().eq('id', id)
+  if (error) { alert('Error: ' + error.message); return }
+  await loadPlantillas2()
+  renderPlantillas2()
+}
+
+function tpl2ToggleSubject() {
+  document.getElementById('tpl2SubjectRow').style.display =
+    document.getElementById('tpl2-channel').value === 'email' ? '' : 'none'
+}
+
+function insertVar2(v) {
+  const ta = document.getElementById('tpl2-body')
+  const s  = ta.selectionStart, e = ta.selectionEnd
+  ta.value = ta.value.slice(0,s) + v + ta.value.slice(e)
+  ta.selectionStart = ta.selectionEnd = s + v.length
+  ta.focus()
+}
+
 async function signOut(){ await db.auth.signOut(); window.location.href='login.html' }
+
+/* ══ FILTRO EMPRESA GLOBAL ══ */
+function onGlobalCompanyChange() {
+  const val = document.getElementById('globalCompany').value
+  // Sincronizar con el filtro interno de cartera activa
+  const fCompany = document.getElementById('fCompany')
+  if (fCompany) fCompany.value = val
+  const fCompanyPaid = document.getElementById('fCompanyPaid')
+  if (fCompanyPaid) fCompanyPaid.value = val
+
+  // Actualizar stats y KPIs con los datos de la empresa seleccionada
+  renderStats()
+  renderKpis()
+  // Si estamos en el tab de envío, recargar logs filtrados
+  if (document.getElementById('tabEnvioWrap')?.style.display !== 'none') loadEnvioLogs()
+
+  // Re-renderizar según tab activo
+  const activeTab = document.querySelector('.tab-btn.active')?.id
+  if (activeTab === 'tabActive' || !activeTab) renderTable()
+  else if (activeTab === 'tabPaid')    renderPaidTable()
+  else if (activeTab === 'tabGestion') renderGestion()
+  else if (activeTab === 'tabEnvio')   updateEnvioSegment()
+}
+
+function populateGlobalCompany() {
+  const sel = document.getElementById('globalCompany')
+  if (!sel) return
+  const current = sel.value
+  sel.innerHTML = '<option value="">Todas las empresas</option>' +
+    Object.values(S.companies).map(co =>
+      `<option value="${co.id}"${co.id===current?' selected':''}>${esc(co.name)}</option>`
+    ).join('')
+}
+
+/* ══ GESTIÓN DEL DÍA ══ */
+let ACTIONS_TODAY = {}
+let ENVIO_CHANNEL = 'whatsapp'
+let ENVIO_SEGMENT = []
+let ENVIO_TEMPLATES = []
+
+async function loadActionsToday() {
+  const todayStr = today()
+  const ids = S.debtors.map(d => d.id).slice(0, 500)
+  if (!ids.length) { ACTIONS_TODAY = {}; return }
+  const { data } = await db.from('collection_actions')
+    .select('debtor_id')
+    .gte('created_at', todayStr + 'T00:00:00')
+    .lte('created_at', todayStr + 'T23:59:59')
+    .in('debtor_id', ids)
+  ACTIONS_TODAY = {}
+  ;(data||[]).forEach(a => { ACTIONS_TODAY[a.debtor_id] = true })
+}
+
+function renderGestion() {
+  const companyId = document.getElementById('globalCompany').value
+  const subieron  = S.debtors.filter(d =>
+    d.status !== 'paid' &&
+    d.max_days > (d.prev_max_tramo || 0) &&
+    d.max_days > 0 &&
+    (!companyId || d.company_id === companyId)
+  )
+  const sinGestion = subieron.filter(d => !ACTIONS_TODAY[d.id])
+  const conGestion = subieron.filter(d =>  ACTIONS_TODAY[d.id])
+
+  // Badge
+  const badge = document.getElementById('tabGestionCount')
+  if (badge) {
+    badge.textContent = sinGestion.length
+    badge.style.display = sinGestion.length > 0 ? 'inline-flex' : 'none'
+    badge.style.background = 'var(--err)'
+    badge.style.color = '#fff'
+  }
+
+  document.getElementById('gestionSub').textContent =
+    `${subieron.length} subieron de tramo · ${sinGestion.length} sin gestionar · ${conGestion.length} gestionados`
+
+  const tl = t => t>=91?'91+ días':t>=61?'61–90 días':t>=31?'31–60 días':'1–30 días'
+  const tc = t => t>=91?'var(--err)':t>=61?'var(--err)':t>=31?'var(--warn)':'var(--gold)'
+
+  if (!subieron.length) {
+    document.getElementById('gestionWrap').innerHTML = `
+      <div style="text-align:center;padding:2rem;color:var(--txt3)">
+        <div style="font-size:1.5rem;margin-bottom:.5rem;opacity:.4">✅</div>
+        <div style="font-size:.78rem">Sin cambios de tramo en la última importación.</div>
+      </div>`
+    return
+  }
+
+  const rows = [...sinGestion.map(d => ({ d, urgent: true })), ...conGestion.map(d => ({ d, urgent: false }))]
+    .map(({ d, urgent }) => {
+      const co   = S.companies[d.company_id]?.name || '—'
+      const prev = d.prev_max_tramo || 0
+      return `<tr class="${urgent ? 'urgent' : ''}">
+        <td>${urgent
+          ? '<span style="font-size:.68rem;color:var(--err);font-weight:600">🔴 Sin gestión</span>'
+          : '<span style="font-size:.68rem;color:var(--ok);font-weight:600">✅ Gestionado</span>'
+        }</td>
+        <td>
+          <div style="font-weight:500;color:var(--txt)">${esc(d.debtor_name)}</div>
+          <div style="font-size:.67rem;color:var(--txt3)">${esc(d.debtor_document||'—')} · ${esc(co)}</div>
+        </td>
+        <td>
+          <span style="color:var(--txt3);font-size:.7rem">${tl(prev)}</span>
+          <span style="color:var(--txt3)"> → </span>
+          <span style="color:${tc(d.max_days)};font-weight:600;font-size:.75rem">${tl(d.max_days)}</span>
+        </td>
+        <td style="font-family:var(--fd);font-size:.95rem;font-weight:600;color:var(--gold-l)">${fmt(d.total_outstanding)}</td>
+        <td style="color:${d.has_contact?'var(--ok)':'var(--warn)'};font-size:.75rem">${d.has_contact?'✓':'⚠'}</td>
+        <td>
+          <a href="admin-collections-detail.html?id=${d.id}"
+            style="display:inline-flex;align-items:center;gap:.3rem;padding:.3rem .65rem;border-radius:6px;border:1px solid rgba(201,168,76,.3);background:var(--gold-pale);font-size:.7rem;font-weight:500;color:var(--gold-l);text-decoration:none">
+            📞 Ir a ficha
+          </a>
+        </td>
+      </tr>`
+    }).join('')
+
+  document.getElementById('gestionWrap').innerHTML = `
+    <div style="overflow-x:auto">
+    <table class="pending-tbl">
+      <thead><tr>
+        <th>Estado</th><th>Deudor</th><th>Cambio de tramo</th>
+        <th>Saldo</th><th>Contacto</th><th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>`
+}
+
+/* ══ ENVÍO MASIVO ══ */
+function updateEnvioSegment() {
+  const companyId = document.getElementById('globalCompany').value
+  const tramo     = parseInt(document.getElementById('envioTramo').value) || 0
+  const status    = document.getElementById('envioStatus').value
+
+  clearEnvioMsg()  // limpiar plantilla al cambiar segmento
+
+  ENVIO_SEGMENT = S.debtors.filter(d => {
+    if (d.status === 'paid') return false
+    if (companyId && d.company_id !== companyId) return false
+    if (tramo  && d.max_days !== tramo) return false
+    if (status && d.status   !== status) return false
+    return d.max_days > 0
+  })
+
+  renderEnvioDebtors()
+  loadEnvioTemplateOptions()
+  updateEnvioPreview()
+  updateEnvioSummary()
+}
+
+function renderEnvioDebtors() {
+  const list = document.getElementById('envioDebtorsList')
+  const tc   = t => t>=91?'var(--err)':t>=61?'var(--err)':t>=31?'var(--warn)':'var(--gold)'
+  const tl   = t => t>=91?'91+':t>=61?'61-90':t>=31?'31-60':'1-30'
+
+  if (!ENVIO_SEGMENT.length) {
+    list.innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--txt3);font-size:.78rem">Sin deudores en este segmento</div>`
+    document.getElementById('envioSelAll').checked = false
+    document.getElementById('envioSelCount').textContent = '0 seleccionados'
+    return
+  }
+
+  list.innerHTML = ENVIO_SEGMENT.map(d => {
+    const co = S.companies[d.company_id]?.name || '—'
+    return `<div style="display:flex;align-items:center;gap:.6rem;padding:.45rem .6rem;background:var(--bg3);border:1px solid var(--border2);border-radius:7px">
+      <input type="checkbox" class="envio-chk" data-id="${d.id}" checked
+        onchange="updateEnvioSelCount()"
+        style="accent-color:var(--gold);width:15px;height:15px;flex-shrink:0;cursor:pointer">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.77rem;font-weight:500;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(d.debtor_name)}</div>
+        <div style="font-size:.66rem;color:var(--txt3)">${esc(d.debtor_document||'—')} · ${esc(co)}</div>
+      </div>
+      <span style="font-size:.65rem;font-weight:600;color:${tc(d.max_days)};flex-shrink:0">${tl(d.max_days)} días</span>
+      <div style="font-family:var(--fd);font-size:.88rem;font-weight:600;color:var(--gold-l);flex-shrink:0">${fmt(d.total_outstanding)}</div>
+      <span style="font-size:.7rem;color:${d.has_contact?'var(--ok)':'var(--warn)'};flex-shrink:0">${d.has_contact?'✓':'⚠'}</span>
+    </div>`
+  }).join('')
+
+  document.getElementById('envioSelAll').checked = true
+  updateEnvioSelCount()
+}
+
+function toggleEnvioAll(el) {
+  document.querySelectorAll('.envio-chk').forEach(chk => { chk.checked = el.checked })
+  updateEnvioSelCount()
+}
+
+function updateEnvioSelCount() {
+  const n     = document.querySelectorAll('.envio-chk:checked').length
+  const total = document.querySelectorAll('.envio-chk').length
+  document.getElementById('envioSelCount').textContent = `${n} seleccionado${n!==1?'s':''}`
+  document.getElementById('envioSelAll').checked      = n === total
+  document.getElementById('envioSelAll').indeterminate = n > 0 && n < total
+  updateEnvioPreview()
+  updateEnvioSummary()
+}
+
+function getEnvioSelected() {
+  const ids = new Set(Array.from(document.querySelectorAll('.envio-chk:checked')).map(el => el.dataset.id))
+  return ENVIO_SEGMENT.filter(d => ids.has(d.id))
+}
+
+function selectEnvioChannel(ch, btn) {
+  ENVIO_CHANNEL = ch
+  document.querySelectorAll('.envio-ch').forEach(b => b.classList.remove('active'))
+  btn.classList.add('active')
+  clearEnvioMsg()
+  loadEnvioTemplateOptions()
+}
+
+/* ══ HISTORIAL DE ENVÍOS ══ */
+async function loadEnvioLogs() {
+  const coId = document.getElementById('globalCompany').value
+  const wrap = document.getElementById('envioLogsWrap')
+  if (!wrap) return
+
+  wrap.innerHTML = '<div class="sk" style="height:12px;border-radius:4px;margin-bottom:.4rem"></div><div class="sk" style="height:12px;border-radius:4px;width:70%"></div>'
+
+  // Cargar últimas 100 acciones masivas (notes contiene [Campaña masiva] o [Envío masivo])
+  let query = db.from('collection_actions')
+    .select('id, debtor_id, channel, result, notes, created_at, company_id, profiles(full_name), collection_debtors(debtor_name)')
+    .or('notes.ilike.%Campaña masiva%,notes.ilike.%Envío masivo%,notes.ilike.%Envio masivo%')
+    .order('created_at', { ascending: false })
+    .limit(100)
+
+  if (coId) query = query.eq('company_id', coId)
+
+  const { data, error } = await query
+  if (error) { wrap.innerHTML = `<div style="color:var(--err);font-size:.75rem">Error: ${esc(error.message)}</div>`; return }
+
+  const logs = data || []
+  document.getElementById('logSub').textContent = `${logs.length} envíos masivos registrados`
+
+  if (!logs.length) {
+    wrap.innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--txt3);font-size:.76rem">Sin envíos masivos registrados aún.</div>`
+    return
+  }
+
+  const chIcon  = { whatsapp:'💬', email:'📧', sms:'📱', phone:'📞', manual:'📝' }
+  const resCls  = { contacted:'b-ok', uncontactable:'b-n', contacted_auto:'b-info' }
+
+  // Agrupar por fecha + canal (para mostrar campañas agrupadas)
+  const grouped = {}
+  logs.forEach(l => {
+    const dateKey = l.created_at?.slice(0,16).replace('T',' ') || '—'
+    const key = `${dateKey}|${l.channel}|${l.company_id}`
+    if (!grouped[key]) grouped[key] = { date: dateKey, channel: l.channel, company_id: l.company_id, count: 0, sent: 0, skipped: 0, gestor: l.profiles?.full_name || '—' }
+    grouped[key].count++
+    if (l.result === 'contacted') grouped[key].sent++
+    else grouped[key].skipped++
+  })
+
+  const rows = Object.values(grouped).slice(0, 30).map(g => {
+    const co = S.companies[g.company_id]?.name || '—'
+    return `<tr>
+      <td style="font-size:.7rem;color:var(--txt3);white-space:nowrap">${esc(g.date)}</td>
+      <td>${chIcon[g.channel]||'📝'} <span style="font-size:.74rem;color:var(--txt2)">${esc(g.channel)}</span></td>
+      <td style="font-size:.74rem;color:var(--txt2)">${esc(co)}</td>
+      <td style="text-align:center">
+        <span style="font-family:var(--fd);font-size:.95rem;font-weight:600;color:var(--gold-l)">${g.count}</span>
+        <span style="font-size:.65rem;color:var(--txt3)"> total</span>
+      </td>
+      <td style="text-align:center">
+        <span style="font-size:.74rem;color:var(--ok);font-weight:500">${g.sent}</span>
+        <span style="font-size:.65rem;color:var(--txt3)"> env · </span>
+        <span style="font-size:.74rem;color:var(--txt3)">${g.skipped}</span>
+        <span style="font-size:.65rem;color:var(--txt3)"> omit</span>
+      </td>
+      <td style="font-size:.7rem;color:var(--txt3)">${esc(g.gestor)}</td>
+    </tr>`
+  }).join('')
+
+  wrap.innerHTML = `
+    <div style="overflow-x:auto;max-height:280px;overflow-y:auto;scrollbar-width:thin">
+    <table class="pending-tbl">
+      <thead><tr>
+        <th>Fecha</th><th>Canal</th><th>Empresa</th>
+        <th style="text-align:center">Destinatarios</th>
+        <th style="text-align:center">Resultado</th>
+        <th>Gestor</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>`
+}
+
+function clearEnvioMsg() {
+  document.getElementById('envioTemplate').value = ''
+  document.getElementById('envioMsg').value = ''
+  document.getElementById('envioPreview').textContent = '—'
+  updateEnvioSummary()
+}
+
+function loadEnvioTemplateOptions() {
+  const tramo     = parseInt(document.getElementById('envioTramo').value) || 0
+  const companyId = document.getElementById('globalCompany').value
+  const sel       = document.getElementById('envioTemplate')
+
+  const filtered = ENVIO_TEMPLATES.filter(t => {
+    if (t.channel !== ENVIO_CHANNEL) return false
+    if (tramo && t.tramo && t.tramo !== tramo) return false
+    // Mostrar globales siempre + las de la empresa seleccionada
+    if (t.is_global || !t.company_id) return true
+    if (companyId && t.company_id === companyId) return true
+    if (!companyId) return true  // sin filtro → mostrar todas
+    return false
+  })
+
+  sel.innerHTML = '<option value="">— Seleccionar plantilla —</option>' +
+    filtered.map(t => {
+      const label = t.is_global ? t.name : `★ ${t.name}`  // ★ = plantilla de empresa
+      return `<option value="${t.id}">${esc(label)}</option>`
+    }).join('')
+}
+
+function loadEnvioTemplate() {
+  const id  = document.getElementById('envioTemplate').value
+  const tpl = ENVIO_TEMPLATES.find(t => t.id === id)
+  if (!tpl) return
+  document.getElementById('envioMsg').value = tpl.body
+  updateEnvioPreview()
+  updateEnvioSummary()
+}
+
+function updateEnvioPreview() {
+  const msg = document.getElementById('envioMsg').value
+  const box = document.getElementById('envioPreview')
+  const sel = getEnvioSelected()
+  if (!msg || !sel.length) { box.textContent = msg || '—'; return }
+  const d  = sel[0]
+  const co = S.companies[d.company_id]?.name || '—'
+  box.textContent = msg
+    .replace(/\{\{nombre\}\}/g,    d.debtor_name || '')
+    .replace(/\{\{saldo\}\}/g,     fmt(d.total_outstanding))
+    .replace(/\{\{dias_mora\}\}/g, d.max_days >= 91 ? '91+' : String(d.max_days || 0))
+    .replace(/\{\{empresa\}\}/g,   co)
+    .replace(/\{\{asesor\}\}/g,    'Asesor RS')
+}
+
+function updateEnvioSummary() {
+  const sel       = getEnvioSelected()
+  const msg       = document.getElementById('envioMsg')?.value?.trim()
+  const chLabel   = { whatsapp:'WhatsApp', sms:'SMS', email:'Email' }
+  const noContact = sel.filter(d => {
+    if (ENVIO_CHANNEL === 'whatsapp') return !d.phone && !d.whatsapp
+    if (ENVIO_CHANNEL === 'sms')      return !d.phone && !d.whatsapp
+    if (ENVIO_CHANNEL === 'email')    return !d.email
+    return false
+  }).length
+  const canSend = sel.length > 0 && msg
+
+  document.getElementById('envioSendBtn').disabled = !canSend
+  document.getElementById('envioSummary').innerHTML = !canSend
+    ? '<span style="color:var(--txt3)">Completa los pasos anteriores.</span>'
+    : `<div style="display:flex;gap:1rem;flex-wrap:wrap">
+        <div><div style="font-family:var(--fd);font-size:1.4rem;font-weight:600;color:var(--gold-l)">${sel.length}</div><div style="font-size:.65rem;color:var(--txt3)">destinatarios</div></div>
+        <div><div style="font-family:var(--fd);font-size:1.4rem;font-weight:600;color:${noContact>0?'var(--warn)':'var(--ok)'}">${sel.length - noContact}</div><div style="font-size:.65rem;color:var(--txt3)">con contacto ${chLabel[ENVIO_CHANNEL]}</div></div>
+        ${noContact>0?`<div><div style="font-family:var(--fd);font-size:1.4rem;font-weight:600;color:var(--txt3)">${noContact}</div><div style="font-size:.65rem;color:var(--txt3)">sin contacto</div></div>`:''}
+      </div>`
+}
+
+async function executeEnvio() {
+  const msg = document.getElementById('envioMsg').value.trim()
+  if (!msg) return
+  const toSend = getEnvioSelected()
+  if (!toSend.length) return
+
+  const btn = document.getElementById('envioSendBtn')
+  btn.disabled = true; btn.textContent = 'Enviando…'
+  document.getElementById('envioProg').style.display = ''
+
+  const { data:{ user } } = await db.auth.getUser()
+  let sent = 0, skipped = 0
+  const errors = []
+
+  for (let i = 0; i < toSend.length; i++) {
+    const d  = toSend[i]
+    const co = S.companies[d.company_id]?.name || '—'
+    const hasContact =
+      ENVIO_CHANNEL === 'whatsapp' ? !!(d.phone || d.whatsapp) :
+      ENVIO_CHANNEL === 'sms'      ? !!(d.phone || d.whatsapp) :
+      ENVIO_CHANNEL === 'email'    ? !!d.email : false
+
+    const personalMsg = msg
+      .replace(/\{\{nombre\}\}/g,    d.debtor_name || '')
+      .replace(/\{\{saldo\}\}/g,     fmt(d.total_outstanding))
+      .replace(/\{\{dias_mora\}\}/g, d.max_days >= 91 ? '91+' : String(d.max_days || 0))
+      .replace(/\{\{empresa\}\}/g,   co)
+      .replace(/\{\{asesor\}\}/g,    'Asesor RS')
+
+    // ── Aquí va Twilio cuando esté listo ──
+    // const result = await callTwilio(ENVIO_CHANNEL, d, personalMsg)
+
+    const { error } = await db.from('collection_actions').insert({
+      company_id : d.company_id,
+      debtor_id  : d.id,
+      user_id    : user?.id || null,
+      channel    : ENVIO_CHANNEL,
+      result     : hasContact ? 'contacted' : 'uncontactable',
+      notes      : `[Campaña masiva]
+${personalMsg}`,
+    })
+    if (error) errors.push(`${d.debtor_name}: ${error.message}`)
+    if (hasContact && d.status === 'pending') {
+      await db.from('collection_debtors').update({ status: 'in_collection' }).eq('id', d.id)
+    }
+    if (hasContact) sent++; else skipped++
+
+    const pct = Math.round(((i+1)/toSend.length)*100)
+    document.getElementById('envioProgBar').style.width   = pct + '%'
+    document.getElementById('envioProgDetail').textContent = `${i+1} de ${toSend.length} — ${d.debtor_name}`
+  }
+
+  document.getElementById('envioProgTitle').textContent = '✅ Envío completado'
+  document.getElementById('envioProgDetail').innerHTML =
+    `<strong style="color:var(--ok)">${sent} enviados</strong>` +
+    (skipped > 0 ? ` · <span style="color:var(--txt3)">${skipped} omitidos</span>` : '') +
+    (errors.length > 0 ? ` · <span style="color:var(--err)">${errors.length} errores</span>` : '')
+
+  btn.textContent = '✉️ Aprobar y enviar'; btn.disabled = false
+  setTimeout(() => { loadAll(); loadEnvioLogs() }, 2000)
+}
 
 init()
 </script>
