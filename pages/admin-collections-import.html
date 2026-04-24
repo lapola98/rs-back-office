@@ -203,7 +203,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
     <a href="admin-dashboards.html" class="sb-link"><span class="sb-icon">📊</span> Dashboards BI</a>
     <div class="sb-div"></div>
     <div class="sb-lbl">Módulos</div>
-    <a href="admin-collections.html" class="sb-link"><span class="sb-icon">💰</span> Cobranza</a>
+    <a href="admin-collections.html" class="sb-link active"><span class="sb-icon">💰</span> Cobranza</a>
     <a href="#" class="sb-link"><span class="sb-icon">🧾</span> Facturación y Cartera</a>
     <a href="#" class="sb-link"><span class="sb-icon">📋</span> Contabilidad</a>
     <a href="#" class="sb-link"><span class="sb-icon">🏦</span> Tesorería</a>
@@ -795,27 +795,29 @@ function renderDiffPreview() {
       !existingDebtors[doc].phone && !existingDebtors[doc].email && !existingDebtors[doc].whatsapp
     ).length
 
-  // Summary cards
+  // Summary cards — dos niveles: DEUDORES y FACTURAS
   document.getElementById('sumGrid').innerHTML = `
-    <div class="sum-card">
-      <div class="sum-lbl">Sin cambio</div>
-      <div class="sum-val" style="color:var(--ok)">${diffResult.sin_cambio}</div>
-      <div style="font-size:.65rem;color:var(--txt3);margin-top:.2rem">no se escriben</div>
+    <div class="sum-card" style="border-top:2px solid var(--info)">
+      <div class="sum-lbl">🆕 Deudores nuevos</div>
+      <div class="sum-val" style="color:var(--info)">${diffResult.nuevos_deb.length}</div>
+      <div style="font-size:.65rem;color:var(--txt3);margin-top:.2rem">se crearán en cartera</div>
     </div>
-    <div class="sum-card">
-      <div class="sum-lbl">Se actualizan</div>
-      <div class="sum-val" style="color:var(--gold-l)">${diffResult.modificados.length}</div>
-      <div style="font-size:.65rem;color:var(--txt3);margin-top:.2rem">montos cambiaron</div>
+    <div class="sum-card" style="border-top:2px solid var(--ok)">
+      <div class="sum-lbl">✅ Pagaron</div>
+      <div class="sum-val" style="color:var(--ok)">${diffResult.pagados.length + diffResult.desaparecidos.length}</div>
+      <div style="font-size:.65rem;color:var(--txt3);margin-top:.2rem">${diffResult.desaparecidos.length} salieron del reporte</div>
     </div>
-    <div class="sum-card">
-      <div class="sum-lbl">Nuevas facturas</div>
-      <div class="sum-val" style="color:var(--info)">${diffResult.nuevos_inv.length}</div>
-      <div style="font-size:.65rem;color:var(--txt3);margin-top:.2rem">${diffResult.nuevos_deb.length} deudores nuevos</div>
+    <div class="sum-card" style="border-top:2px solid var(--warn)">
+      <div class="sum-lbl">🔴 Subieron de tramo</div>
+      <div class="sum-val" style="color:var(--warn)">${diffResult.sube_tramo.length}</div>
+      <div style="font-size:.65rem;color:var(--txt3);margin-top:.2rem">requieren gestión hoy</div>
     </div>
-    <div class="sum-card">
-      <div class="sum-lbl">Queries a BD</div>
-      <div class="sum-val" style="color:${toWrite<=50?'var(--ok)':toWrite<=200?'var(--warn)':'var(--err)'}">${toWrite}</div>
-      <div style="font-size:.65rem;color:var(--txt3);margin-top:.2rem">de ${totalRows} filas del archivo</div>
+    <div class="sum-card" style="border-top:2px solid var(--border)">
+      <div class="sum-lbl">📄 Facturas</div>
+      <div class="sum-val" style="color:var(--txt2)">${diffResult.modificados.length + diffResult.nuevos_inv.length}</div>
+      <div style="font-size:.65rem;color:var(--txt3);margin-top:.2rem">
+        ${diffResult.sin_cambio} sin cambio · ${diffResult.nuevos_inv.length} nuevas · ${diffResult.modificados.length} actualizadas
+      </div>
     </div>`
 
   // Alertas de novedades
@@ -864,7 +866,7 @@ function renderDiffPreview() {
   // Reset debug lines for fresh comparison
   debugLines = []
   document.getElementById('previewSub').textContent =
-    `${totalRows} filas en el archivo · ${toWrite} se escribirán · ${diffResult.sin_cambio} sin cambio`
+    `${totalRows} filas en el archivo · ${diffResult.modificados.length} facturas con cambio de monto · ${diffResult.nuevos_inv.length} facturas nuevas · ${diffResult.sin_cambio} sin cambio`
 
   const tbody = document.getElementById('previewBody')
   tbody.innerHTML = ''

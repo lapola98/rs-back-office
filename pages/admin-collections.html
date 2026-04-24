@@ -562,7 +562,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
             <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:.75rem 1rem;margin-bottom:.85rem">
               <div style="font-size:.68rem;font-weight:600;color:var(--txt3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.45rem">Variables disponibles — clic para copiar</div>
               <div style="display:flex;flex-wrap:wrap;gap:.35rem">
-                ${['{{nombre}}','{{saldo}}','{{dias_mora}}','{{empresa}}','{{asesor}}','{{fecha_limite}}'].map(v=>
+                ${['{{nombre}}','{{saldo}}','{{dias_mora}}','{{facturas}}','{{empresa}}','{{asesor}}','{{fecha_limite}}'].map(v=>
                   `<span onclick="navigator.clipboard.writeText('${v}');this.style.background='var(--ok-bg)';setTimeout(()=>this.style.background='',800)"
                     style="font-family:monospace;font-size:.72rem;background:var(--bg4);border:1px solid var(--border);border-radius:5px;padding:.2rem .55rem;cursor:pointer;color:var(--gold-l);transition:background .2s">${v}</span>`
                 ).join('')}
@@ -627,7 +627,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
       <div class="field">
         <label>Variables — clic para insertar</label>
         <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.5rem">
-          ${['{{nombre}}','{{saldo}}','{{dias_mora}}','{{empresa}}','{{asesor}}','{{fecha_limite}}'].map(v=>
+          ${['{{nombre}}','{{saldo}}','{{dias_mora}}','{{facturas}}','{{empresa}}','{{asesor}}','{{fecha_limite}}'].map(v=>
             `<span onclick="insertVar2('${v}')"
               style="font-family:monospace;font-size:.7rem;background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:.18rem .5rem;cursor:pointer;color:var(--gold-l)">${v}</span>`
           ).join('')}
@@ -683,7 +683,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
       <div class="field">
         <label>Mensaje *
           <span style="font-size:.64rem;color:var(--txt3);font-weight:400;margin-left:.4rem">
-            Variables: {{nombre}} {{saldo}} {{dias_mora}} {{empresa}} {{asesor}}
+            Variables: {{nombre}} {{saldo}} {{dias_mora}} {{facturas}} {{empresa}} {{asesor}}
           </span>
         </label>
         <textarea id="bm-body" rows="4" placeholder="Escribe el mensaje aquí…" oninput="previewBulkMsg()"></textarea>
@@ -1408,6 +1408,7 @@ function previewBulkMsg() {
     .replace(/\{\{dias_mora\}\}/g, String(sample.max_days || 0))
     .replace(/\{\{empresa\}\}/g,   co)
     .replace(/\{\{asesor\}\}/g,    S.users.find(u=>u.id===sample.assigned_user_id)?.full_name || 'Gestor RS')
+    .replace(/\{\{facturas\}\}/g,  buildFacturasText(sample))
   document.getElementById('bm-preview').textContent = preview
 }
 
@@ -1431,6 +1432,7 @@ async function sendBulkMsg() {
       .replace(/\{\{dias_mora\}\}/g, String(d.max_days || 0))
       .replace(/\{\{empresa\}\}/g,   co)
       .replace(/\{\{asesor\}\}/g,    gestor)
+      .replace(/\{\{facturas\}\}/g,  buildFacturasText(d))
 
     // Registrar la gestión en collection_actions
     const { error } = await db.from('collection_actions').insert({
@@ -1829,6 +1831,12 @@ function renderEnvioDebtors() {
             onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.7">
             ✏️ Editar →
           </a>
+          <a href="admin-collections-detail.html?id=${d.id}"
+            style="color:var(--txt3);text-decoration:none;font-size:.8rem;transition:color .2s"
+            onmouseover="this.style.color='var(--txt)'" onmouseout="this.style.color='var(--txt3)'"
+            title="Ver ficha completa">
+            👁
+          </a>
         </div>
       </div>
       <span style="font-size:.65rem;font-weight:600;color:${tc(d.max_days)};flex-shrink:0">${tl(d.max_days)} días</span>
@@ -1995,6 +2003,7 @@ function updateEnvioPreview() {
     .replace(/\{\{dias_mora\}\}/g, d.max_days >= 91 ? '91+' : String(d.max_days || 0))
     .replace(/\{\{empresa\}\}/g,   co)
     .replace(/\{\{asesor\}\}/g,    'Asesor RS')
+    .replace(/\{\{facturas\}\}/g,  buildFacturasText(d))
 }
 
 function updateEnvioSummary() {
@@ -2092,6 +2101,40 @@ async function executeEnvio() {
 
   btn.textContent = '✉️ Aprobar y enviar'; btn.disabled = false
   setTimeout(() => { loadAll(); loadEnvioLogs() }, 2000)
+}
+
+/* ══ FACTURAS — helper para variable {{facturas}} ══ */
+function buildFacturasText(debtor) {
+  // Construir lista de todas las facturas de cartera con detalle
+  const tramoLabel = t => t>=91?'91+ días':t>=61?'61-90 días':t>=31?'31-60 días':t===1?'1-30 días':'Por vencer'
+  const debts = debtor.collection_debts || []
+
+  // Incluir facturas vencidas Y por vencer (not_yet_due > 0)
+  const active = debts.filter(f => {
+    const ov     = (+f.overdue_1_30||0)+(+f.overdue_31_60||0)+(+f.overdue_61_90||0)+(+f.overdue_91_plus||0)
+    const notDue = +f.not_yet_due || 0
+    return ov > 0 || notDue > 0
+  })
+
+  if (!active.length) return 'Sin facturas en cartera'
+
+  const lines = active.map(f => {
+    const ov1    = +f.overdue_1_30    || 0
+    const ov31   = +f.overdue_31_60   || 0
+    const ov61   = +f.overdue_61_90   || 0
+    const ov91   = +f.overdue_91_plus || 0
+    const notDue = +f.not_yet_due     || 0
+    const vencido = ov1 + ov31 + ov61 + ov91
+
+    if (vencido > 0) {
+      const tramo = ov91>0?91:ov61>0?61:ov31>0?31:1
+      return `- ${f.siigo_document}: ${fmt(vencido)} (${tramoLabel(tramo)})`
+    } else {
+      return `- ${f.siigo_document}: ${fmt(notDue)} (Por vencer)`
+    }
+  })
+
+  return lines.join('\n')
 }
 
 /* ══ TWILIO — callTwilio() ══ */
