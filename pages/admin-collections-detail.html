@@ -715,8 +715,8 @@ function renderProfile() {
         <span class="pf-val" id="pfPhone">${esc(D.phone||'—')}</span>
       </div>
       <div class="pf-row">
-        <span class="pf-lbl">WhatsApp</span>
-        <span class="pf-val" id="pfWA">${esc(D.whatsapp||'—')}</span>
+        <span class="pf-lbl">Celular</span>
+        <span class="pf-val" id="pfCelular">${esc(D.whatsapp||'—')}</span>
       </div>
       <div class="pf-row">
         <span class="pf-lbl">Email</span>
@@ -733,7 +733,7 @@ function renderProfile() {
     <!-- ACCIONES -->
     <div style="display:flex;gap:.4rem;flex-wrap:wrap;padding-top:.75rem;border-top:1px solid var(--border)">
       <button class="btn-p" onclick="openActionModal()">+ Gestión</button>
-      <button class="btn-g" onclick="openContactEdit()">📞 Editar contacto</button>
+      <button class="btn-g" onclick="openContactEdit()">📞 Editar datos de contacto</button>
       <button class="btn-g" onclick="changeStatus()">⚡ Estado</button>
     </div>
 
@@ -743,7 +743,7 @@ function renderProfile() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.5rem">
         <input type="text"  id="edit-phone"    placeholder="Teléfono"  value="${esc(D.phone||'')}"
           style="background:var(--bg4);border:1px solid var(--border);border-radius:6px;padding:.35rem .6rem;font-family:var(--fu);font-size:.73rem;color:var(--txt);outline:none">
-        <input type="text"  id="edit-whatsapp" placeholder="WhatsApp"  value="${esc(D.whatsapp||'')}"
+        <input type="text"  id="edit-whatsapp" placeholder="Celular"  value="${esc(D.whatsapp||'')}"
           style="background:var(--bg4);border:1px solid var(--border);border-radius:6px;padding:.35rem .6rem;font-family:var(--fu);font-size:.73rem;color:var(--txt);outline:none">
         <input type="email" id="edit-email"    placeholder="Email"     value="${esc(D.email||'')}"
           style="background:var(--bg4);border:1px solid var(--border);border-radius:6px;padding:.35rem .6rem;font-family:var(--fu);font-size:.73rem;color:var(--txt);outline:none">

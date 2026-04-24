@@ -732,7 +732,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
           <input type="text" id="dm-phone" placeholder="3001234567">
         </div>
         <div class="field">
-          <label>WhatsApp</label>
+          <label>Celular</label>
           <input type="text" id="dm-whatsapp" placeholder="3001234567">
         </div>
         <div class="field">
@@ -745,7 +745,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
           <label>Canal preferido</label>
           <select id="dm-channel">
             <option value="">Sin preferencia</option>
-            <option value="whatsapp">WhatsApp</option>
+            <option value="whatsapp">Celular</option>
             <option value="email">Email</option>
             <option value="phone">Teléfono</option>
             <option value="sms">SMS</option>
@@ -1032,7 +1032,7 @@ function renderTable() {
            <a href="admin-collections-detail.html?id=${d.id}"
              style="font-size:.63rem;color:var(--gold);text-decoration:none;opacity:.7;transition:opacity .2s"
              onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.7">
-             ✏️ Editar contacto →
+             ✏️ Editar datos de contacto →
            </a>
          </div>`
       : `<div style="display:flex;align-items:center;gap:.4rem;flex-direction:column">
@@ -1373,7 +1373,7 @@ function getSelectedDebtors() {
 /* ── ENVÍO MASIVO ── */
 function openBulkMsg(channel) {
   bulkChannel = channel
-  const chLabel = { whatsapp:'WhatsApp', email:'Email', sms:'SMS' }
+  const chLabel = { whatsapp:'Celular', email:'Email', sms:'SMS' }
   document.getElementById('bulkMsgTitle').textContent = `Enviar ${chLabel[channel]} masivo`
   document.getElementById('bulkMsgInfo').innerHTML =
     `<strong style="color:var(--gold-l)">${selectedIds.size} deudores</strong> recibirán este mensaje por <strong>${chLabel[channel]}</strong>.`
@@ -1456,7 +1456,7 @@ async function sendBulkMsg() {
   btn.disabled = false
   closeModal('bulkMsgModal')
 
-  const chLabel = { whatsapp:'WhatsApp', email:'Email', sms:'SMS' }
+  const chLabel = { whatsapp:'Celular', email:'Email', sms:'SMS' }
   alert(`✅ ${sent} mensajes registrados por ${chLabel[bulkChannel]}.
 ${errors.length > 0 ? errors.length + ' errores.' : 'Sin errores.'}`)
 
@@ -1821,7 +1821,7 @@ function renderEnvioDebtors() {
         <div style="font-size:.77rem;font-weight:500;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(d.debtor_name)}</div>
         <div style="font-size:.66rem;color:var(--txt3)">${esc(d.debtor_document||'—')} · ${esc(co)}</div>
         <div style="font-size:.65rem;margin-top:.15rem;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
-          ${(d.phone||d.whatsapp) ? `<span style="color:var(--txt2)">📞 ${esc(d.phone||d.whatsapp)}</span>` : ''}
+          ${(d.phone||d.whatsapp) ? `<span style="color:var(--txt2)">📞 ${esc(d.whatsapp||d.phone)}</span>` : ''}
           ${d.email ? `<span style="color:var(--txt2)">📧 ${esc(d.email)}</span>` : ''}
           ${!d.has_contact ? `<span style="color:var(--warn)">⚠ Sin contacto</span>` : ''}
           <a href="admin-collections-detail.html?id=${d.id}"
@@ -2000,7 +2000,7 @@ function updateEnvioPreview() {
 function updateEnvioSummary() {
   const sel       = getEnvioSelected()
   const msg       = document.getElementById('envioMsg')?.value?.trim()
-  const chLabel   = { whatsapp:'WhatsApp', sms:'SMS', email:'Email' }
+  const chLabel   = { whatsapp:'Celular', sms:'SMS', email:'Email' }
   const noContact = sel.filter(d => {
     if (ENVIO_CHANNEL === 'whatsapp') return !d.phone && !d.whatsapp
     if (ENVIO_CHANNEL === 'sms')      return !d.phone && !d.whatsapp
@@ -2037,8 +2037,8 @@ async function executeEnvio() {
     const d  = toSend[i]
     const co = S.companies[d.company_id]?.name || '—'
     const hasContact =
-      ENVIO_CHANNEL === 'whatsapp' ? !!(d.phone || d.whatsapp) :
-      ENVIO_CHANNEL === 'sms'      ? !!(d.phone || d.whatsapp) :
+      ENVIO_CHANNEL === 'whatsapp' ? !!(d.whatsapp || d.phone) :
+      ENVIO_CHANNEL === 'sms'      ? !!(d.whatsapp || d.phone) :
       ENVIO_CHANNEL === 'email'    ? !!d.email : false
 
     const personalMsg = msg
@@ -2101,8 +2101,8 @@ async function callTwilio(channel, debtor, message) {
   // Determinar destino según canal
   let to = null
   if (channel === 'whatsapp') to = debtor.whatsapp || debtor.phone
-  else if (channel === 'sms') to = debtor.phone || debtor.whatsapp
-  else if (channel === 'email') to = debtor.email
+  else if (channel === 'sms')      to = debtor.whatsapp || debtor.phone  // celular = whatsapp field
+  else if (channel === 'email')    to = debtor.email
 
   if (!to) return { success: false, error: 'Sin contacto registrado para este canal' }
 
