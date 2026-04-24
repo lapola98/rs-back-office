@@ -2056,6 +2056,7 @@ async function executeEnvio() {
       .replace(/\{\{dias_mora\}\}/g, d.max_days >= 91 ? '91+' : String(d.max_days || 0))
       .replace(/\{\{empresa\}\}/g,   co)
       .replace(/\{\{asesor\}\}/g,    'Asesor RS')
+      .replace(/\{\{facturas\}\}/g,  buildFacturasText(d))
 
     // ── Llamada real a Twilio via Edge Function ──
     let twilioOk   = false

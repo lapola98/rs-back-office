@@ -243,6 +243,21 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
   <div class="content">
     <div class="page">
 
+      <!-- MAIN TABS -->
+      <div style="display:flex;gap:.25rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:.25rem;margin-bottom:1.25rem;width:fit-content">
+        <button id="mainTabSiigo" onclick="switchImportTab('siigo')"
+          style="padding:.38rem 1rem;border-radius:7px;border:none;background:var(--gold-pale);font-family:var(--fu);font-size:.76rem;color:var(--gold-l);font-weight:500;cursor:pointer">
+          📊 Importar cartera Siigo
+        </button>
+        <button id="mainTabContactos" onclick="switchImportTab('contactos')"
+          style="padding:.38rem 1rem;border-radius:7px;border:none;background:none;font-family:var(--fu);font-size:.76rem;color:var(--txt3);cursor:pointer">
+          📞 Importar contactos
+        </button>
+      </div>
+
+      <!-- TAB SIIGO -->
+      <div id="tabSiigoContent">
+
       <!-- PASOS -->
       <div class="steps" id="stepsBar">
         <div class="step active" id="step1">
@@ -391,7 +406,62 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
     </div>
   </div>
 </div>
-</div>
+      </div><!-- /tabSiigoContent -->
+
+      <!-- TAB CONTACTOS -->
+      <div id="tabContactosContent" style="display:none">
+        <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.25rem">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
+            <div>
+              <div style="font-family:var(--fd);font-size:1.05rem;font-weight:600;color:var(--white)">Importar datos de contacto</div>
+              <div style="font-size:.68rem;color:var(--txt3);margin-top:.1rem">Sube un Excel con columnas: Identificación · Cliente · Correo · Celular · Telefono</div>
+            </div>
+            <select id="ctCompany" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:.45rem .75rem;font-family:var(--fu);font-size:.76rem;color:var(--txt2);outline:none;-webkit-appearance:none;cursor:pointer;min-width:200px">
+              <option value="">— Seleccionar empresa —</option>
+            </select>
+          </div>
+
+          <!-- Upload -->
+          <div id="ctUploadArea"
+            style="border:2px dashed var(--border);border-radius:var(--r);padding:2rem;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:1rem"
+            onclick="document.getElementById('ctFileInput').click()"
+            ondragover="event.preventDefault();this.style.borderColor='var(--gold)'"
+            ondragleave="this.style.borderColor='var(--border)'"
+            ondrop="event.preventDefault();this.style.borderColor='var(--border)';handleCtFile(event.dataTransfer.files[0])">
+            <div style="font-size:1.5rem;margin-bottom:.5rem">📂</div>
+            <div style="font-size:.82rem;color:var(--txt2);margin-bottom:.25rem">Arrastra el Excel aquí o haz clic para seleccionar</div>
+            <div style="font-size:.7rem;color:var(--txt3)">Columnas: Identificación · Cliente · Correo · Celular · Telefono</div>
+            <input type="file" id="ctFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleCtFile(this.files[0])">
+          </div>
+
+          <!-- Preview -->
+          <div id="ctPreview" style="display:none">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem">
+              <div style="font-size:.78rem;color:var(--txt2)" id="ctPreviewSub">—</div>
+              <div style="display:flex;gap:.5rem">
+                <button class="btn-s" onclick="resetCtImport()">← Cambiar archivo</button>
+                <button class="btn-p" id="ctImportBtn" onclick="runCtImport()">Importar contactos →</button>
+              </div>
+            </div>
+            <div style="overflow-x:auto;max-height:340px;overflow-y:auto;scrollbar-width:thin">
+              <table class="tbl">
+                <thead><tr>
+                  <th>Documento</th><th>Cliente</th><th>Celular</th><th>Teléfono</th><th>Email</th><th>Estado BD</th>
+                </tr></thead>
+                <tbody id="ctBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Resultado -->
+          <div id="ctResult" style="display:none;margin-top:1rem"></div>
+        </div>
+      </div><!-- /tabContactosContent -->
+
+    </div><!-- /page -->
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
 
 <script>
 /* ══════════════════════════════════════════════════════
@@ -1321,6 +1391,186 @@ function hideLoader() {
   setTimeout(() => document.getElementById('loader').classList.add('gone'), 300)
 }
 async function signOut() { await db.auth.signOut(); window.location.href = 'login.html' }
+
+/* ══ IMPORTADOR DE CONTACTOS ══ */
+let ctRows = []  // filas parseadas del Excel de contactos
+
+function switchImportTab(tab) {
+  const isSiigo = tab === 'siigo'
+  document.getElementById('tabSiigoContent').style.display    = isSiigo ? '' : 'none'
+  document.getElementById('tabContactosContent').style.display = isSiigo ? 'none' : ''
+  const btnSiigo = document.getElementById('mainTabSiigo')
+  const btnCt    = document.getElementById('mainTabContactos')
+  btnSiigo.style.background = isSiigo ? 'var(--gold-pale)' : 'none'
+  btnSiigo.style.color      = isSiigo ? 'var(--gold-l)'    : 'var(--txt3)'
+  btnSiigo.style.fontWeight = isSiigo ? '500' : '400'
+  btnCt.style.background    = !isSiigo ? 'var(--gold-pale)' : 'none'
+  btnCt.style.color         = !isSiigo ? 'var(--gold-l)'    : 'var(--txt3)'
+  btnCt.style.fontWeight    = !isSiigo ? '500' : '400'
+  // Poblar empresas en tab contactos
+  if (!isSiigo) populateCtCompanies()
+}
+
+function populateCtCompanies() {
+  const sel = document.getElementById('ctCompany')
+  if (!sel) return
+  // Usar COMPANIES que ya cargó el importador en init()
+  sel.innerHTML = '<option value="">— Seleccionar empresa —</option>' +
+    COMPANIES.map(co => `<option value="${co.id}">${esc(co.name)}</option>`).join('')
+}
+
+function handleCtFile(file) {
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = e => {
+    const wb   = XLSX.read(e.target.result, { type: 'array' })
+    const ws   = wb.Sheets[wb.SheetNames[0]]
+    const data = XLSX.utils.sheet_to_json(ws, { defval: '' })
+    parseCtRows(data)
+  }
+  reader.readAsArrayBuffer(file)
+}
+
+function parseCtRows(data) {
+  ctRows = []
+  // Mapeo flexible de columnas
+  const COL_ID     = ['Identificación','Identificacion','identificación','identificacion','NIT','nit','documento','Documento']
+  const COL_NAME   = ['Cliente','cliente','Nombre','nombre','Razón Social','Razon Social']
+  const COL_EMAIL  = ['Correo','correo','Email','email','Correo Electrónico','correo electronico']
+  const COL_CEL    = ['Celular','celular','Móvil','movil','Celular/WhatsApp']
+  const COL_TEL    = ['Telefono','Teléfono','telefono','teléfono','Tel','tel']
+
+  // Normalizar texto: quitar tildes y pasar a minúsculas para comparación flexible
+  const normalize = s => s.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .trim()
+
+  const findCol = (row, options) => {
+    const normOptions = options.map(normalize)
+    const key = Object.keys(row).find(k => normOptions.includes(normalize(k)))
+    return key ? String(row[key] || '').trim() : ''
+  }
+
+  data.forEach((row, i) => {
+    const doc    = findCol(row, COL_ID)
+    const name   = findCol(row, COL_NAME)
+    const email  = findCol(row, COL_EMAIL)
+    const cel    = findCol(row, COL_CEL)
+    const tel    = findCol(row, COL_TEL)
+    if (!doc) return
+    ctRows.push({ doc, name, email, cel, tel, _row: i+2 })
+  })
+
+  renderCtPreview()
+}
+
+async function renderCtPreview() {
+  if (!ctRows.length) {
+    alert('No se encontraron filas válidas. Verifica que el archivo tenga la columna "Identificación".')
+    return
+  }
+
+  // Cargar deudores existentes para cruzar
+  const coId = document.getElementById('ctCompany').value
+  let existing = {}
+  if (coId) {
+    const { data } = await db.from('collection_debtors')
+      .select('id, debtor_document, debtor_name, phone, whatsapp, email')
+      .eq('company_id', coId)
+    ;(data||[]).forEach(d => { existing[d.debtor_document] = d })
+  }
+
+  const tbody = document.getElementById('ctBody')
+  tbody.innerHTML = ''
+
+  let found = 0, notFound = 0
+
+  ctRows.forEach(r => {
+    const match = existing[r.doc]
+    const inBD  = !!match
+    if (inBD) found++; else notFound++
+
+    const tr = document.createElement('tr')
+    tr.innerHTML = `
+      <td style="font-weight:500;color:var(--txt)">${esc(r.doc)}</td>
+      <td style="font-size:.76rem;color:var(--txt2)">${esc(r.name||match?.debtor_name||'—')}</td>
+      <td style="font-size:.75rem;color:${r.cel?'var(--ok)':'var(--txt3)'}">${esc(r.cel||'—')}</td>
+      <td style="font-size:.75rem;color:var(--txt2)">${esc(r.tel||'—')}</td>
+      <td style="font-size:.75rem;color:${r.email?'var(--ok)':'var(--txt3)'}">${esc(r.email||'—')}</td>
+      <td><span class="badge ${inBD?'b-ok':'b-warn'}">${inBD?'✓ En cartera':'⚠ No encontrado'}</span></td>`
+    tbody.appendChild(tr)
+  })
+
+  document.getElementById('ctPreviewSub').textContent =
+    `${ctRows.length} filas · ${found} encontrados en cartera · ${notFound} no encontrados`
+  document.getElementById('ctPreview').style.display  = ''
+  document.getElementById('ctUploadArea').style.display = 'none'
+  document.getElementById('ctResult').style.display   = 'none'
+}
+
+async function runCtImport() {
+  const coId = document.getElementById('ctCompany').value
+  if (!coId) { alert('Selecciona una empresa primero.'); return }
+
+  const btn = document.getElementById('ctImportBtn')
+  btn.textContent = 'Importando…'; btn.disabled = true
+
+  // Cargar deudores para cruzar por documento
+  const { data: debtors } = await db.from('collection_debtors')
+    .select('id, debtor_document')
+    .eq('company_id', coId)
+
+  const debtorMap = {}
+  ;(debtors||[]).forEach(d => { debtorMap[d.debtor_document] = d.id })
+
+  let updated = 0, notFound = 0, errors = []
+
+  for (const r of ctRows) {
+    const debtorId = debtorMap[r.doc]
+    if (!debtorId) { notFound++; continue }
+
+    const payload = {}
+    if (r.cel)   payload.whatsapp = r.cel    // celular → campo whatsapp
+    if (r.tel)   payload.phone    = r.tel    // telefono → campo phone
+    if (r.email) payload.email    = r.email
+
+    if (!Object.keys(payload).length) continue
+
+    const { error } = await db.from('collection_debtors')
+      .update(payload)
+      .eq('id', debtorId)
+
+    if (error) { errors.push(`${r.doc}: ${error.message}`); continue }
+    updated++
+  }
+
+  // Mostrar resultado
+  const result = document.getElementById('ctResult')
+  result.style.display = ''
+  result.innerHTML = `
+    <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:1rem">
+      <div style="font-family:var(--fd);font-size:1.1rem;font-weight:600;color:var(--white);margin-bottom:.75rem">
+        ✅ Importación completada
+      </div>
+      <div style="display:flex;gap:1.2rem;flex-wrap:wrap;margin-bottom:.75rem">
+        <div><div style="font-family:var(--fd);font-size:1.5rem;font-weight:600;color:var(--ok)">${updated}</div><div style="font-size:.65rem;color:var(--txt3)">contactos actualizados</div></div>
+        <div><div style="font-family:var(--fd);font-size:1.5rem;font-weight:600;color:var(--txt3)">${notFound}</div><div style="font-size:.65rem;color:var(--txt3)">no encontrados en cartera</div></div>
+        ${errors.length?`<div><div style="font-family:var(--fd);font-size:1.5rem;font-weight:600;color:var(--err)">${errors.length}</div><div style="font-size:.65rem;color:var(--txt3)">errores</div></div>`:''}
+      </div>
+      ${errors.length?`<div style="font-size:.72rem;color:var(--err)">${errors.slice(0,5).map(e=>esc(e)).join('<br>')}</div>`:''}
+      <button class="btn-g" onclick="resetCtImport()" style="margin-top:.75rem">📂 Importar otro archivo</button>
+    </div>`
+
+  btn.textContent = 'Importar contactos →'; btn.disabled = false
+}
+
+function resetCtImport() {
+  ctRows = []
+  document.getElementById('ctFileInput').value  = ''
+  document.getElementById('ctPreview').style.display    = 'none'
+  document.getElementById('ctUploadArea').style.display = ''
+  document.getElementById('ctResult').style.display     = 'none'
+}
 
 init()
 </script>
