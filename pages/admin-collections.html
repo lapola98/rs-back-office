@@ -1024,19 +1024,24 @@ function renderTable() {
       <div class="mora-bar" style="height:${bh(d.ov_61_90)}px;background:var(--err);opacity:${d.ov_61_90>0?.9:.15}" title="61–90: ${fmt(d.ov_61_90)}"></div>
       <div class="mora-bar" style="height:${bh(d.ov_91)}px;background:#8b0000;opacity:${d.ov_91>0?.9:.15}" title="91+: ${fmt(d.ov_91)}"></div>
     </div>`
+    const phone_display = d.phone || d.whatsapp || ''
     const contactInfo = d.has_contact
-      ? `<div style="font-size:.72rem;color:var(--txt2)">${ch} ${esc(d.phone||d.whatsapp||'')}</div>${d.email?`<div style="font-size:.67rem;color:var(--txt3)">${esc(d.email)}</div>`:''}`
-      : `<button class="badge b-warn" style="cursor:pointer;border:none" onclick="toggleContactEdit('${d.id}')">⚠ Sin contacto — agregar →</button>
-         <div class="contact-edit" id="ce-${d.id}">
-           <div class="contact-edit-grid">
-             <input type="text"  id="ce-ph-${d.id}"  placeholder="Teléfono" value="${esc(d.phone||'')}">
-             <input type="text"  id="ce-wa-${d.id}"  placeholder="WhatsApp" value="${esc(d.whatsapp||'')}">
-             <input type="email" id="ce-em-${d.id}"  placeholder="Email"    value="${esc(d.email||'')}">
-             <div style="display:flex;gap:.3rem">
-               <button class="ce-save" onclick="saveContact('${d.id}')">Guardar</button>
-               <button class="ce-cancel" onclick="toggleContactEdit('${d.id}')">✕</button>
-             </div>
-           </div>
+      ? `<div style="display:flex;align-items:flex-start;gap:.4rem;flex-direction:column">
+           ${phone_display ? `<div style="font-size:.72rem;color:var(--txt2)">📞 ${esc(phone_display)}</div>` : ''}
+           ${d.email ? `<div style="font-size:.68rem;color:var(--txt3)">📧 ${esc(d.email)}</div>` : ''}
+           <a href="admin-collections-detail.html?id=${d.id}"
+             style="font-size:.63rem;color:var(--gold);text-decoration:none;opacity:.7;transition:opacity .2s"
+             onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.7">
+             ✏️ Editar contacto →
+           </a>
+         </div>`
+      : `<div style="display:flex;align-items:center;gap:.4rem;flex-direction:column">
+           <span class="badge b-warn">⚠ Sin contacto</span>
+           <a href="admin-collections-detail.html?id=${d.id}"
+             style="font-size:.63rem;color:var(--warn);text-decoration:none;font-weight:500"
+             onmouseover="this.style.opacity=.7" onmouseout="this.style.opacity=1">
+             + Agregar contacto →
+           </a>
          </div>`
     const isChecked = selectedIds.has(d.id)
     return `<tr class="${isChecked?'row-selected':''}">
@@ -1815,10 +1820,19 @@ function renderEnvioDebtors() {
       <div style="flex:1;min-width:0">
         <div style="font-size:.77rem;font-weight:500;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(d.debtor_name)}</div>
         <div style="font-size:.66rem;color:var(--txt3)">${esc(d.debtor_document||'—')} · ${esc(co)}</div>
+        <div style="font-size:.65rem;margin-top:.15rem;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+          ${(d.phone||d.whatsapp) ? `<span style="color:var(--txt2)">📞 ${esc(d.phone||d.whatsapp)}</span>` : ''}
+          ${d.email ? `<span style="color:var(--txt2)">📧 ${esc(d.email)}</span>` : ''}
+          ${!d.has_contact ? `<span style="color:var(--warn)">⚠ Sin contacto</span>` : ''}
+          <a href="admin-collections-detail.html?id=${d.id}"
+            style="color:var(--gold);text-decoration:none;opacity:.7;transition:opacity .2s"
+            onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.7">
+            ✏️ Editar →
+          </a>
+        </div>
       </div>
       <span style="font-size:.65rem;font-weight:600;color:${tc(d.max_days)};flex-shrink:0">${tl(d.max_days)} días</span>
       <div style="font-family:var(--fd);font-size:.88rem;font-weight:600;color:var(--gold-l);flex-shrink:0">${fmt(d.total_outstanding)}</div>
-      <span style="font-size:.7rem;color:${d.has_contact?'var(--ok)':'var(--warn)'};flex-shrink:0">${d.has_contact?'✓':'⚠'}</span>
     </div>`
   }).join('')
 
@@ -2034,23 +2048,36 @@ async function executeEnvio() {
       .replace(/\{\{empresa\}\}/g,   co)
       .replace(/\{\{asesor\}\}/g,    'Asesor RS')
 
-    // ── Aquí va Twilio cuando esté listo ──
-    // const result = await callTwilio(ENVIO_CHANNEL, d, personalMsg)
+    // ── Llamada real a Twilio via Edge Function ──
+    let twilioOk   = false
+    let twilioNote = ''
+
+    if (hasContact) {
+      const twilioResult = await callTwilio(ENVIO_CHANNEL, d, personalMsg)
+      twilioOk   = twilioResult.success
+      twilioNote = twilioOk
+        ? `[Envío masivo · ${ENVIO_CHANNEL}]\n${personalMsg}`
+        : `[Envío masivo · ERROR]\n${personalMsg}\nError: ${twilioResult.error}`
+      if (!twilioOk) {
+        errors.push(`${d.debtor_name}: ${twilioResult.error}`)
+      }
+    } else {
+      twilioNote = `[Envío masivo] Sin contacto para canal ${ENVIO_CHANNEL}\n${personalMsg}`
+    }
 
     const { error } = await db.from('collection_actions').insert({
       company_id : d.company_id,
       debtor_id  : d.id,
       user_id    : user?.id || null,
       channel    : ENVIO_CHANNEL,
-      result     : hasContact ? 'contacted' : 'uncontactable',
-      notes      : `[Campaña masiva]
-${personalMsg}`,
+      result     : !hasContact ? 'uncontactable' : twilioOk ? 'contacted' : 'error',
+      notes      : twilioNote,
     })
     if (error) errors.push(`${d.debtor_name}: ${error.message}`)
-    if (hasContact && d.status === 'pending') {
+    if (hasContact && twilioOk && d.status === 'pending') {
       await db.from('collection_debtors').update({ status: 'in_collection' }).eq('id', d.id)
     }
-    if (hasContact) sent++; else skipped++
+    if (hasContact && twilioOk) sent++; else skipped++
 
     const pct = Math.round(((i+1)/toSend.length)*100)
     document.getElementById('envioProgBar').style.width   = pct + '%'
@@ -2065,6 +2092,46 @@ ${personalMsg}`,
 
   btn.textContent = '✉️ Aprobar y enviar'; btn.disabled = false
   setTimeout(() => { loadAll(); loadEnvioLogs() }, 2000)
+}
+
+/* ══ TWILIO — callTwilio() ══ */
+const FUNCTIONS_URL = SUPABASE_URL + '/functions/v1'
+
+async function callTwilio(channel, debtor, message) {
+  // Determinar destino según canal
+  let to = null
+  if (channel === 'whatsapp') to = debtor.whatsapp || debtor.phone
+  else if (channel === 'sms') to = debtor.phone || debtor.whatsapp
+  else if (channel === 'email') to = debtor.email
+
+  if (!to) return { success: false, error: 'Sin contacto registrado para este canal' }
+
+  try {
+    const { data: { session } } = await db.auth.getSession()
+    const token = session?.access_token
+
+    const response = await fetch(`${FUNCTIONS_URL}/send-message`, {
+      method : 'POST',
+      headers: {
+        'Content-Type' : 'application/json',
+        'Authorization': token ? `Bearer ${token}` : '',
+        'apikey'       : SUPABASE_KEY,
+      },
+      body: JSON.stringify({
+        channel,
+        to,
+        message,
+        subject: channel === 'email' ? 'Aviso de cobranza — RAD/ estrategias legales' : null,
+      }),
+    })
+
+    const data = await response.json()
+    return data
+
+  } catch (err) {
+    console.error('[callTwilio] Error:', err)
+    return { success: false, error: 'Error de conexión con servidor de envío' }
+  }
 }
 
 init()
