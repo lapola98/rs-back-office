@@ -1433,6 +1433,17 @@ function handleCtFile(file) {
 
 function parseCtRows(data) {
   ctRows = []
+  // DEBUG — mostrar columnas que leyó SheetJS
+  if (data.length > 0) {
+    const cols = Object.keys(data[0])
+    const diagEl = document.getElementById('ctUploadArea')
+    if (diagEl) {
+      const dbg = document.createElement('div')
+      dbg.style.cssText = 'margin-top:.75rem;background:#0a0f14;border:1px solid rgba(74,159,212,.3);border-radius:8px;padding:.75rem 1rem;font-family:monospace;font-size:.7rem;color:var(--info);text-align:left'
+      dbg.innerHTML = '<strong>Columnas detectadas:</strong><br>' + cols.map(k=>`"${k}"`).join(' · ')
+      diagEl.parentNode.insertBefore(dbg, diagEl.nextSibling)
+    }
+  }
   // Mapeo flexible de columnas
   const COL_ID     = ['Identificación','Identificacion','identificación','identificacion','NIT','nit','documento','Documento']
   const COL_NAME   = ['Cliente','cliente','Nombre','nombre','Razón Social','Razon Social']
