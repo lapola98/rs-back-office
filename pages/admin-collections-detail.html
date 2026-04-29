@@ -647,12 +647,16 @@ function renderProfile() {
   const initials= (D.debtor_name||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()
 
   // Calcular totales desde las facturas activas
-  const active      = DEBTS.filter(f => f.status !== 'paid')
-  const totalOut    = active.reduce((s,f)=>s+(+f.outstanding_amount||0),0)
-  const ov_1_30     = active.reduce((s,f)=>s+(+f.overdue_1_30||0),0)
-  const ov_31_60    = active.reduce((s,f)=>s+(+f.overdue_31_60||0),0)
-  const ov_61_90    = active.reduce((s,f)=>s+(+f.overdue_61_90||0),0)
-  const ov_91       = active.reduce((s,f)=>s+(+f.overdue_91_plus||0),0)
+  // Saldo neto = suma de total_balance de TODOS los documentos con su signo
+  const active   = DEBTS.filter(f => f.status !== 'paid')
+  const totalOut = DEBTS.reduce((s,f) => s + (+f.total_balance||0), 0)
+  // Solo contar mora de documentos con total_balance significativo (≥ $1000)
+  const MIN_MORA = 1000
+  const activeSig   = active.filter(f => (+f.total_balance||0) >= MIN_MORA)
+  const ov_1_30     = activeSig.reduce((s,f)=>s+(+f.overdue_1_30||0),0)
+  const ov_31_60    = activeSig.reduce((s,f)=>s+(+f.overdue_31_60||0),0)
+  const ov_61_90    = activeSig.reduce((s,f)=>s+(+f.overdue_61_90||0),0)
+  const ov_91       = activeSig.reduce((s,f)=>s+(+f.overdue_91_plus||0),0)
   const maxDays     = ov_91>0?91:ov_61_90>0?61:ov_31_60>0?31:ov_1_30>0?1:0
   const ageColor    = maxDays>=91?'var(--err)':maxDays>=31?'var(--warn)':'var(--ok)'
   const ageLabel    = maxDays>=91?'91+ días':maxDays>=61?'61–90 días':maxDays>=31?'31–60 días':maxDays>=1?'1–30 días':'Al día'
@@ -763,6 +767,22 @@ function renderProfile() {
 function renderDebts() {
   const active = DEBTS.filter(f => f.status !== 'paid')
   const paid   = DEBTS.filter(f => f.status === 'paid')
+  // Para la tabla: solo mostrar documentos con mora vencida o por vencer > 0
+  // Umbral mínimo — montos menores a $1000 se ignoran (centavos por redondeo)
+  const MIN_MONTO = 1000
+
+  // Excluir documentos compensados y montos despreciables
+  const compensaciones = DEBTS
+    .filter(f => f.status === 'paid' && (+f.total_balance||0) < 0)
+    .map(f => Math.abs(Math.round(+f.total_balance||0)))
+  const usedComp = [...compensaciones]
+  const visibles = DEBTS.filter(f => {
+    if (f.status !== 'pending' || (+f.total_balance||0) < MIN_MONTO) return false
+    const monto = Math.round(+f.total_balance||0)
+    const idx = usedComp.indexOf(monto)
+    if (idx >= 0) { usedComp.splice(idx, 1); return false }
+    return true
+  })
   document.getElementById('debtsSub').textContent =
     `${active.length} activa${active.length!==1?'s':''} · ${paid.length} pagada${paid.length!==1?'s':''}`
 
@@ -781,7 +801,7 @@ function renderDebts() {
         <th>Total</th><th>Estado</th>
       </tr></thead>
       <tbody>
-      ${DEBTS.map(f => {
+      ${visibles.map(f => {
         const isPaid     = f.status === 'paid'
         const notDueOnly = !isPaid &&
           (+f.overdue_1_30||0)===0 && (+f.overdue_31_60||0)===0 &&

@@ -750,13 +750,17 @@ async function buildPreview() {
   // Calcular tramo nuevo por deudor desde el archivo
   const debtorNewTramo = {}
   const debtorAllPaid  = {}
+  const debtorNetSaldo = {}
   parsedRows.forEach(r => {
     if (!debtorNewTramo[r.document_id]) {
-      debtorNewTramo[r.document_id] = 0
-      debtorAllPaid[r.document_id]  = true
+      debtorNewTramo[r.document_id]  = 0
+      debtorAllPaid[r.document_id]   = true
+      debtorNetSaldo[r.document_id]  = 0
     }
     const t = r.ov_91>0?91:r.ov_61_90>0?61:r.ov_31_60>0?31:r.ov_1_30>0?1:0
     if (t > debtorNewTramo[r.document_id]) debtorNewTramo[r.document_id] = t
+    // Acumular saldo neto (total_balance con signo)
+    debtorNetSaldo[r.document_id] = (debtorNetSaldo[r.document_id] || 0) + r.total
     if (!r.isPaid) debtorAllPaid[r.document_id] = false
   })
 
@@ -823,8 +827,10 @@ async function buildPreview() {
       const prevTramo    = existD.prev_max_tramo || 0
       const esPrimeraVez = !existD.last_import_at  // nunca se ha importado antes
 
-      if (debtorAllPaid[doc] && existD.status !== 'paid') {
-        // Todos sus tramos son 0 → pagó
+      const netSaldo = debtorNetSaldo[doc] || 0
+      // Marcar paid si todos los tramos son 0 Y el saldo neto del archivo es <= 0
+      if ((debtorAllPaid[doc] && netSaldo <= 0) && existD.status !== 'paid') {
+        // Saldo neto <= 0 → el cliente está al día
         diffResult.pagados.push({ id: existD.id, name: existD.debtor_name, document_id: doc })
       } else if (!esPrimeraVez && newTramo > prevTramo) {
         // Solo detectar subida de tramo si hay una importación anterior con qué comparar
@@ -1220,45 +1226,43 @@ async function runImport() {
   // ── FASE 4d: Marcar facturas individuales pagadas (desaparecieron del archivo para deudores activos) ──
   setProgress(88, 'Detectando facturas pagadas individualmente…')
 
-  // Facturas que aparecen en el archivo para deudores activos
-  const invoicesEnArchivo = new Set(parsedRows.map(r => {
-    const debtor = existingDebtors[r.document_id]
-    return debtor ? debtor.id + '|' + r.invoice : null
-  }).filter(Boolean))
-
   // Deudores activos que aparecen en el archivo
-  const debtorIdsEnArchivo = new Set(
-    parsedRows
-      .map(r => existingDebtors[r.document_id]?.id)
-      .filter(Boolean)
-  )
+  const debtorIdsEnArchivo = [...new Set(
+    parsedRows.map(r => existingDebtors[r.document_id]?.id).filter(Boolean)
+  )]
 
-  if (debtorIdsEnArchivo.size > 0) {
-    // Cargar facturas pending de deudores activos en el archivo
-    const debtorIdsArr = [...debtorIdsEnArchivo]
-    for (let i = 0; i < debtorIdsArr.length; i += 50) {
-      const batch = debtorIdsArr.slice(i, i + 50)
-      const { data: facturas } = await db.from('collection_debts')
-        .select('id, debtor_id, siigo_document')
-        .in('debtor_id', batch)
-        .eq('status', 'pending')
+  if (debtorIdsEnArchivo.length > 0) {
+    // Cargar TODAS las facturas pending de esos deudores en 2 queries máximo
+    const { data: todasFacturas } = await db.from('collection_debts')
+      .select('id, debtor_id, siigo_document')
+      .in('debtor_id', debtorIdsEnArchivo)
+      .eq('status', 'pending')
 
-      for (const f of (facturas || [])) {
-        const key = f.debtor_id + '|' + f.siigo_document
-        if (!invoicesEnArchivo.has(key)) {
-          // Esta factura no aparece en el archivo → se pagó
-          await db.from('collection_debts')
-            .update({
-              status            : 'paid',
-              overdue_1_30      : 0,
-              overdue_31_60     : 0,
-              overdue_61_90     : 0,
-              overdue_91_plus   : 0,
-              outstanding_amount: 0,
-              last_sync_at      : now,
-            })
-            .eq('id', f.id)
-        }
+    // Facturas que sí aparecen en el archivo (ya calculadas en buildPreview)
+    const invoicesEnArchivoRun = new Set(parsedRows.map(r => {
+      const deb = existingDebtors[r.document_id]
+      return deb ? deb.id + '|' + r.invoice : null
+    }).filter(Boolean))
+
+    // IDs de facturas que desaparecieron
+    const idsAPagar = (todasFacturas || [])
+      .filter(f => !invoicesEnArchivoRun.has(f.debtor_id + '|' + f.siigo_document))
+      .map(f => f.id)
+
+    // Una sola query para marcar todas como paid
+    if (idsAPagar.length > 0) {
+      for (let i = 0; i < idsAPagar.length; i += 200) {
+        await db.from('collection_debts')
+          .update({
+            status            : 'paid',
+            overdue_1_30      : 0,
+            overdue_31_60     : 0,
+            overdue_61_90     : 0,
+            overdue_91_plus   : 0,
+            outstanding_amount: 0,
+            last_sync_at      : now,
+          })
+          .in('id', idsAPagar.slice(i, i + 200))
       }
     }
   }

@@ -830,7 +830,7 @@ async function loadAll() {
         status,assigned_user_id,notes,created_at,prev_max_tramo,last_import_at,
         collection_debts(id,siigo_document,due_date,
           overdue_1_30,overdue_31_60,overdue_61_90,overdue_91_plus,
-          not_yet_due,total_balance,outstanding_amount,status)
+          not_yet_due,credit_balance,total_balance,outstanding_amount,status)
       `).order('debtor_name'),
       db.from('companies').select('id,name').order('name'),
       db.from('profiles').select('id,full_name,role').in('role',['rs_staff','rs_admin','admin']),
@@ -844,18 +844,29 @@ async function loadAll() {
     S.debtors = (r1.data||[]).map(d => {
       const debts  = d.collection_debts || []
       const active = debts.filter(f => f.status !== 'paid')
-      const total_outstanding = active.reduce((s,f)=>s+(+f.outstanding_amount||0),0)
-      const ov_1_30   = active.reduce((s,f)=>s+(+f.overdue_1_30||0),0)
-      const ov_31_60  = active.reduce((s,f)=>s+(+f.overdue_31_60||0),0)
-      const ov_61_90  = active.reduce((s,f)=>s+(+f.overdue_61_90||0),0)
-      const ov_91     = active.reduce((s,f)=>s+(+f.overdue_91_plus||0),0)
+
+      // Saldo neto = suma de total_balance de TODOS los documentos con su signo
+      // (paid y pending) — los negativos restan aunque estén marcados paid
+      const total_outstanding = debts.reduce((s,f) => s + (+f.total_balance||0), 0)
+
+      // Tramos de mora — solo documentos pending con total_balance >= $1000
+      const conMora = debts.filter(f => {
+        const ov = (+f.overdue_1_30||0)+(+f.overdue_31_60||0)+(+f.overdue_61_90||0)+(+f.overdue_91_plus||0)
+        return ov > 0 && f.status !== 'paid' && (+f.total_balance||0) >= 1000
+      })
+      const ov_1_30   = conMora.reduce((s,f)=>s+(+f.overdue_1_30||0),0)
+      const ov_31_60  = conMora.reduce((s,f)=>s+(+f.overdue_31_60||0),0)
+      const ov_61_90  = conMora.reduce((s,f)=>s+(+f.overdue_61_90||0),0)
+      const ov_91     = conMora.reduce((s,f)=>s+(+f.overdue_91_plus||0),0)
+
       let max_days = 0
       if      (ov_91    > 0) max_days = 91
       else if (ov_61_90 > 0) max_days = 61
       else if (ov_31_60 > 0) max_days = 31
       else if (ov_1_30  > 0) max_days = 1
       return { ...d,
-        total_outstanding, ov_1_30, ov_31_60, ov_61_90, ov_91,
+        total_outstanding,
+        ov_1_30, ov_31_60, ov_61_90, ov_91,
         max_days,
         invoice_count: debts.length,
         has_contact: !!(d.phone||d.email||d.whatsapp),
@@ -2106,18 +2117,26 @@ async function executeEnvio() {
 
 /* ══ FACTURAS — helper para variable {{facturas}} ══ */
 function buildFacturasText(debtor) {
-  // Construir lista de todas las facturas de cartera con detalle
+  // Construir lista de facturas no compensadas
   const tramoLabel = t => t>=91?'91+ días':t>=61?'61-90 días':t>=31?'31-60 días':t===1?'1-30 días':'Por vencer'
   const debts = debtor.collection_debts || []
 
-  // Incluir facturas vencidas Y por vencer (not_yet_due > 0)
+  // Montos de documentos paid negativos (compensaciones)
+  const compensaciones = debts
+    .filter(f => f.status === 'paid' && (+f.total_balance||0) < 0)
+    .map(f => Math.abs(Math.round(+f.total_balance||0)))
+
+  // Pendientes con total_balance >= $1000, excluir compensados
+  const usedComp = [...compensaciones]
   const active = debts.filter(f => {
-    const ov     = (+f.overdue_1_30||0)+(+f.overdue_31_60||0)+(+f.overdue_61_90||0)+(+f.overdue_91_plus||0)
-    const notDue = +f.not_yet_due || 0
-    return ov > 0 || notDue > 0
+    if (f.status !== 'pending' || (+f.total_balance||0) < 1000) return false
+    const monto = Math.round(+f.total_balance||0)
+    const idx = usedComp.indexOf(monto)
+    if (idx >= 0) { usedComp.splice(idx, 1); return false } // compensado
+    return true
   })
 
-  if (!active.length) return 'Sin facturas en cartera'
+  if (!active.length) return 'Sin facturas pendientes'
 
   const lines = active.map(f => {
     const ov1    = +f.overdue_1_30    || 0

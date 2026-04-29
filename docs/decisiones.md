@@ -1,3 +1,42 @@
+## 2026-04-29
+
+feat: lógica de saldo neto y filtro de facturas con compensaciones Siigo
+
+## Problema
+El reporte de Siigo incluye documentos de diferentes tipos (FV, NC, CC, RC, RP, SI)
+que pueden sumar o restar al saldo de un deudor. El sistema mostraba todos los
+documentos en el detalle y calculaba el saldo incorrectamente.
+
+## Solución
+
+### Cálculo de saldo neto ({{saldo}})
+- Suma de `total_balance` de TODOS los documentos del deudor (paid y pending)
+- Los documentos negativos (notas crédito, recibos de caja) restan automáticamente
+- Si el saldo neto es <= 0, el deudor se marca como `paid` en la importación
+
+### Filtro de facturas visibles ({{facturas}} y tabla de detalle)
+- Solo se muestran documentos `pending` con `total_balance >= $1.000`
+- Se excluyen documentos compensados: si un documento pending tiene el mismo
+  monto exacto que un documento paid negativo, se considera compensado y no aparece
+- Umbral mínimo de $1.000 para ignorar diferencias de centavos por redondeo
+
+### Tramos de mora (1-30, 31-60, 61-90, 91+)
+- Solo se calculan sobre documentos pending con `total_balance >= $1.000`
+- Evita que facturas casi en cero afecten la clasificación de mora del deudor
+
+### Importador Siigo
+- FASE 4b: al marcar un deudor como paid (desapareció del reporte), también
+  marca todas sus facturas como paid
+- FASE 4c: marca como paid las facturas de deudores pagados (tramos en cero)
+- FASE 4d: detecta facturas individuales que desaparecieron del reporte aunque
+  el deudor siga activo — las marca como paid en lote (optimizado)
+- Deudor se marca paid si saldo neto de todos sus documentos es <= 0
+
+### Archivos modificados
+- `pages/admin-collections.html`
+- `pages/admin-collections-detail.html`
+- `pages/admin-collections-import.html`
+
 ## 2026-03-27
 
 - Decisión: Desplegar el frontend en Vercel como plataforma de hosting principal
