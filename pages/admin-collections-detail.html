@@ -782,7 +782,11 @@ function renderDebts() {
       </tr></thead>
       <tbody>
       ${DEBTS.map(f => {
-        const isPaid = f.status === 'paid'
+        const isPaid     = f.status === 'paid'
+        const notDueOnly = !isPaid &&
+          (+f.overdue_1_30||0)===0 && (+f.overdue_31_60||0)===0 &&
+          (+f.overdue_61_90||0)===0 && (+f.overdue_91_plus||0)===0 &&
+          (+f.not_yet_due||0)>0
         return `<tr style="${isPaid?'opacity:.5':''}">
           <td style="font-weight:500;color:var(--txt)">${esc(f.siigo_document)}</td>
           <td style="font-size:.7rem;color:var(--txt3)">${fmtDate(f.due_date)}</td>
@@ -791,7 +795,7 @@ function renderDebts() {
           <td style="font-size:.7rem;color:${f.overdue_61_90>0?'var(--err)':'var(--txt3)'}">${f.overdue_61_90>0?fmt(f.overdue_61_90):'—'}</td>
           <td style="font-size:.7rem;color:${f.overdue_91_plus>0?'var(--err)':'var(--txt3)'}">${f.overdue_91_plus>0?fmt(f.overdue_91_plus):'—'}</td>
           <td style="font-weight:500;color:var(--txt)">${fmt(f.total_balance)}</td>
-          <td><span class="badge ${isPaid?'b-ok':'b-n'}">${isPaid?'Pagada':'Activa'}</span></td>
+          <td><span class="badge ${isPaid?'b-ok':notDueOnly?'b-info':'b-n'}">${isPaid?'Pagada':notDueOnly?'Por vencer':'Activa'}</span></td>
         </tr>`
       }).join('')}
       </tbody>
