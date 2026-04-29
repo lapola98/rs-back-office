@@ -845,14 +845,30 @@ async function loadAll() {
       const debts  = d.collection_debts || []
       const active = debts.filter(f => f.status !== 'paid')
 
-      // Saldo neto = suma de total_balance de TODOS los documentos con su signo
-      // (paid y pending) — los negativos restan aunque estén marcados paid
-      const total_outstanding = debts.reduce((s,f) => s + (+f.total_balance||0), 0)
+      // Saldo neto: pending + paid negativos (notas crédito que restan)
+      // Los paid con balance positivo ya están pagados — no suman
+      const total_outstanding = debts.reduce((s,f) => {
+        const bal = +f.total_balance||0
+        if (f.status === 'pending') return s + bal
+        if (f.status === 'paid' && bal < 0) return s + bal
+        return s
+      }, 0)
 
-      // Tramos de mora — solo documentos pending con total_balance >= $1000
+      // Tramos de mora — documentos pending con mora >= $1000
+      // y que no están compensados por un paid negativo de igual monto
+      const paidNegs1 = debts
+        .filter(f => f.status === 'paid' && (+f.total_balance||0) < 0)
+        .map(f => Math.abs(Math.round(+f.total_balance||0)))
+      const usedNeg1 = [...paidNegs1]
       const conMora = debts.filter(f => {
+        if (f.status === 'paid') return false
         const ov = (+f.overdue_1_30||0)+(+f.overdue_31_60||0)+(+f.overdue_61_90||0)+(+f.overdue_91_plus||0)
-        return ov > 0 && f.status !== 'paid' && (+f.total_balance||0) >= 1000
+        if (ov < 1000) return false
+        // Verificar si está compensado
+        const monto = Math.round(+f.total_balance||0)
+        const idx = usedNeg1.findIndex(c => Math.abs(c - monto) <= 2)
+        if (idx >= 0) { usedNeg1.splice(idx, 1); return false }
+        return true
       })
       const ov_1_30   = conMora.reduce((s,f)=>s+(+f.overdue_1_30||0),0)
       const ov_31_60  = conMora.reduce((s,f)=>s+(+f.overdue_31_60||0),0)
@@ -2131,7 +2147,7 @@ function buildFacturasText(debtor) {
   const active = debts.filter(f => {
     if (f.status !== 'pending' || (+f.total_balance||0) < 1000) return false
     const monto = Math.round(+f.total_balance||0)
-    const idx = usedComp.indexOf(monto)
+    const idx = usedComp.findIndex(c => Math.abs(c - monto) <= 2)
     if (idx >= 0) { usedComp.splice(idx, 1); return false } // compensado
     return true
   })

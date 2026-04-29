@@ -647,16 +647,33 @@ function renderProfile() {
   const initials= (D.debtor_name||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()
 
   // Calcular totales desde las facturas activas
-  // Saldo neto = suma de total_balance de TODOS los documentos con su signo
+  // Saldo neto: pending + paid negativos (notas crédito que restan)
+  // Los paid con balance positivo ya están pagados — no suman
   const active   = DEBTS.filter(f => f.status !== 'paid')
-  const totalOut = DEBTS.reduce((s,f) => s + (+f.total_balance||0), 0)
-  // Solo contar mora de documentos con total_balance significativo (≥ $1000)
-  const MIN_MORA = 1000
-  const activeSig   = active.filter(f => (+f.total_balance||0) >= MIN_MORA)
-  const ov_1_30     = activeSig.reduce((s,f)=>s+(+f.overdue_1_30||0),0)
-  const ov_31_60    = activeSig.reduce((s,f)=>s+(+f.overdue_31_60||0),0)
-  const ov_61_90    = activeSig.reduce((s,f)=>s+(+f.overdue_61_90||0),0)
-  const ov_91       = activeSig.reduce((s,f)=>s+(+f.overdue_91_plus||0),0)
+  const totalOut = DEBTS.reduce((s,f) => {
+    const bal = +f.total_balance||0
+    if (f.status === 'pending') return s + bal
+    if (f.status === 'paid' && bal < 0) return s + bal
+    return s
+  }, 0)
+  // Solo contar mora de documentos pending con mora >= $1000
+  // y que no están compensados por un paid negativo de igual monto
+  const paidNegs2 = DEBTS
+    .filter(f => f.status === 'paid' && (+f.total_balance||0) < 0)
+    .map(f => Math.abs(Math.round(+f.total_balance||0)))
+  const usedNeg2 = [...paidNegs2]
+  const activeSig = active.filter(f => {
+    const ov = (+f.overdue_1_30||0)+(+f.overdue_31_60||0)+(+f.overdue_61_90||0)+(+f.overdue_91_plus||0)
+    if (ov < 1000) return false
+    const monto = Math.round(+f.total_balance||0)
+    const idx = usedNeg2.findIndex(c => Math.abs(c - monto) <= 2)
+    if (idx >= 0) { usedNeg2.splice(idx, 1); return false }
+    return true
+  })
+  const ov_1_30   = activeSig.reduce((s,f)=>s+(+f.overdue_1_30||0),0)
+  const ov_31_60  = activeSig.reduce((s,f)=>s+(+f.overdue_31_60||0),0)
+  const ov_61_90  = activeSig.reduce((s,f)=>s+(+f.overdue_61_90||0),0)
+  const ov_91     = activeSig.reduce((s,f)=>s+(+f.overdue_91_plus||0),0)
   const maxDays     = ov_91>0?91:ov_61_90>0?61:ov_31_60>0?31:ov_1_30>0?1:0
   const ageColor    = maxDays>=91?'var(--err)':maxDays>=31?'var(--warn)':'var(--ok)'
   const ageLabel    = maxDays>=91?'91+ días':maxDays>=61?'61–90 días':maxDays>=31?'31–60 días':maxDays>=1?'1–30 días':'Al día'
@@ -779,7 +796,7 @@ function renderDebts() {
   const visibles = DEBTS.filter(f => {
     if (f.status !== 'pending' || (+f.total_balance||0) < MIN_MONTO) return false
     const monto = Math.round(+f.total_balance||0)
-    const idx = usedComp.indexOf(monto)
+    const idx = usedComp.findIndex(c => Math.abs(c - monto) <= 2)
     if (idx >= 0) { usedComp.splice(idx, 1); return false }
     return true
   })
