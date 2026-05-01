@@ -596,7 +596,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
 /* ══ ESTADO ══ */
-let S = { profile:null, company:null, tasks:[], documents:[], dashboards:[], requestTypes:[], requests:[], contractedServiceIds:[] }
+let S = { profile:null, company:null, tasks:[], documents:[], dashboards:[], requestTypes:[], requests:[], contractedServiceIds:[], allServices:[] }
 let tFilter = 'todas', dFilter = 'todos'
 
 /* ══ SOLICITUDES ══ */
@@ -910,8 +910,8 @@ async function loadAll(user) {
   }
 }
 
-function renderAll() {
-  renderUser(); renderWelcome(); renderKpis()
+async function renderAll() {
+  renderUser(); await renderWelcome(); renderKpis()
   renderDashTasks(); renderDashDocs(); renderDashBi()
   renderFullTasks(); renderFullDocs(); renderBiSection()
   renderRequestTypes()    // ← NUEVO
@@ -935,10 +935,13 @@ function renderUser() {
   document.getElementById('sbTeamLbl').style.display = 'block'
   document.getElementById('sbTeamLink').style.display = 'flex'
   }
+  const waMsg = encodeURIComponent(`Hola RS Back Office, soy ${name} de ${c?.name || 'mi empresa'}. Necesito ayuda con:`)
+  const waEl = document.getElementById('waLink')
+  if (waEl) waEl.href = `https://wa.me/573102170905?text=${waMsg}`
 }
 
 /* ══ WELCOME BAND ══ */
-function renderWelcome() {
+async function renderWelcome() {
   const c = S.company; if (!c) return
   const h  = new Date().getHours()
   const g  = h<12?'Buenos días':h<18?'Buenas tardes':'Buenas noches'
@@ -947,16 +950,23 @@ function renderWelcome() {
   document.getElementById('wbG').textContent   = g
   document.getElementById('wbN').innerHTML     = `<em>${esc(c.name)}</em>`
   document.getElementById('wbS').textContent   = `Portal RS Back Office · ${fmtDate(new Date().toISOString())}`
-  const SERVICE_NAMES = {
-  '03288227-5f30-4fc8-9857-6005b905a1fa': '📊 Controller',
-  '78687f1c-1a0b-44af-957e-1fe2f6fc6bef': '👥 Nómina',
-  'a629c808-d0ae-4f40-8ac6-fa1cd0c4778b': '📋 Contabilidad',
-  'c4b63af0-b25f-4d15-9021-10ea5ac5ce95': '🧾 Facturación',
+  const SVC_ICONS = {
+  'Contabilidad e Impuestos':          '📋',
+  'Controller financiero y tesorería': '📊',
+  'Facturación y recaudo':             '🧾',
+  'Gestión de personal y compras':     '👥',
+  'Nómina':                            '👤',
+  'SG-SST':                            '🛡️',
 }
-document.getElementById('wbMods').innerHTML =
-  Object.entries(SERVICE_NAMES).map(([id, label]) =>
-    `<div class="wb-mod ${S.contractedServiceIds.includes(id)?'on':''}">${label}</div>`
-  ).join('')
+if (!S.allServices?.length) {
+  const { data } = await db.from('services').select('id, name').eq('active', true)
+  S.allServices = data || []
+}
+document.getElementById('wbMods').innerHTML = S.allServices.map(svc => {
+  const on = S.contractedServiceIds.includes(svc.id)
+  const ico = SVC_ICONS[svc.name] || '⚙️'
+  return `<div class="wb-mod ${on ? 'on' : ''}">${ico} ${esc(svc.name)}</div>`
+}).join('')
 }
 
 /* ══ KPIS ══ */
