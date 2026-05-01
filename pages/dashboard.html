@@ -1120,16 +1120,13 @@ function biCard(bi, preview=false, idx=0) {
 /* ══ CHAT ══ */
 function sendMsg(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsgBtn()} }
 function sendMsgBtn() {
-  const inp=document.getElementById('chatInp'), msgs=document.getElementById('chatMsgs')
-  const val=inp.value.trim(); if(!val) return
-  const now=new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})
-  const name=S.profile?.full_name||'Tú', ini=name.slice(0,2).toUpperCase()
-  msgs.insertAdjacentHTML('beforeend',`<div class="msg mine"><div class="msg-av">${ini}</div><div class="msg-meta"><div class="msg-bubble">${esc(val)}</div><div class="msg-time">${now} · ${esc(name)}</div></div></div>`)
-  inp.value=''; msgs.scrollTop=msgs.scrollHeight
-  setTimeout(()=>{
-    msgs.insertAdjacentHTML('beforeend',`<div class="msg theirs"><div class="msg-av">RS</div><div class="msg-meta"><div class="msg-bubble">Mensaje recibido ✅ Tu asesor lo revisará y te responde pronto. Si es urgente, crea una solicitud formal.</div><div class="msg-time">${now} · Equipo RS</div></div></div>`)
-    msgs.scrollTop=msgs.scrollHeight
-  },1200)
+  const inp = document.getElementById('chatInp')
+  const val = inp.value.trim(); if (!val) return
+  const name = S.profile?.full_name || ''
+  const company = S.company?.name || ''
+  const text = encodeURIComponent(`Hola RS Back Office, soy ${name} de ${company}. ${val}`)
+  window.open(`https://wa.me/573102170905?text=${text}`, '_blank')
+  inp.value = ''
 }
 
 /* ══ NAVEGACIÓN ══ */
