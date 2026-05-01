@@ -458,18 +458,28 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
     </div>
 
     <!-- Tipos de solicitud (se pueblan desde operational_request_types) -->
-    <div class="req-grid" id="reqTypeGrid">
-      <!-- Generado por JS -->
+    <div id="wizardSolicitud">
+
+  <!-- Paso 1: Área -->
+  <div id="wStep1">
+    <div style="font-size:.7rem;font-weight:600;color:var(--g500);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.65rem">Paso 1 — Selecciona el área</div>
+    <div id="areaGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.5rem;margin-bottom:1rem"></div>
+  </div>
+
+  <!-- Paso 2: Tipo (oculto hasta elegir área) -->
+  <div id="wStep2" style="display:none">
+    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.65rem">
+      <button onclick="backToAreas()" style="background:none;border:none;cursor:pointer;color:var(--gold);font-size:.75rem;font-family:var(--fu);padding:0">← Volver</button>
+      <div style="font-size:.7rem;font-weight:600;color:var(--g500);letter-spacing:.1em;text-transform:uppercase">Paso 2 — Tipo de solicitud</div>
     </div>
+    <div id="subtypeGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.5rem;margin-bottom:1rem"></div>
+  </div>
+
+</div>
 
     <!-- Formulario -->
     <div style="display:flex;flex-direction:column;gap:.75rem;margin-bottom:1rem">
-      <div>
-        <label style="font-size:.62rem;font-weight:600;color:var(--g500);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:.3rem">Título / descripción breve *</label>
-        <input type="text" id="reqTitle" placeholder="Ej: Nota crédito factura FE-001234"
-          style="width:100%;border:1.5px solid var(--g200);border-radius:var(--r);padding:.62rem .88rem;font-family:var(--fu);font-size:.8rem;color:var(--ink);outline:none;background:var(--g50);transition:all .18s"
-          onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--g200)'">
-      </div>
+      
       <div>
         <label style="font-size:.62rem;font-weight:600;color:var(--g500);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:.3rem">Detalle adicional (opcional)</label>
         <textarea id="reqDesc" placeholder="Describe el contexto o adjunta números de documento, fechas, montos…" rows="3"
@@ -509,7 +519,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
         <div class="card-title">Gestión de equipo</div>
         <div class="card-sub" id="teamSub">Cargando…</div>
       </div>
-      <button class="btn-p" onclick="openInviteModal()">+ Invitar usuario</button>
+      <button class="btn-p" style="opacity:.4;cursor:not-allowed" title="Función temporalmente deshabilitada" disabled>+ Invitar usuario</button>
     </div>
 
     <!-- Tabla de miembros -->
@@ -598,62 +608,93 @@ const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 /* ══ ESTADO ══ */
 let S = { profile:null, company:null, tasks:[], documents:[], dashboards:[], requestTypes:[], requests:[], contractedServiceIds:[], allServices:[] }
 let tFilter = 'todas', dFilter = 'todos'
+let selectedArea = null
 
 /* ══ SOLICITUDES ══ */
 let selectedReqType = null
 
 function renderRequestTypes() {
-  const grid = document.getElementById('reqTypeGrid')
-  if (!grid) return
   selectedReqType = null
+  selectedArea = null
 
-  const ICONS = {
-    credit_note:          { ico:'🧾', bg:'var(--gold-pale)' },
-    collections_followup: { ico:'📞', bg:'var(--info-bg)'   },
-    accounting:           { ico:'📋', bg:'var(--info-bg)'   },
-    controller:           { ico:'📊', bg:'var(--info-bg)'   },
-    hiring:               { ico:'👥', bg:'var(--ok-bg)'     },
-    certificate:          { ico:'📄', bg:'var(--ok-bg)'     },
-    general_query:        { ico:'💬', bg:'var(--gold-pale)' },
+  const AREA_ICONS = {
+    'Facturación y recaudo':             { ico:'🧾', color:'var(--gold-pale)',  txt:'var(--gold)'  },
+    'Contabilidad e Impuestos':          { ico:'📋', color:'var(--info-bg)',    txt:'var(--info)'  },
+    'Nómina':                            { ico:'👤', color:'var(--ok-bg)',      txt:'var(--ok)'    },
+    'Controller financiero y tesorería': { ico:'📊', color:'var(--info-bg)',    txt:'var(--info)'  },
+    'Gestión de personal y compras':     { ico:'👥', color:'var(--ok-bg)',      txt:'var(--ok)'    },
+    'SG-SST':                            { ico:'🛡️', color:'var(--warn-bg)',   txt:'var(--warn)'  },
   }
 
-  if (!S.requestTypes.length) {
-    grid.innerHTML = '<p style="font-size:.78rem;color:var(--g500)">No hay tipos de solicitud disponibles.</p>'
-    return
-  }
+  // Agrupar request types por service_id
+  const areaMap = {}
+  S.requestTypes.forEach(t => {
+    if (!areaMap[t.service_id]) areaMap[t.service_id] = []
+    areaMap[t.service_id].push(t)
+  })
 
-  grid.innerHTML = S.requestTypes.map(t => {
-    const ic = ICONS[t.code] || { ico:'📋', bg:'var(--g100)' }
+  // Obtener servicios únicos con nombre desde allServices
+  const areas = S.allServices.filter(svc => areaMap[svc.id])
 
-    // ¿Este tipo corresponde a un servicio contratado?
-    const contracted = !t.service_id || S.contractedServiceIds.includes(t.service_id)
+  const grid = document.getElementById('areaGrid')
+  if (!grid) return
 
-    if (contracted) {
-      // DISPONIBLE — seleccionable
-      return `<div class="req-type" id="rt-${t.id}" onclick="selectReqType('${t.id}')">
-        <div class="req-ico" style="background:${ic.bg}">${ic.ico}</div>
-        <div>
-          <h4>${esc(t.name)}</h4>
-          <p>${esc(t.description || '')}</p>
-        </div>
-      </div>`
-    } else {
-      // BLOQUEADO — visible pero no seleccionable
-      return `<div class="req-type" 
-        style="opacity:.45;cursor:not-allowed;filter:grayscale(.6)"
-        onclick="showUpgradeMsg('${esc(t.name)}')"
-        title="Servicio no contratado">
-        <div class="req-ico" style="background:var(--g100);position:relative">
-          ${ic.ico}
-          <span style="position:absolute;top:-4px;right:-4px;font-size:.55rem;background:var(--g300);color:var(--white);border-radius:100px;padding:.05rem .3rem;font-weight:700">🔒</span>
-        </div>
-        <div>
-          <h4 style="color:var(--g500)">${esc(t.name)}</h4>
-          <p style="color:var(--g400)">${esc(t.description || 'Servicio no incluido en tu plan')}</p>
-        </div>
-      </div>`
-    }
+  grid.innerHTML = areas.map(svc => {
+    const contracted = S.contractedServiceIds.includes(svc.id)
+    const ic = AREA_ICONS[svc.name] || { ico:'⚙️', color:'var(--g100)', txt:'var(--g500)' }
+    const count = areaMap[svc.id]?.length || 0
+    return `<div onclick="${contracted ? `selectArea('${svc.id}')` : `showUpgradeMsg('${esc(svc.name)}')`}"
+      style="border:1.5px solid ${contracted ? 'var(--g200)' : 'var(--g100)'};
+      border-radius:var(--r-lg);padding:1rem;cursor:${contracted ? 'pointer' : 'not-allowed'};
+      background:var(--white);transition:all .2s;
+      opacity:${contracted ? '1' : '.45'};filter:${contracted ? 'none' : 'grayscale(.6)'};"
+      onmouseover="if(${contracted}) this.style.borderColor='var(--gold)'"
+      onmouseout="if(${contracted}) this.style.borderColor='var(--g200)'"
+      id="area-${svc.id}">
+      <div style="width:36px;height:36px;border-radius:9px;background:${ic.color};display:flex;align-items:center;justify-content:center;font-size:1.1rem;margin-bottom:.6rem;position:relative">
+        ${ic.ico}
+        ${!contracted ? '<span style="position:absolute;top:-4px;right:-4px;font-size:.55rem;background:var(--g300);color:var(--white);border-radius:100px;padding:.05rem .3rem;font-weight:700">🔒</span>' : ''}
+      </div>
+      <div style="font-size:.82rem;font-weight:600;color:var(--ink);margin-bottom:.2rem">${esc(svc.name)}</div>
+      <div style="font-size:.68rem;color:var(--g400)">${count} tipo${count !== 1 ? 's' : ''} de solicitud</div>
+    </div>`
   }).join('')
+
+  // Mostrar paso 1, ocultar paso 2
+  document.getElementById('wStep1').style.display = 'block'
+  document.getElementById('wStep2').style.display = 'none'
+}
+
+function selectArea(serviceId) {
+  selectedArea = serviceId
+  selectedReqType = null
+  document.getElementById('wStep1').style.display = 'none'
+  document.getElementById('wStep2').style.display = 'block'
+  renderRequestSubtypes()
+}
+
+function backToAreas() {
+  selectedArea = null
+  selectedReqType = null
+  document.getElementById('wStep1').style.display = 'block'
+  document.getElementById('wStep2').style.display = 'none'
+}
+
+function renderRequestSubtypes() {
+  const subtypes = S.requestTypes.filter(t => t.service_id === selectedArea)
+  const grid = document.getElementById('subtypeGrid')
+  if (!grid) return
+
+  grid.innerHTML = subtypes.map(t => `
+    <div id="rt-${t.id}" onclick="selectReqType('${t.id}')"
+      style="border:1.5px solid var(--g200);border-radius:var(--r-lg);padding:.85rem 1rem;
+      cursor:pointer;background:var(--white);transition:all .2s;"
+      onmouseover="this.style.borderColor='var(--gold)'"
+      onmouseout="if(!this.classList.contains('sel')) this.style.borderColor='var(--g200)'">
+      <div style="font-size:.82rem;font-weight:600;color:var(--ink);margin-bottom:.18rem">${esc(t.name)}</div>
+      ${t.description ? `<div style="font-size:.7rem;color:var(--g500);line-height:1.5">${esc(t.description)}</div>` : ''}
+    </div>`
+  ).join('')
 }
 
 function showUpgradeMsg(serviceName) {
@@ -707,8 +748,11 @@ function showUpgradeMsg(serviceName) {
 
 function selectReqType(id) {
   selectedReqType = id
-  document.querySelectorAll('.req-type').forEach(el => {
-    el.classList.toggle('sel', el.id === 'rt-' + id)
+  document.querySelectorAll('#subtypeGrid > div').forEach(el => {
+    const sel = el.id === 'rt-' + id
+    el.classList.toggle('sel', sel)
+    el.style.borderColor = sel ? 'var(--gold)' : 'var(--g200)'
+    el.style.background  = sel ? 'var(--gold-pale)' : 'var(--white)'
   })
 }
 
