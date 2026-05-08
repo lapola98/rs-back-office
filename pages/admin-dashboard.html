@@ -741,9 +741,12 @@ function updateSbCounts() {
 function renderUser(user) {
   const e   = user.email || '—'
   const ini = e.slice(0, 2).toUpperCase()
-  document.getElementById('uAv').textContent  = ini
-  document.getElementById('tbAv').textContent = ini
-  document.getElementById('uName').textContent = e
+  const uAv  = document.getElementById('uAv')
+  const tbAv = document.getElementById('tbAv')
+  const uName = document.getElementById('uName')
+  if (uAv)   uAv.textContent   = ini
+  if (tbAv)  tbAv.textContent  = ini
+  if (uName) uName.textContent = e
 }
 
 async function signOut() {
