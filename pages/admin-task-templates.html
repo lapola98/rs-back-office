@@ -281,6 +281,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
               <th>Responsable</th>
               <th>Día creación</th>
               <th>Día vencimiento</th>
+              <th>Req. doc.</th>
               <th>Activa</th>
               <th style="text-align:right">Acciones</th>
             </tr>
@@ -332,6 +333,17 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
       <div class="field">
         <label>Servicio *</label>
         <select id="f-service"></select>
+      </div>
+      <div class="field" style="flex-direction:row;align-items:center;justify-content:space-between;padding:.5rem .88rem;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r)">
+        <div>
+          <label style="display:block;margin-bottom:.15rem">Requiere documento para cerrar</label>
+          <span style="font-size:.68rem;color:var(--txt3)">El cliente o RS deberá adjuntar un archivo al completarla</span>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="f-requires-doc">
+          <span class="toggle-track"></span>
+          <span class="toggle-thumb"></span>
+        </label>
       </div>
       <div class="field-row">
         <div class="field">
@@ -488,7 +500,7 @@ function ownerBadge(o) {
 function renderTable(rows) {
   const tbody = document.getElementById('tableBody')
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="8">
+    tbody.innerHTML = `<tr><td colspan="9">
       <div class="empty-state">
         <div class="empty-state-icon">📋</div>
         <h3>Sin plantillas</h3>
@@ -508,6 +520,7 @@ function renderTable(rows) {
       <td>${ownerBadge(t.owner_type)}</td>
       <td>${t.create_day != null ? `<span style="color:var(--txt)">Día ${t.create_day}</span>` : '<span style="color:var(--txt3)">—</span>'}</td>
       <td>${t.due_day != null ? `<span style="color:var(--txt)">Día ${t.due_day}</span>` : '<span style="color:var(--txt3)">—</span>'}</td>
+      <td>${t.requires_document ? '<span class="badge b-rs">📎 Sí</span>' : '<span style="color:var(--txt3);font-size:.75rem">No</span>'}</td>
       <td>
         <label class="toggle">
           <input type="checkbox" ${t.active ? 'checked' : ''} onchange="toggleActive('${t.id}', this.checked)">
@@ -542,8 +555,9 @@ function openCreateModal() {
   document.getElementById('f-frequency').value  = 'monthly'
   document.getElementById('f-service').value    = ''
   document.getElementById('f-owner').value      = 'rs_team'
-  document.getElementById('f-create-day').value = ''
-  document.getElementById('f-due-day').value    = ''
+  document.getElementById('f-create-day').value    = ''
+  document.getElementById('f-due-day').value        = ''
+  document.getElementById('f-requires-doc').checked = false
   openModal('modalForm')
 }
 
@@ -557,8 +571,9 @@ function openEditModal(id) {
   document.getElementById('f-frequency').value  = t.frequency || 'monthly'
   document.getElementById('f-service').value    = t.service_id || ''
   document.getElementById('f-owner').value      = t.owner_type || 'rs_team'
-  document.getElementById('f-create-day').value = t.create_day ?? ''
-  document.getElementById('f-due-day').value    = t.due_day ?? ''
+  document.getElementById('f-create-day').value    = t.create_day ?? ''
+  document.getElementById('f-due-day').value        = t.due_day ?? ''
+  document.getElementById('f-requires-doc').checked = t.requires_document || false
   openModal('modalForm')
 }
 
@@ -584,7 +599,7 @@ async function saveTemplate() {
   const origText = btn.textContent
   btn.textContent = '⏳ Guardando…'; btn.disabled = true
 
-  const payload = { title, frequency, service_id, owner_type, create_day, due_day }
+  const payload = { title, frequency, service_id, owner_type, create_day, due_day, requires_document: document.getElementById('f-requires-doc').checked }
 
   try {
     if (editingId) {

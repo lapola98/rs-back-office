@@ -160,6 +160,28 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
+/* MODAL DOCUMENTO */
+.modal-doc{max-width:520px}
+.upload-zone{border:2px dashed var(--border);border-radius:var(--r);padding:1.6rem 1rem;display:flex;flex-direction:column;align-items:center;gap:.5rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg3);position:relative}
+.upload-zone:hover,.upload-zone.drag-over{border-color:rgba(201,168,76,.4);background:var(--gold-pale)}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-zone-ico{font-size:1.6rem;opacity:.5}
+.upload-zone-lbl{font-size:.78rem;font-weight:500;color:var(--txt2)}
+.upload-zone-sub{font-size:.68rem;color:var(--txt3)}
+.file-prev{display:none;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:.7rem .9rem;align-items:center;gap:.65rem}
+.file-prev.show{display:flex}
+.file-prev-info{flex:1;min-width:0}
+.file-prev-name{font-size:.78rem;font-weight:500;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-prev-size{font-size:.66rem;color:var(--txt3)}
+.file-prev-rm{background:none;border:none;cursor:pointer;color:var(--txt3);padding:.2rem;border-radius:4px;transition:color .15s;font-size:.85rem}
+.file-prev-rm:hover{color:var(--err)}
+.prog-wrap{display:none;flex-direction:column;gap:.5rem}
+.prog-wrap.show{display:flex}
+.prog-bar-bg{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.prog-bar{height:100%;background:var(--gold);border-radius:2px;width:0%;transition:width .3s ease}
+.prog-lbl{font-size:.68rem;color:var(--txt2);display:flex;justify-content:space-between}
+.doc-badge{display:inline-flex;align-items:center;gap:.25rem;font-size:.6rem;font-weight:600;padding:.12rem .4rem;border-radius:100px;background:var(--gold-pale);color:var(--gold);border:1px solid rgba(201,168,76,.3);vertical-align:middle;margin-left:.35rem}
+
 @media(max-width:1100px){.stats-row{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:768px){.sb{display:none}.stats-row{grid-template-columns:1fr 1fr}}
 </style>
@@ -237,6 +259,18 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
         <!-- Poblado dinámicamente -->
       </div>
 
+      <!-- FILTRO POR SERVICIO -->
+      <div class="co-filter-row" id="serviceFilterRow">
+        <span style="font-size:.67rem;color:var(--txt3);white-space:nowrap">Por servicio:</span>
+        <div class="co-chip on" data-svc="todas" onclick="setServiceFilter('todas',this)">Todos</div>
+        <div class="co-chip" data-svc="a629c808-d0ae-4f40-8ac6-fa1cd0c4778b" onclick="setServiceFilter('a629c808-d0ae-4f40-8ac6-fa1cd0c4778b',this)">Contabilidad e Impuestos</div>
+        <div class="co-chip" data-svc="03288227-5f30-4fc8-9857-6005b905a1fa" onclick="setServiceFilter('03288227-5f30-4fc8-9857-6005b905a1fa',this)">Controller financiero y tesorería</div>
+        <div class="co-chip" data-svc="c4b63af0-b25f-4d15-9021-10ea5ac5ce95" onclick="setServiceFilter('c4b63af0-b25f-4d15-9021-10ea5ac5ce95',this)">Facturación y recaudo</div>
+        <div class="co-chip" data-svc="9e5de36d-a2a0-45ea-a393-b411b30e3723" onclick="setServiceFilter('9e5de36d-a2a0-45ea-a393-b411b30e3723',this)">Gestión de personal y compras</div>
+        <div class="co-chip" data-svc="786871dc-1a0b-44af-957e-1fe2f6fc6bef" onclick="setServiceFilter('786871dc-1a0b-44af-957e-1fe2f6fc6bef',this)">Nómina</div>
+        <div class="co-chip" data-svc="9740c5ba-203c-4cbb-8d90-f2ca6966572b" onclick="setServiceFilter('9740c5ba-203c-4cbb-8d90-f2ca6966572b',this)">SG-SST</div>
+      </div>
+
       <!-- TABLA -->
       <div class="task-table-wrap">
         <div class="task-table-hd">
@@ -302,6 +336,53 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
   </div>
 </div>
 
+<!-- MODAL CERRAR TAREA CON DOCUMENTO -->
+<div class="modal-overlay" id="modalDocOverlay" onclick="closeDocModalOut(event)">
+  <div class="modal modal-doc">
+    <div class="modal-hd">
+      <h3 id="modalDocTitle">Completar tarea</h3>
+      <button class="modal-close" onclick="closeDocModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.78rem;color:var(--txt2);margin-bottom:1rem;line-height:1.5">
+        Esta tarea requiere un documento de soporte para cerrarse. Adjunta el archivo antes de continuar.
+      </p>
+      <div class="field">
+        <label>Comentarios <span style="text-transform:none;font-weight:400;letter-spacing:0">(opcional)</span></label>
+        <input type="text" id="doc-desc" placeholder="Describe brevemente el documento adjunto…">
+      </div>
+      <div class="field">
+        <label>Archivo *</label>
+        <div class="upload-zone" id="uploadZone"
+             ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+          <input type="file" id="fileInput"
+                 accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                 onchange="onFileSelect(event)">
+          <div class="upload-zone-ico">📎</div>
+          <div class="upload-zone-lbl">Arrastra aquí o haz clic para seleccionar</div>
+          <div class="upload-zone-sub">PDF, Word, Excel, imágenes — máx. 20 MB</div>
+        </div>
+        <div class="file-prev" id="filePrev">
+          <span style="font-size:1.1rem">📄</span>
+          <div class="file-prev-info">
+            <div class="file-prev-name" id="prevName">—</div>
+            <div class="file-prev-size" id="prevSize">—</div>
+          </div>
+          <button class="file-prev-rm" onclick="removeFile()" title="Quitar">✕</button>
+        </div>
+      </div>
+      <div class="prog-wrap" id="progWrap">
+        <div class="prog-lbl"><span id="progTxt">Subiendo…</span><span id="progPct">0%</span></div>
+        <div class="prog-bar-bg"><div class="prog-bar" id="progBar"></div></div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-s" id="docCancelBtn" onclick="closeDocModal()">Cancelar</button>
+      <button class="btn-p" id="docSaveBtn" onclick="submitDocAndClose()">✓ Completar tarea</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL = 'https://doauzsmkoeyvllbmbdda.supabase.co'
@@ -310,10 +391,20 @@ const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
 let ALL_TASKS = []
 let COMPANIES = {}   // { id: { name, color } }
-let filterStatus = 'todas'
-let filterCo     = 'todas'
-let filterOwner  = 'todas'
-let editingId    = null
+let filterStatus  = 'todas'
+let filterCo      = 'todas'
+let filterOwner   = 'todas'
+let filterService = 'todas'
+let editingId     = null
+
+const SERVICES = {
+  'a629c808-d0ae-4f40-8ac6-fa1cd0c4778b': 'Contabilidad e Impuestos',
+  '03288227-5f30-4fc8-9857-6005b905a1fa': 'Controller financiero y tesorería',
+  'c4b63af0-b25f-4d15-9021-10ea5ac5ce95': 'Facturación y recaudo',
+  '9e5de36d-a2a0-45ea-a393-b411b30e3723': 'Gestión de personal y compras',
+  '786871dc-1a0b-44af-957e-1fe2f6fc6bef': 'Nómina',
+  '9740c5ba-203c-4cbb-8d90-f2ca6966572b': 'SG-SST',
+}
 
 const CO_COLORS = ['#c9a84c','#4a9fd4','#22a66a','#e8a020','#9b59b6','#e05c4b']
 
@@ -342,7 +433,7 @@ async function loadData() {
     // Cargar tareas
     const { data: tasks, error } = await db
       .from('tasks')
-      .select('id, title, status, due_date, company_id, owner_type, created_at, create_day')
+      .select('id, title, status, due_date, company_id, owner_type, created_at, create_day, requires_document, document_id, service_id')
       .order('due_date', { ascending: true, nullsFirst: false })
 
     if (error) throw error
@@ -412,6 +503,12 @@ function setOwner(o, btn) {
   btn.classList.add('on'); renderTable()
 }
 
+function setServiceFilter(svcId, el) {
+  filterService = svcId
+  document.querySelectorAll('#serviceFilterRow .co-chip').forEach(c => c.classList.remove('on'))
+  el.classList.add('on'); renderTable()
+}
+
 function setCoFilter(coId, el) {
   filterCo = coId
   document.querySelectorAll('.co-chip').forEach(c => c.classList.remove('on'))
@@ -423,15 +520,16 @@ function getFiltered() {
   return ALL_TASKS.filter(t => {
     const coName     = (COMPANIES[t.company_id]?.name || '').toLowerCase()
     const matchQ     = !q || t.title.toLowerCase().includes(q) || coName.includes(q)
-    const matchCo    = filterCo === 'todas' || t.company_id === filterCo
-    const matchOwner = filterOwner === 'todas' || t.owner_type === filterOwner
+    const matchCo      = filterCo === 'todas' || t.company_id === filterCo
+    const matchOwner   = filterOwner === 'todas' || t.owner_type === filterOwner
+    const matchService = filterService === 'todas' || t.service_id === filterService
     const matchS     =
       filterStatus === 'todas'     ||
       (filterStatus === 'overdue'   && isOverdue(t)) ||
       (filterStatus === 'pending'   && t.status === 'pending' && !isOverdue(t)) ||
       (filterStatus === 'completed' && t.status === 'completed')
 
-    return matchQ && matchCo && matchOwner && matchS
+    return matchQ && matchCo && matchOwner && matchService && matchS
   })
 }
 
@@ -481,7 +579,7 @@ function renderTable() {
           onclick="toggleDone('${t.id}','${t.status}')">${done?'✓':''}</div>
       </td>
       <td>
-        <div class="td-w">${esc(t.title)} ${t.owner_type==='rs_team'?'<span style="font-size:.58rem;font-weight:600;padding:.1rem .38rem;border-radius:100px;background:rgba(201,168,76,.15);color:var(--gold)">⚙️ RS</span>':t.owner_type==='client'?'<span style="font-size:.58rem;font-weight:600;padding:.1rem .38rem;border-radius:100px;background:var(--info-bg);color:var(--info)">🏢</span>':''}</div>
+        <div class="td-w">${esc(t.title)} ${t.owner_type==='rs_team'?'<span style="font-size:.58rem;font-weight:600;padding:.1rem .38rem;border-radius:100px;background:rgba(201,168,76,.15);color:var(--gold)">⚙️ RS</span>':t.owner_type==='client'?'<span style="font-size:.58rem;font-weight:600;padding:.1rem .38rem;border-radius:100px;background:var(--info-bg);color:var(--info)">🏢</span>':''}${t.requires_document?`<span class="doc-badge">${t.document_id?'📎 doc':'📎 req'}</span>`:''}</div>
       </td>
       <td>
         <div style="display:flex;align-items:center;gap:.5rem">
@@ -512,11 +610,31 @@ function hexToRgb(hex) {
 
 /* ══ ACCIONES ══ */
 async function toggleDone(id, currentStatus) {
-  const newStatus = currentStatus === 'completed' ? 'pending' : 'completed'
-  const { error } = await db.from('tasks').update({ status: newStatus }).eq('id', id)
-  if (error) { alert('Error: ' + error.message); return }
   const task = ALL_TASKS.find(t => t.id === id)
-  if (task) task.status = newStatus
+  if (!task) return
+
+  // Si ya está completada → confirmar antes de reabrir
+  if (currentStatus === 'completed') {
+    if (!confirm('¿Estás seguro de que quieres desmarcar esta tarea como completada?')) return
+    const { error } = await db.from('tasks').update({ status: 'pending', document_id: null }).eq('id', id)
+    if (error) { alert('Error: ' + error.message); return }
+    task.status = 'pending'
+    task.document_id = null
+    updateStats(); renderTable()
+    return
+  }
+
+  // Si requiere documento y aún no tiene → abrir modal de documento
+  if (task.requires_document && !task.document_id) {
+    openDocModal(task)
+    return
+  }
+
+  // Caso normal: cerrar directamente
+  if (!confirm(`¿Confirmas que la tarea "${task.title}" está completada?`)) return
+  const { error } = await db.from('tasks').update({ status: 'completed' }).eq('id', id)
+  if (error) { alert('Error: ' + error.message); return }
+  task.status = 'completed'
   updateStats(); renderTable()
 }
 
@@ -572,6 +690,167 @@ async function saveTask() {
   } finally {
     btn.textContent = editingId ? 'Guardar cambios' : 'Crear tarea'
     btn.disabled = false
+  }
+}
+
+/* ══ MODAL DOCUMENTO ══ */
+let _docTask   = null   // tarea que se está cerrando
+let _docFile   = null   // archivo seleccionado
+
+function openDocModal(task) {
+  _docTask = task
+  _docFile = null
+  document.getElementById('modalDocTitle').textContent = `Completar: ${task.title}`
+  document.getElementById('doc-desc').value  = ''
+  document.getElementById('fileInput').value    = ''
+  document.getElementById('filePrev').classList.remove('show')
+  document.getElementById('uploadZone').style.display = ''
+  document.getElementById('progWrap').classList.remove('show')
+  setDocBusy(false)
+  document.getElementById('modalDocOverlay').classList.add('open')
+}
+
+function closeDocModal() {
+  if (document.getElementById('docSaveBtn').disabled) return
+  document.getElementById('modalDocOverlay').classList.remove('open')
+  _docTask = null; _docFile = null
+}
+
+function closeDocModalOut(e) {
+  if (e.target === document.getElementById('modalDocOverlay')) closeDocModal()
+}
+
+function onFileSelect(e) { if (e.target.files[0]) setDocFile(e.target.files[0]) }
+function onDragOver(e)   { e.preventDefault(); document.getElementById('uploadZone').classList.add('drag-over') }
+function onDragLeave()   { document.getElementById('uploadZone').classList.remove('drag-over') }
+function onDrop(e) {
+  e.preventDefault()
+  document.getElementById('uploadZone').classList.remove('drag-over')
+  if (e.dataTransfer.files[0]) setDocFile(e.dataTransfer.files[0])
+}
+
+function setDocFile(file) {
+  if (file.size > 20 * 1024 * 1024) { alert('El archivo supera 20 MB'); return }
+  _docFile = file
+  document.getElementById('prevName').textContent = file.name
+  document.getElementById('prevSize').textContent = fmtBytes(file.size)
+  document.getElementById('filePrev').classList.add('show')
+  document.getElementById('uploadZone').style.display = 'none'
+}
+
+function removeFile() {
+  _docFile = null
+  document.getElementById('fileInput').value = ''
+  document.getElementById('filePrev').classList.remove('show')
+  document.getElementById('uploadZone').style.display = ''
+}
+
+function setDocBusy(busy) {
+  document.getElementById('docSaveBtn').disabled  = busy
+  document.getElementById('docCancelBtn').disabled = busy
+}
+
+function setProgress(pct, txt) {
+  document.getElementById('progBar').style.width = pct + '%'
+  document.getElementById('progPct').textContent  = pct + '%'
+  if (txt) document.getElementById('progTxt').textContent = txt
+}
+
+function fmtBytes(b) {
+  if (b < 1024) return b + ' B'
+  if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB'
+  return (b/1024/1024).toFixed(1) + ' MB'
+}
+
+async function submitDocAndClose() {
+  if (!_docFile) { alert('Selecciona un archivo.'); return }
+
+  // Título del documento = título de la tarea (ya viene con el mes del cron)
+  const title = _docTask.title
+  const desc  = document.getElementById('doc-desc').value.trim() || null
+
+  setDocBusy(true)
+  document.getElementById('progWrap').classList.add('show')
+
+  try {
+    // 1. Contar documentos previos de esta tarea para versionar el título
+    const { count: prevCount } = await db
+      .from('documents')
+      .select('id', { count: 'exact', head: true })
+      .like('storage_path', `${_docTask.company_id || 'rs'}/${_docTask.id}/%`)
+    const titleVersioned = prevCount > 0 ? `${title} (${prevCount + 1})` : title
+
+    // Subir archivo a Storage
+    const ext  = _docFile.name.split('.').pop()
+    const base = `${_docTask.company_id || 'rs'}/${_docTask.id}`
+    const { data: existing } = await db.storage.from('documents').list(base)
+    const version = existing ? existing.length + 1 : 1
+    const path    = `${base}/v${version}_${Date.now()}.${ext}`
+    setProgress(20, 'Subiendo archivo…')
+    console.log('[1] subiendo, path:', path, 'versión título:', prevCount + 1)
+
+    const { error: storageErr } = await db.storage
+      .from('documents')
+      .upload(path, _docFile, { contentType: _docFile.type, upsert: false })
+    if (storageErr) { console.log('[1] storage error:', storageErr); throw storageErr }
+    console.log('[1] storage ok')
+
+    // 2. URL pública
+    setProgress(50, 'Registrando documento…')
+    const { data: urlData } = db.storage.from('documents').getPublicUrl(path)
+    const fileUrl = urlData?.publicUrl || ''
+    console.log('[2] fileUrl:', fileUrl)
+
+    // 3. Insertar en tabla documents
+    const { data: authData } = await db.auth.getUser()
+    const user = authData?.user
+    console.log('[3] user:', user?.id, 'company:', _docTask.company_id)
+
+    const { data: docData, error: docErr } = await db
+      .from('documents')
+      .insert({
+        company_id:    _docTask.company_id,
+        title:         titleVersioned,
+        category:      'general',
+        description:   desc,
+        file_url:      fileUrl,
+        storage_path:  path,
+        original_name: _docFile.name,
+        mime_type:     _docFile.type,
+        size_bytes:    _docFile.size,
+        status:        'available',
+        uploaded_by:   user?.id || null,
+      })
+      .select('id')
+      .single()
+    if (docErr) { console.log('[3] doc error:', docErr); throw docErr }
+    console.log('[3] doc ok, id:', docData.id)
+
+    // 4. Cerrar tarea con document_id
+    setProgress(85, 'Cerrando tarea…')
+    console.log('[4] updating task:', _docTask.id)
+    const { error: taskErr } = await db
+      .from('tasks')
+      .update({ status: 'completed', document_id: docData.id })
+      .eq('id', _docTask.id)
+    if (taskErr) { console.log('[4] task error:', taskErr); throw taskErr }
+    console.log('[4] task ok')
+
+    setProgress(100, '¡Listo!')
+    await new Promise(r => setTimeout(r, 500))
+
+    const t = ALL_TASKS.find(t => t.id === _docTask.id)
+    if (t) { t.status = 'completed'; t.document_id = docData.id }
+
+    setDocBusy(false)
+    closeDocModal()
+    updateStats(); renderTable()
+
+  } catch(e) {
+    console.log('ERROR catch:', e)
+    alert('Error: ' + (e.message || e.error_description || JSON.stringify(e)))
+    document.getElementById('progWrap').classList.remove('show')
+    setDocBusy(false)
   }
 }
 
