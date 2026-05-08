@@ -825,8 +825,9 @@ async function loadAll() {
         phone,email,whatsapp,preferred_channel,
         status,assigned_user_id,notes,created_at,prev_max_tramo,last_import_at,
         collection_debts(id,siigo_document,due_date,
-          overdue_1_30,overdue_31_60,overdue_61_90,overdue_91_plus,
-          not_yet_due,credit_balance,total_balance,outstanding_amount,status)
+  overdue_1_30,overdue_31_60,overdue_61_90,overdue_91_plus,
+  not_yet_due,credit_balance,total_balance,outstanding_amount,status,
+  currency,original_amount)
       `).order('debtor_name'),
       db.from('companies').select('id,name').order('name'),
       db.from('profiles').select('id,full_name,role').in('role',['rs_staff','rs_admin','admin']),
@@ -2129,44 +2130,68 @@ async function executeEnvio() {
 
 /* ══ FACTURAS — helper para variable {{facturas}} ══ */
 function buildFacturasText(debtor) {
-  // Construir lista de facturas no compensadas
-  const tramoLabel = t => t>=91?'91+ días':t>=61?'61-90 días':t>=31?'31-60 días':t===1?'1-30 días':'Por vencer'
-  const debts = debtor.collection_debts || []
+  const tramoLabel = t =>
+    t >= 91 ? '91+ días' :
+    t >= 61 ? '61-90 días' :
+    t >= 31 ? '31-60 días' :
+    t === 1 ? '1-30 días' :
+    'Por vencer'
 
-  // Montos de documentos paid negativos (compensaciones)
+  const debts = debtor?.debts || debtor?.collection_debts || []
+
   const compensaciones = debts
-    .filter(f => f.status === 'paid' && (+f.total_balance||0) < 0)
-    .map(f => Math.abs(Math.round(+f.total_balance||0)))
+    .filter(f => f.status === 'paid' && (+f.total_balance || 0) < 0)
+    .map(f => Math.abs(Math.round(+f.total_balance || 0)))
 
-  // Pendientes con total_balance >= $1000, excluir compensados
   const usedComp = [...compensaciones]
+
   const active = debts.filter(f => {
-    if (f.status !== 'pending' || (+f.total_balance||0) < 1000) return false
-    const monto = Math.round(+f.total_balance||0)
+    if (f.status !== 'pending' || (+f.total_balance || 0) < 1000) return false
+
+    const monto = Math.round(+f.total_balance || 0)
     const idx = usedComp.findIndex(c => Math.abs(c - monto) <= 2)
-    if (idx >= 0) { usedComp.splice(idx, 1); return false } // compensado
+
+    if (idx >= 0) {
+      usedComp.splice(idx, 1)
+      return false
+    }
+
     return true
   })
 
   if (!active.length) return 'Sin facturas pendientes'
 
-  const lines = active.map(f => {
-    const ov1    = +f.overdue_1_30    || 0
-    const ov31   = +f.overdue_31_60   || 0
-    const ov61   = +f.overdue_61_90   || 0
-    const ov91   = +f.overdue_91_plus || 0
-    const notDue = +f.not_yet_due     || 0
+  return active.map(f => {
+    const ov1 = +f.overdue_1_30 || 0
+    const ov31 = +f.overdue_31_60 || 0
+    const ov61 = +f.overdue_61_90 || 0
+    const ov91 = +f.overdue_91_plus || 0
+    const notDue = +f.not_yet_due || 0
+
     const vencido = ov1 + ov31 + ov61 + ov91
 
-    if (vencido > 0) {
-      const tramo = ov91>0?91:ov61>0?61:ov31>0?31:1
-      return `- ${f.siigo_document}: ${fmt(vencido)} (${tramoLabel(tramo)})`
-    } else {
-      return `- ${f.siigo_document}: ${fmt(notDue)} (Por vencer)`
-    }
-  })
+    const tramo = ov91 > 0 ? 91 :
+                  ov61 > 0 ? 61 :
+                  ov31 > 0 ? 31 :
+                  ov1 > 0 ? 1 :
+                  0
 
-  return lines.join('\n')
+    const amount = vencido > 0 ? vencido : notDue
+
+    const usdAmount = Number(f.original_amount || f.usd_amount || 0)
+
+    const usdText =
+      f.currency &&
+      f.currency !== 'COP' &&
+      usdAmount > 0
+        ? ` [${f.currency} $${usdAmount.toLocaleString('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+          })}]`
+        : ''
+
+    return `- ${f.siigo_document}: ${fmt(amount)}${usdText} (${tramoLabel(tramo)})`
+  }).join('\n')
 }
 
 /* ══ TWILIO — callTwilio() ══ */
