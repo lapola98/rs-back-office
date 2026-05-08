@@ -230,45 +230,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
 <div class="app">
 
 <!-- SIDEBAR — idéntico al dashboard -->
-<aside class="sb">
-  <a href="admin-dashboard.html" class="sb-logo">
-    <div class="sb-mark">RS</div>
-    <div class="sb-wm"><strong>RS Back Office</strong><span>Panel admin</span></div>
-    <span class="admin-pill">⚙ Admin</span>
-  </a>
-  <nav class="sb-nav">
-    <div class="sb-lbl">Principal</div>
-    <a href="admin-dashboard.html" class="sb-link"><span class="sb-icon">🏠</span> Dashboard</a>
-    <a href="admin-companies.html" class="sb-link"><span class="sb-icon">🏢</span> Empresas<span class="sb-count" id="sb-co">—</span></a>
-    <a href="admin-onboarding.html" class="sb-link active"><span class="sb-icon">🚀</span> Onboarding<span class="sb-badge-n" id="sb-ob">!</span></a>
-    <a href="admin-tasks.html" class="sb-link"><span class="sb-icon">✅</span> Tareas<span class="sb-badge-n" id="sb-tn">!</span></a>
-    <a href="admin-documents.html" class="sb-link"><span class="sb-icon">📁</span> Documentos<span class="sb-count" id="sb-dc">—</span></a>
-    <a href="admin-requests.html" class="sb-link"><span class="sb-icon">📝</span> Solicitudes<span class="sb-badge-n" id="sb-rq" style="display:none">!</span></a>
-    <a href="admin-dashboards.html" class="sb-link"><span class="sb-icon">📊</span> Dashboards BI<span class="sb-count" id="sb-dh">—</span></a>
-    <div class="sb-div"></div>
-    <div class="sb-lbl">Módulos</div>
-    <a href="admin-collections.html" class="sb-link"><span class="sb-icon">💰</span> Cobranza</a>
-    <a href="#" class="sb-link"><span class="sb-icon">🧾</span> Facturación y Cartera</a>
-    <a href="#" class="sb-link"><span class="sb-icon">📋</span> Contabilidad</a>
-    <a href="#" class="sb-link"><span class="sb-icon">🏦</span> Tesorería</a>
-    <a href="#" class="sb-link"><span class="sb-icon">👥</span> Gestión de Personal</a>
-    <div class="sb-div"></div>
-    <div class="sb-lbl">Sistema</div>
-    <a href="#" class="sb-link"><span class="sb-icon">👤</span> Usuarios</a>
-    <a href="#" class="sb-link"><span class="sb-icon">⚙️</span> Configuración</a>
-    <a href="../index.html" class="sb-link"><span class="sb-icon">🌐</span> Ver sitio web</a>
-  </nav>
-  <div class="sb-foot">
-    <div class="u-pill">
-      <div class="u-av" id="uAv">—</div>
-      <div style="flex:1;min-width:0">
-        <span class="u-name" id="uName">Cargando…</span>
-        <span class="u-role">Administrador RS</span>
-      </div>
-      <button class="u-out" onclick="signOut()" title="Cerrar sesión">⎋</button>
-    </div>
-  </div>
-</aside>
+<aside class="sb" id="sidebar"></aside>
 
 <!-- MAIN -->
 <div class="main">
@@ -672,5 +634,6 @@ function showToast(type,msg){
 
 init()
 </script>
+<script src="../js/sidebar.js"></script>
 </body>
 </html>

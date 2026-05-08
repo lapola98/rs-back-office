@@ -327,35 +327,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
 <div class="app">
 
 <!-- SIDEBAR -->
-<aside class="sb">
-  <div class="sb-logo">
-    <div class="sb-mark">RS</div>
-    <div class="sb-wm"><strong>RS Back Office</strong><span>Mi portal</span></div>
-  </div>
-  <nav class="sb-nav">
-    <div class="sb-lbl">Mi empresa</div>
-    <div class="sb-link active" onclick="go('dashboard')"><span class="sb-icon">🏠</span> Dashboard</div>
-    <div class="sb-link" onclick="go('tareas')"><span class="sb-icon">✅</span> Mis tareas</div>
-    <div class="sb-link" onclick="go('documentos')"><span class="sb-icon">📁</span> Documentos</div>
-    <div class="sb-div"></div>
-    <div class="sb-lbl">Soporte</div>
-    <div class="sb-link" onclick="go('solicitudes')"><span class="sb-icon">📝</span> Solicitudes</div>
-    <div class="sb-div"></div>
-    <div class="sb-lbl" id="sbTeamLbl" style="display:none">Mi empresa</div>
-    <div class="sb-link" id="sbTeamLink" onclick="go('equipo')" style="display:none"><span class="sb-icon">👥</span> Mi equipo</div>
-    <div class="sb-link" onclick="go('chat')"><span class="sb-icon">💬</span> Chat RS</div>
-  </nav>
-  <div class="sb-foot">
-    <div class="u-pill">
-      <div class="u-av" id="uAv">—</div>
-      <div style="flex:1;min-width:0">
-        <span class="u-name" id="uName">Cargando…</span>
-        <span class="u-co" id="uCo">—</span>
-      </div>
-      <button class="u-out" onclick="signOut()" title="Cerrar sesión">⎋</button>
-    </div>
-  </div>
-</aside>
+<aside class="sb" id="sidebar"></aside>
 
 <!-- MAIN -->
 <div class="main">
@@ -1352,5 +1324,6 @@ setInterval(()=>{ if(document.visibilityState==='visible') loadAll() },90_000)
 
 init()
 </script>
+<script src="../js/sidebar.js"></script>
 </body>
 </html>
