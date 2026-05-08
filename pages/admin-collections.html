@@ -2190,7 +2190,7 @@ function buildFacturasText(debtor) {
           })}]`
         : ''
 
-    return `- ${f.siigo_document}: ${fmt(amount)}${usdText} (${tramoLabel(tramo)})`
+    return `- RAD-${f.siigo_document}: ${fmt(amount)}${usdText} (${tramoLabel(tramo)})`
   }).join('\n')
 }
 
