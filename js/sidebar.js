@@ -14,10 +14,7 @@ function renderSidebar() {
     { divider: true },
     { section: 'Módulos' },
     { href: 'admin-collections.html',    icon: '💰', label: 'Cobranza' },
-    { href: '#',                         icon: '🧾', label: 'Facturación y Cartera' },
-    { href: '#',                         icon: '📋', label: 'Contabilidad' },
-    { href: '#',                         icon: '🏦', label: 'Tesorería' },
-    { href: '#',                         icon: '👥', label: 'Gestión de Personal' },
+    
     { divider: true },
     { section: 'Sistema' },
     { href: '#',                         icon: '👤', label: 'Usuarios' },
