@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
+import { useSEO } from '../../hooks/useSEO';
 import styles from './AdminCollectionsDetailPage.module.css';
 
 const STATUS_MAP = {
@@ -39,6 +40,12 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 export default function AdminCollectionsDetailPage() {
   const { id } = useParams();
+
+  useSEO({
+    title: 'Detalle de Deudor',
+    description: 'Gestión detallada de cartera, histórico de pagos y contacto con el deudor.',
+  });
+
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
 

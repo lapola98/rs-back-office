@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
+import { useSEO } from '../../hooks/useSEO';
 import styles from './ClientDashboardPage.module.css';
 
 const fmtDate = (iso) => {
@@ -43,6 +44,12 @@ const EmptyState = ({ icon, title, subtitle }) => (
 
 export default function ClientDashboardPage() {
   const navigate = useNavigate();
+
+  useSEO({
+    title: 'Portal de Cliente',
+    description: 'Accede a tus reportes financieros, contables y de facturación en el portal de RS Back Office.',
+  });
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');

@@ -2,9 +2,15 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 // Asegúrate de tener este archivo creado según la guía anterior
 import { supabase } from '../../lib/supabaseClient';
+import { useSEO } from '../../hooks/useSEO';
 import styles from './AuthPages.module.css';
 
 export default function LoginPage() {
+  useSEO({
+    title: 'Iniciar Sesión',
+    description: 'Ingresa a tu cuenta de RS Back Office para gestionar las finanzas de tu empresa.',
+  });
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);

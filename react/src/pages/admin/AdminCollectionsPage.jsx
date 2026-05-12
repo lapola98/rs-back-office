@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import { useSEO } from '../../hooks/useSEO';
 import styles from './AdminCollectionsPage.module.css';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -21,6 +22,11 @@ const todayStr = () => new Date().toISOString().slice(0, 10);
 
 export default function AdminCollectionsPage() {
   const navigate = useNavigate();
+
+  useSEO({
+    title: 'Gestión de Cartera',
+    description: 'Módulo de cobranza y gestión de cartera de clientes para administradores de RS.',
+  });
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

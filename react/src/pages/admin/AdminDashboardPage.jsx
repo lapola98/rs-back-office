@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
+import { useSEO } from '../../hooks/useSEO';
 import styles from './AdminDashboardPage.module.css';
 
 const fmtDate = (iso) => {
@@ -61,6 +62,12 @@ const Sparkline = ({ vals, isHi = false }) => {
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
+
+  useSEO({
+    title: 'Dashboard Administrativo',
+    description: 'Panel de control de RS Back Office para la gestión de clientes, tareas y documentos.',
+  });
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);

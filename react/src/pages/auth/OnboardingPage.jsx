@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
+import { useSEO } from '../../hooks/useSEO';
 import styles from './OnboardingPage.module.css';
 
 const STEP_LABELS = ['', 'Datos de empresa', 'Servicios', 'Políticas', 'KYC / Documentos', 'Confirmación'];
@@ -22,6 +23,11 @@ function isEmail(e) {
 }
 
 export default function OnboardingPage() {
+  useSEO({
+    title: 'Registro de Empresa',
+    description: 'Registra tu empresa en RS Back Office y comienza a optimizar tu gestión.',
+  });
+
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 

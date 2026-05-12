@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import { useSEO } from '../../hooks/useSEO';
 import styles from './AdminCompaniesPage.module.css';
 
 const PALETTE = [
@@ -26,6 +27,11 @@ const fmtDate = (iso) => {
 };
 
 export default function AdminCompaniesPage() {
+  useSEO({
+    title: 'Directorio de Empresas',
+    description: 'Gestión y administración de empresas clientes en RS Back Office.',
+  });
+
   const [companies, setCompanies] = useState([]);
   const [filteredCompanies, setFilteredCompanies] = useState([]);
   const [selectedCoId, setSelectedCoId] = useState(null);

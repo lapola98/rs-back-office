@@ -3,11 +3,18 @@ import { supabase } from '../../lib/supabaseClient';
 import styles from './AdminCollectionsImportPage.module.css';
 import { Link, useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
+import { useSEO } from '../../hooks/useSEO';
 
 const fmt = (n) => '$' + Number(n || 0).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
 export default function AdminCollectionsImportPage() {
   const navigate = useNavigate();
+
+  useSEO({
+    title: 'Importar Cartera',
+    description: 'Importación masiva de estados de cuenta y cartera de clientes vía Excel.',
+  });
+
   const [loading, setLoading] = useState(true);
   const [companies, setCompanies] = useState([]);
   
