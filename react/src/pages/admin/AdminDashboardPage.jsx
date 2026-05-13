@@ -179,39 +179,7 @@ export default function AdminDashboardPage() {
   const greeting = h < 12 ? 'Buenos días' : h < 18 ? 'Buenas tardes' : 'Buenas noches';
 
   return (
-    <div className={styles.app}>
-      {/* SIDEBAR PLACEHOLDER */}
-      <aside className={styles.sb}>
-        <a href="#" className={styles.sbLogo}>
-          <div className={styles.sbMark}>RS</div>
-          <div className={styles.sbWm}>
-            <strong>RS Back Office</strong>
-            <span>Admin</span>
-          </div>
-          <div className={styles.adminPill}>ADMIN</div>
-        </a>
-        <div className={styles.sbNav}>
-          <div className={styles.sbLbl}>Principal</div>
-          <a href="/admin/dashboard" className={`${styles.sbLink} ${styles.sbLinkActive}`}>
-            <span className={styles.sbIcon}>📊</span> Dashboard
-          </a>
-          <a href="/admin/tasks" className={styles.sbLink}>
-            <span className={styles.sbIcon}>✅</span> Tareas
-          </a>
-          <a href="/admin/task-templates" className={styles.sbLink}>
-            <span className={styles.sbIcon}>📋</span> Plantillas
-          </a>
-          <a href="/admin/requests" className={styles.sbLink}>
-            <span className={styles.sbIcon}>📥</span> Solicitudes
-          </a>
-          <a href="/admin/documents" className={styles.sbLink}>
-            <span className={styles.sbIcon}>📁</span> Documentos
-          </a>
-        </div>
-      </aside>
-
-      {/* MAIN */}
-      <div className={styles.main}>
+    <>
         <header className={styles.topbar}>
           <div>
             <div className={styles.tbBc}>Admin / <span>Dashboard</span></div>
@@ -523,7 +491,6 @@ export default function AdminDashboardPage() {
 
           </div>
         </div>
-      </div>
-    </div>
+    </>
   );
 }

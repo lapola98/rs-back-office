@@ -58,7 +58,7 @@ export default function AdminCompaniesPage() {
     try {
       const { data: coData, error } = await supabase
         .from('companies')
-        .select('id, name, status, billing_module, accounting_module, treasury_module, hr_module, created_at')
+        .select('id, name, status, billing_module, accounting_module, treasury_module, hr_module, created_at, nit, city, sector, phone')
         .order('name', { ascending: true });
 
       if (error) throw error;
@@ -85,8 +85,8 @@ export default function AdminCompaniesPage() {
           color: pal.color,
           bg: pal.bg,
           name: c.name || 'Sin nombre',
-          nit: '—', city: '—', dept: '—', sector: '—', size: '—',
-          contact: '—', email: '—', tel: '—',
+          nit: c.nit || '—', city: c.city || '—', dept: '—', sector: c.sector || '—', size: '—',
+          contact: '—', email: '—', tel: c.phone || '—',
           date: fmtDate(c.created_at),
           asesor: '—',
           plan: mods.filter(Boolean).length + ' módulo(s) activo(s)',
@@ -141,6 +141,10 @@ export default function AdminCompaniesPage() {
         accounting_module: formData.accounting_module,
         treasury_module: formData.treasury_module,
         hr_module: formData.hr_module,
+        nit: formData.nit || null,
+        city: formData.city || null,
+        sector: formData.sector || null,
+        phone: formData.tel || null,
       };
 
       if (isEditing && selectedCoId) {
