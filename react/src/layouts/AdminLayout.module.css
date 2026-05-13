@@ -1,0 +1,82 @@
+/* ─── LAYOUT RAÍZ ─── */
+.app { display: flex; height: 100vh; overflow: hidden; background: #0d1117; }
+
+/* ─── SIDEBAR ─── */
+.sb {
+  width: 248px; background: #131920; border-right: 1px solid rgba(255,255,255,.07);
+  display: flex; flex-direction: column; flex-shrink: 0; height: 100vh;
+  overflow-y: auto; overflow-x: hidden; scrollbar-width: none; position: relative;
+}
+.sb::-webkit-scrollbar { display: none; }
+.sb::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background-image: linear-gradient(rgba(201,168,76,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201,168,76,.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* Logo */
+.sbLogo {
+  padding: 1.2rem 1.1rem; display: flex; align-items: center; gap: .7rem;
+  text-decoration: none; border-bottom: 1px solid rgba(255,255,255,.07);
+  position: relative; z-index: 1;
+}
+.sbMark {
+  width: 38px; height: 38px; flex-shrink: 0;
+  background: linear-gradient(135deg, #c9a84c, #e8c97a); border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Cormorant Garamond', serif; font-size: 1.05rem; font-weight: 600;
+  color: #0d1117; box-shadow: 0 4px 16px rgba(201,168,76,.3);
+}
+.sbWm strong { display: block; font-size: .82rem; font-weight: 600; color: #fff; letter-spacing: .04em; line-height: 1.2; }
+.sbWm span   { font-size: .58rem; color: rgba(255,255,255,.25); letter-spacing: .13em; text-transform: uppercase; }
+.adminPill {
+  display: inline-flex; align-items: center; font-size: .55rem;
+  font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #c9a84c;
+  background: rgba(201,168,76,.12); border: 1px solid rgba(201,168,76,.2);
+  border-radius: 100px; padding: .15rem .5rem; margin-left: auto; flex-shrink: 0;
+}
+
+/* Nav links */
+.sbNav  { flex: 1; padding: .65rem 0; position: relative; z-index: 1; }
+.sbLbl  { font-size: .58rem; font-weight: 600; color: rgba(255,255,255,.25); letter-spacing: .14em; text-transform: uppercase; padding: .85rem 1.1rem .3rem; }
+.sbLink {
+  display: flex; align-items: center; gap: .65rem; padding: .6rem 1.1rem;
+  text-decoration: none; color: rgba(255,255,255,.5); font-size: .79rem;
+  font-weight: 400; transition: all .18s; border-left: 2px solid transparent;
+}
+.sbLink:hover { color: rgba(255,255,255,.88); background: rgba(255,255,255,.04); }
+.sbLinkActive {
+  color: #e8c97a !important; background: rgba(201,168,76,.12) !important;
+  border-left-color: #c9a84c !important; font-weight: 500 !important;
+}
+.sbIcon { font-size: .9rem; width: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+/* Footer de usuario */
+.sbFoot {
+  padding: .85rem 1rem; border-top: 1px solid rgba(255,255,255,.07);
+  display: flex; align-items: center; gap: .6rem; position: relative; z-index: 1;
+}
+.sbUser { display: flex; align-items: center; gap: .55rem; flex: 1; min-width: 0; }
+.sbAv {
+  width: 32px; height: 32px; background: linear-gradient(135deg, #c9a84c, #e8c97a);
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  font-family: 'Cormorant Garamond', serif; font-size: .78rem; font-weight: 600;
+  color: #0d1117; flex-shrink: 0;
+}
+.sbUserInfo { display: flex; flex-direction: column; min-width: 0; }
+.sbUserEmail { font-size: .65rem; color: rgba(255,255,255,.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sbUserRole  { font-size: .56rem; color: rgba(255,255,255,.25); letter-spacing: .06em; text-transform: uppercase; }
+.sbLogout {
+  background: none; border: 1px solid rgba(255,255,255,.07); color: rgba(255,255,255,.3);
+  border-radius: 7px; width: 28px; height: 28px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-size: .8rem;
+  transition: all .18s; flex-shrink: 0;
+}
+.sbLogout:hover { background: rgba(224,92,75,.12); border-color: #e05c4b; color: #e05c4b; }
+
+/* ─── MAIN (slot del Outlet) ─── */
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; height: 100vh; overflow: hidden; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 768px) { .sb { display: none; } }
