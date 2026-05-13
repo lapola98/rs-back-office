@@ -15,19 +15,19 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+
   // Estado de errores individuales
   const [emailError, setEmailError] = useState('');
   const [passError, setPassError] = useState('');
-  
+
   // Alerta global del formulario
   const [formError, setFormError] = useState('');
-  
+
   // Modal de reset de contraseña
   const [showModal, setShowModal] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
-  
+
   // Toast (notificaciones)
   const [toast, setToast] = useState({ show: false, msg: '', type: 'ok' });
 
@@ -97,7 +97,7 @@ export default function LoginPage() {
 
       const role = profile?.role || data.user.user_metadata?.role || 'client_user';
       const ADMIN_ROLES = ['admin', 'rs_staff', 'rs_admin'];
-      
+
       setTimeout(() => {
         if (ADMIN_ROLES.includes(role)) {
           navigate('/admin/dashboard');
@@ -148,7 +148,7 @@ export default function LoginPage() {
 
       {/* MODAL RESET */}
       {showModal && (
-        <div className={styles.modalOv} onClick={(e) => { if(e.target === e.currentTarget) setShowModal(false) }}>
+        <div className={styles.modalOv} onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false) }}>
           <div className={styles.modal}>
             <h3>Recuperar contraseña</h3>
             <p>Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña.</p>
@@ -156,9 +156,9 @@ export default function LoginPage() {
               <label>Correo electrónico</label>
               <div className={styles.inputWrap}>
                 <span className={styles.inputIcon}>📧</span>
-                <input 
-                  type="email" 
-                  placeholder="tu@empresa.com" 
+                <input
+                  type="email"
+                  placeholder="tu@empresa.com"
                   value={resetEmail}
                   onChange={(e) => setResetEmail(e.target.value)}
                 />
@@ -238,10 +238,10 @@ export default function LoginPage() {
                 <label htmlFor="email">Correo electrónico</label>
                 <div className={`${styles.inputWrap} ${emailError ? styles.error : ''}`}>
                   <span className={styles.inputIcon}>📧</span>
-                  <input 
-                    type="email" 
-                    id="email" 
-                    placeholder="correo@empresa.com" 
+                  <input
+                    type="email"
+                    id="email"
+                    placeholder="correo@empresa.com"
                     autoComplete="email"
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); setEmailError(''); setFormError(''); }}
@@ -254,17 +254,17 @@ export default function LoginPage() {
                 <label htmlFor="password">Contraseña</label>
                 <div className={`${styles.inputWrap} ${passError ? styles.error : ''}`}>
                   <span className={styles.inputIcon}>🔑</span>
-                  <input 
-                    type={showPassword ? 'text' : 'password'} 
-                    id="password" 
-                    placeholder="••••••••" 
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    id="password"
+                    placeholder="••••••••"
                     autoComplete="current-password"
                     value={password}
                     onChange={(e) => { setPassword(e.target.value); setPassError(''); setFormError(''); }}
                   />
-                  <button 
-                    type="button" 
-                    className={styles.togglePass} 
+                  <button
+                    type="button"
+                    className={styles.togglePass}
                     onClick={() => setShowPassword(!showPassword)}
                     title="Mostrar/ocultar contraseña"
                   >

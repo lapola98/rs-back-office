@@ -97,7 +97,7 @@ export default function ClientDashboardPage() {
         navigate('/login');
         return;
       }
-      
+
       const user = session.user;
 
       const { data: profile, error: pe } = await supabase
@@ -233,7 +233,7 @@ export default function ClientDashboardPage() {
         .eq('company_id', data.company.id)
         .order('requested_at', { ascending: false })
         .limit(20);
-      
+
       if (newReqs) setData(prev => ({ ...prev, requests: newReqs }));
 
     } catch (e) {
