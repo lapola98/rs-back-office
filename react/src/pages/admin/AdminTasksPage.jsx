@@ -284,27 +284,6 @@ export default function AdminTasksPage() {
 
   return (
     <div className={styles.app}>
-      {/* SIDEBAR PLACEHOLDER - Debería ser un componente separado */}
-      <aside className={styles.sb}>
-        <a href="#" className={styles.sbLogo}>
-          <div className={styles.sbMark}>RS</div>
-          <div className={styles.sbWm}>
-            <strong>RS Back Office</strong>
-            <span>Admin</span>
-          </div>
-          <div className={styles.adminPill}>ADMIN</div>
-        </a>
-        <div className={styles.sbNav}>
-          <div className={styles.sbLbl}>Principal</div>
-          <a href="#" className={styles.sbLink}>
-            <span className={styles.sbIcon}>📊</span> Dashboard
-          </a>
-          <a href="#" className={`${styles.sbLink} ${styles.sbLinkActive}`}>
-            <span className={styles.sbIcon}>✅</span> Tareas <span className={styles.sbBadgeN}>{stats.pendientes || 0}</span>
-          </a>
-        </div>
-      </aside>
-
       {/* MAIN */}
       <div className={styles.main}>
         <header className={styles.topbar}>

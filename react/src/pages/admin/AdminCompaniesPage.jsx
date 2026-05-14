@@ -58,7 +58,7 @@ export default function AdminCompaniesPage() {
     try {
       const { data: coData, error } = await supabase
         .from('companies')
-        .select('id, name, status, billing_module, accounting_module, treasury_module, hr_module, created_at, nit, city, sector, phone')
+        .select('id, name, status, billing_module, accounting_module, treasury_module, hr_module, created_at, nit, city, sector, phone, dept, size, contact, cargo, email, asesor, notes')
         .order('name', { ascending: true });
 
       if (error) throw error;
@@ -85,17 +85,17 @@ export default function AdminCompaniesPage() {
           color: pal.color,
           bg: pal.bg,
           name: c.name || 'Sin nombre',
-          nit: c.nit || '—', city: c.city || '—', dept: '—', sector: c.sector || '—', size: '—',
-          contact: '—', email: '—', tel: c.phone || '—',
+          nit: c.nit || '—', city: c.city || '—', dept: c.dept || '—', sector: c.sector || '—', size: c.size || '—',
+          contact: c.contact || '—', email: c.email || '—', tel: c.phone || '—', cargo: c.cargo || '—',
           date: fmtDate(c.created_at),
-          asesor: '—',
+          asesor: c.asesor || '—',
           plan: mods.filter(Boolean).length + ' módulo(s) activo(s)',
           status: c.status || 'activa',
           mods,
           tasks: tCount || 0,
           docs: dCount || 0,
           taskVenc: vCount || 0,
-          notes: '',
+          notes: c.notes || '',
           tasksList: tasksList || [],
           docsList: docsList || [],
           _raw: c
@@ -145,6 +145,13 @@ export default function AdminCompaniesPage() {
         city: formData.city || null,
         sector: formData.sector || null,
         phone: formData.tel || null,
+        dept: formData.dept || null,
+        size: formData.size || null,
+        contact: formData.contact || null,
+        cargo: formData.cargo || null,
+        email: formData.email || null,
+        asesor: formData.asesor || null,
+        notes: formData.notes || null,
       };
 
       if (isEditing && selectedCoId) {
@@ -228,7 +235,7 @@ export default function AdminCompaniesPage() {
       name: selectedCo.name, nit: selectedCo.nit !== '—' ? selectedCo.nit : '',
       city: selectedCo.city !== '—' ? selectedCo.city : '', dept: selectedCo.dept !== '—' ? selectedCo.dept : '',
       sector: selectedCo.sector !== '—' ? selectedCo.sector : '', size: selectedCo.size !== '—' ? selectedCo.size : 'Mediana empresa',
-      contact: selectedCo.contact !== '—' ? selectedCo.contact : '', cargo: '',
+      contact: selectedCo.contact !== '—' ? selectedCo.contact : '', cargo: selectedCo.cargo !== '—' ? selectedCo.cargo : '',
       email: selectedCo.email !== '—' ? selectedCo.email : '', tel: selectedCo.tel !== '—' ? selectedCo.tel : '',
       asesor: selectedCo.asesor !== '—' ? selectedCo.asesor : 'Ana García', status: selectedCo.status,
       billing_module: selectedCo.mods[0], accounting_module: selectedCo.mods[1],

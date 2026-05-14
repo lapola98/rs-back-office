@@ -142,31 +142,6 @@ export default function AdminRequestsPage() {
 
   return (
     <div className={styles.app}>
-      {/* SIDEBAR PLACEHOLDER */}
-      <aside className={styles.sb}>
-        <a href="#" className={styles.sbLogo}>
-          <div className={styles.sbMark}>RS</div>
-          <div className={styles.sbWm}>
-            <strong>RS Back Office</strong>
-            <span>Admin</span>
-          </div>
-          <div className={styles.adminPill}>ADMIN</div>
-        </a>
-        <div className={styles.sbNav}>
-          <div className={styles.sbLbl}>Principal</div>
-          <a href="/admin/tasks" className={styles.sbLink}>
-            <span className={styles.sbIcon}>✅</span> Tareas
-          </a>
-          <a href="/admin/task-templates" className={styles.sbLink}>
-            <span className={styles.sbIcon}>📋</span> Plantillas
-          </a>
-          <a href="#" className={`${styles.sbLink} ${styles.sbLinkActive}`}>
-            <span className={styles.sbIcon}>📥</span> Solicitudes
-            {stats.open > 0 && <span className={styles.sbBadgeN}>{stats.open}</span>}
-          </a>
-        </div>
-      </aside>
-
       {/* MAIN */}
       <div className={styles.main}>
         <header className={styles.topbar}>
