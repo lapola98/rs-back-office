@@ -76,22 +76,11 @@ export default function AdminOnboardingPage() {
       const { error } = await supabase.from('client_onboardings').update(upd).eq('id', selectedItem.id);
       if (error) throw error;
       
-      // Si se está aprobando, crear el usuario e invitar
+      // Si se está aprobando, mostrar alerta simple (el Trigger de la BD se encarga de crear el usuario)
       if (editStatus === 'approved' && selectedItem.status !== 'approved') {
-        const { data: { session } } = await supabase.auth.getSession();
-        const res = await fetch('https://doauzsmkoeyvllbmbdda.supabase.co/functions/v1/invite-owner', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
-          body: JSON.stringify({ onboarding_id: selectedItem.id })
-        });
-        const result = await res.json();
-        if (!res.ok || result.error) {
-          alert('Estado actualizado, pero hubo un error al crear/invitar usuario: ' + (result.error || 'error al enviar'));
-        } else {
-          alert('Aprobado. ' + (result.action === 'invited' ? 'Invitación enviada' : 'Usuario vinculado al portal'));
-        }
+        alert('Empresa aprobada. El usuario ha sido creado automáticamente por la base de datos con contraseña temporal (Temporal123!).');
       } else {
-        alert('Estado actualizado');
+        alert('Estado actualizado correctamente.');
       }
       
       setDrawerOpen(false);
@@ -109,18 +98,7 @@ export default function AdminOnboardingPage() {
       }).eq('id', selectedItem.id);
       if (error) throw error;
 
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch('https://doauzsmkoeyvllbmbdda.supabase.co/functions/v1/invite-owner', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ onboarding_id: selectedItem.id })
-      });
-      const result = await res.json();
-      if (!res.ok || result.error) {
-        alert('Empresa aprobada. Email: ' + (result.error || 'error al enviar'));
-      } else {
-        alert('Aprobado. ' + (result.action === 'invited' ? 'Invitación enviada' : 'Usuario vinculado'));
-      }
+      alert('Empresa aprobada. El usuario ha sido creado automáticamente por la base de datos con contraseña temporal (Temporal123!).');
       setDrawerOpen(false);
       loadData();
     } catch (e) {
