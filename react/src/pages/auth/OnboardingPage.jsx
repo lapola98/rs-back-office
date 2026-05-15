@@ -67,8 +67,28 @@ export default function OnboardingPage() {
       await Promise.all([loadServices(), loadPolicies()]);
       const paramNit = searchParams.get('nit');
       if (paramNit) {
-        setForm(f => ({ ...f, nit: paramNit }));
-        showAlert('Encontramos una solicitud previa. Complete los datos y continúe.', 'info');
+        const { data: existing } = await supabase
+          .from('client_onboardings')
+          .select('*')
+          .eq('company_nit', paramNit)
+          .neq('status', 'rejected')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (existing) {
+          setOnboardingId(existing.id);
+          setForm({
+            name: existing.company_name || '', nit: existing.company_nit || paramNit, type: existing.company_type || '',
+            sector: existing.company_sector || '', city: existing.company_city || '', address: existing.company_address || '',
+            phone: existing.company_phone || '', website: existing.company_website || '', repName: existing.rep_name || '',
+            repCedula: existing.rep_cedula || '', repEmail: existing.rep_email || '', repPhone: existing.rep_phone || '',
+            repPosition: existing.rep_position || ''
+          });
+          showAlert('Encontramos una solicitud previa. Verifique sus datos y continúe.', 'info');
+        } else {
+          setForm(f => ({ ...f, nit: paramNit }));
+        }
       }
     };
     init();
@@ -521,10 +541,18 @@ export default function OnboardingPage() {
               <div className={styles.confirmTitle}>🏢 Datos de la empresa</div>
               <div className={styles.confirmRow}><span className={styles.confirmLbl}>Razón social</span><span className={styles.confirmVal}>{form.name || '—'}</span></div>
               <div className={styles.confirmRow}><span className={styles.confirmLbl}>NIT</span><span className={styles.confirmVal}>{form.nit || '—'}</span></div>
-              <div className={styles.confirmRow}><span className={styles.confirmLbl}>Tipo</span><span className={styles.confirmVal}>{form.type || '—'}</span></div>
+              <div className={styles.confirmRow}><span className={styles.confirmLbl}>Tipo y Sector</span><span className={styles.confirmVal}>{form.type || '—'} · {form.sector || '—'}</span></div>
               <div className={styles.confirmRow}><span className={styles.confirmLbl}>Ciudad</span><span className={styles.confirmVal}>{form.city || '—'}</span></div>
-              <div className={styles.confirmRow}><span className={styles.confirmLbl}>Representante</span><span className={styles.confirmVal}>{form.repName || '—'}</span></div>
+              <div className={styles.confirmRow}><span className={styles.confirmLbl}>Dirección</span><span className={styles.confirmVal}>{form.address || '—'}</span></div>
+              <div className={styles.confirmRow}><span className={styles.confirmLbl}>Tel. Empresa</span><span className={styles.confirmVal}>{form.phone || '—'}</span></div>
+              <div className={styles.confirmRow}><span className={styles.confirmLbl}>Sitio web</span><span className={styles.confirmVal}>{form.website || '—'}</span></div>
+
+              <div className={styles.confirmTitle} style={{ marginTop: '1rem', borderTop: '1px solid var(--g200)', paddingTop: '1rem' }}>👤 Representante Legal</div>
+              <div className={styles.confirmRow}><span className={styles.confirmLbl}>Nombre</span><span className={styles.confirmVal}>{form.repName || '—'}</span></div>
+              <div className={styles.confirmRow}><span className={styles.confirmLbl}>Cédula</span><span className={styles.confirmVal}>{form.repCedula || '—'}</span></div>
+              <div className={styles.confirmRow}><span className={styles.confirmLbl}>Cargo</span><span className={styles.confirmVal}>{form.repPosition || '—'}</span></div>
               <div className={styles.confirmRow}><span className={styles.confirmLbl}>Correo</span><span className={styles.confirmVal}>{form.repEmail || '—'}</span></div>
+              <div className={styles.confirmRow}><span className={styles.confirmLbl}>Tel. Móvil</span><span className={styles.confirmVal}>{form.repPhone || '—'}</span></div>
             </div>
 
             <div className={styles.confirmCard}>

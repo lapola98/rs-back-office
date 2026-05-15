@@ -59,7 +59,7 @@ export default function AdminOnboardingPage() {
     try {
       const [{ data: contracts }, { data: kyc }, { data: policies }] = await Promise.all([
         supabase.from('service_contracts').select('service_id,status,services(name)').eq('onboarding_id', item.id),
-        supabase.from('kyc_submissions').select('status,submitted_at,kyc_documents(doc_type,status,file_name)').eq('onboarding_id', item.id).maybeSingle(),
+        supabase.from('kyc_submissions').select('status,submitted_at,kyc_documents(doc_type,status,file_name,storage_path)').eq('onboarding_id', item.id).maybeSingle(),
         supabase.from('policy_acceptances').select('accepted_at,policy_versions(title,version)').eq('onboarding_id', item.id),
       ]);
       setDrawerData({ contracts: contracts || [], kyc: kyc || null, policies: policies || [] });
@@ -76,7 +76,24 @@ export default function AdminOnboardingPage() {
       const { error } = await supabase.from('client_onboardings').update(upd).eq('id', selectedItem.id);
       if (error) throw error;
       
-      alert('Estado actualizado');
+      // Si se está aprobando, crear el usuario e invitar
+      if (editStatus === 'approved' && selectedItem.status !== 'approved') {
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch('https://doauzsmkoeyvllbmbdda.supabase.co/functions/v1/invite-owner', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+          body: JSON.stringify({ onboarding_id: selectedItem.id })
+        });
+        const result = await res.json();
+        if (!res.ok || result.error) {
+          alert('Estado actualizado, pero hubo un error al crear/invitar usuario: ' + (result.error || 'error al enviar'));
+        } else {
+          alert('Aprobado. ' + (result.action === 'invited' ? 'Invitación enviada' : 'Usuario vinculado al portal'));
+        }
+      } else {
+        alert('Estado actualizado');
+      }
+      
       setDrawerOpen(false);
       loadData();
     } catch (e) {
@@ -125,6 +142,19 @@ export default function AdminOnboardingPage() {
       loadData();
     } catch (e) {
       alert('Error: ' + e.message);
+    }
+  };
+
+  const handleViewDocument = async (path) => {
+    if (!path) return;
+    try {
+      const { data, error } = await supabase.storage.from('kyc-documents').createSignedUrl(path, 3600);
+      if (error) throw error;
+      if (data && data.signedUrl) {
+        window.open(data.signedUrl, '_blank');
+      }
+    } catch (e) {
+      alert('Error al abrir el documento: ' + e.message);
     }
   };
 
@@ -361,7 +391,16 @@ export default function AdminOnboardingPage() {
                   const stCol = doc ? (doc.status === 'verified' ? '#22a66a' : doc.status === 'rejected' ? '#e05c4b' : '#e8a020') : 'rgba(255,255,255,.25)';
                   return (
                     <div key={type} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '.38rem 0', borderBottom: '1px solid rgba(255,255,255,.04)', fontSize: '.78rem', color: 'rgba(255,255,255,.5)' }}>
-                      <span>{icons[type]} {names[type]}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
+                        <span>{icons[type]} {names[type]}</span>
+                        {doc && doc.storage_path && (
+                          <button 
+                            onClick={() => handleViewDocument(doc.storage_path)}
+                            style={{ background: 'transparent', border: '1px solid rgba(74,159,212,.3)', borderRadius: '4px', color: '#4a9fd4', padding: '.1rem .3rem', fontSize: '.65rem', cursor: 'pointer' }}>
+                            Ver doc
+                          </button>
+                        )}
+                      </div>
                       <span style={{ color: stCol, fontSize: '.72rem' }}>{stIcon} {doc ? doc.status : 'No subido'}</span>
                     </div>
                   );
