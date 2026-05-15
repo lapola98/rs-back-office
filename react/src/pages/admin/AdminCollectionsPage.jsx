@@ -513,11 +513,195 @@ export default function AdminCollectionsPage() {
                 </div>
               )}
 
-              {/* TABS OTHER (Gestion, Envio, Plantillas) Simplified for length */}
+              {/* ── GESTIÓN DEL DÍA ── */}
               {currentTab === 'gestion' && (
-                <div style={{ padding: '1rem', color: 'rgba(255,255,255,.5)', textAlign: 'center' }}>
-                  <h3>Pendientes de llamada hoy</h3>
-                  <p>Deudores que subieron de tramo sin gestión hoy: {sinGestion.length}</p>
+                <div>
+                  {sinGestion.length === 0 && conGestion.length === 0 ? (
+                    <div className={styles.empty}><div className={styles.emptyIcon}>🎉</div><div className={styles.emptyTxt}>Sin deudores pendientes de gestión hoy.</div></div>
+                  ) : (
+                    <>
+                      {sinGestion.length > 0 && (
+                        <>
+                          <div style={{ fontSize: '.7rem', fontWeight: 600, color: '#e05c4b', letterSpacing: '.1em', textTransform: 'uppercase', marginBottom: '.5rem' }}>⚠ Sin gestionar hoy ({sinGestion.length})</div>
+                          <table className={styles.tbl}>
+                            <thead><tr><th>Deudor</th><th>Empresa</th><th>Antigüedad</th><th>Saldo vencido</th><th>Contacto</th><th></th></tr></thead>
+                            <tbody>
+                              {sinGestion.filter(d => !globalCompany || d.company_id === globalCompany).map(d => {
+                                const co = companies[d.company_id]?.name || '—';
+                                const ac = d.max_days >= 91 ? '#e05c4b' : d.max_days >= 31 ? '#e8a020' : '#c9a84c';
+                                const al = d.max_days >= 91 ? '91+ días' : d.max_days >= 61 ? '61–90 días' : d.max_days >= 31 ? '31–60 días' : '1–30 días';
+                                return (
+                                  <tr key={d.id}>
+                                    <td><div style={{ fontWeight: 500 }}>{d.debtor_name}</div><div style={{ fontSize: '.7rem', color: 'rgba(255,255,255,.25)' }}>{d.debtor_document}</div></td>
+                                    <td style={{ fontSize: '.7rem', color: 'rgba(255,255,255,.25)' }}>{co}</td>
+                                    <td><span style={{ color: ac, fontWeight: 600, fontSize: '.75rem' }}>{al}</span></td>
+                                    <td style={{ fontWeight: 500 }}>{fmt(d.total_outstanding)}</td>
+                                    <td style={{ fontSize: '.72rem', color: 'rgba(255,255,255,.5)' }}>{d.phone || d.whatsapp || d.email || <span style={{ color: '#e8a020' }}>⚠ Sin datos</span>}</td>
+                                    <td><button className={styles.actBtn} onClick={() => navigate(`/admin/collections/detail/${d.id}`)}>👁 Gestionar</button></td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </>
+                      )}
+                      {conGestion.length > 0 && (
+                        <>
+                          <div style={{ fontSize: '.7rem', fontWeight: 600, color: '#22a66a', letterSpacing: '.1em', textTransform: 'uppercase', margin: '1rem 0 .5rem' }}>✓ Gestionados hoy ({conGestion.length})</div>
+                          <table className={styles.tbl}>
+                            <thead><tr><th>Deudor</th><th>Empresa</th><th>Antigüedad</th><th>Saldo vencido</th><th></th></tr></thead>
+                            <tbody>
+                              {conGestion.filter(d => !globalCompany || d.company_id === globalCompany).map(d => (
+                                <tr key={d.id} style={{ opacity: 0.6 }}>
+                                  <td><div style={{ fontWeight: 500 }}>{d.debtor_name}</div></td>
+                                  <td style={{ fontSize: '.7rem', color: 'rgba(255,255,255,.25)' }}>{companies[d.company_id]?.name || '—'}</td>
+                                  <td><span style={{ color: '#22a66a', fontSize: '.75rem' }}>✓ Gestionado</span></td>
+                                  <td>{fmt(d.total_outstanding)}</td>
+                                  <td><button className={styles.actBtn} onClick={() => navigate(`/admin/collections/detail/${d.id}`)}>👁</button></td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* ── ENVÍO MASIVO ── */}
+              {currentTab === 'envio' && (
+                <div>
+                  <div className={styles.toolbar} style={{ flexWrap: 'wrap', gap: '.5rem', marginBottom: '1rem' }}>
+                    <div className={styles.field} style={{ minWidth: 160 }}>
+                      <label style={{ fontSize: '.65rem' }}>Canal</label>
+                      <select value={envioChannel} onChange={e => setEnvioChannel(e.target.value)}>
+                        <option value="whatsapp">💬 WhatsApp</option>
+                        <option value="email">📧 Email</option>
+                        <option value="sms">📱 SMS</option>
+                        <option value="phone">📞 Llamada</option>
+                      </select>
+                    </div>
+                    <div className={styles.field} style={{ minWidth: 160 }}>
+                      <label style={{ fontSize: '.65rem' }}>Filtrar por tramo</label>
+                      <select value={envioTramo} onChange={e => setEnvioTramo(e.target.value)}>
+                        <option value="">Todos los tramos</option>
+                        <option value="1">1–30 días</option>
+                        <option value="31">31–60 días</option>
+                        <option value="61">61–90 días</option>
+                        <option value="91">91+ días</option>
+                      </select>
+                    </div>
+                    <div className={styles.field} style={{ minWidth: 160 }}>
+                      <label style={{ fontSize: '.65rem' }}>Plantilla</label>
+                      <select value={envioTemplateId} onChange={e => {
+                        setEnvioTemplateId(e.target.value);
+                        const tpl = templates.find(t => t.id === e.target.value);
+                        if (tpl) setEnvioMsg(tpl.body);
+                      }}>
+                        <option value="">Sin plantilla</option>
+                        {templates.filter(t => t.is_active && (!t.company_id || t.company_id === globalCompany)).map(t => (
+                          <option key={t.id} value={t.id}>{t.name} ({t.channel})</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {(() => {
+                    const base = debtors.filter(d => d.status !== 'paid' && (!globalCompany || d.company_id === globalCompany));
+                    const seg = base.filter(d => {
+                      if (envioTramo && d.max_days < parseInt(envioTramo)) return false;
+                      if (envioTramo === '1' && d.max_days > 30) return false;
+                      if (envioTramo === '31' && (d.max_days < 31 || d.max_days > 60)) return false;
+                      if (envioTramo === '61' && (d.max_days < 61 || d.max_days > 90)) return false;
+                      return true;
+                    });
+                    return (
+                      <>
+                        <div style={{ fontSize: '.72rem', color: 'rgba(255,255,255,.4)', marginBottom: '.75rem' }}>
+                          {seg.length} destinatarios seleccionados
+                        </div>
+                        <div className={styles.field} style={{ marginBottom: '.75rem' }}>
+                          <label>Mensaje *</label>
+                          <textarea value={envioMsg} onChange={e => setEnvioMsg(e.target.value)} rows={5} placeholder="Escribe el mensaje... Usa {{nombre}}, {{saldo}}, {{empresa}} como variables" />
+                        </div>
+                        <button
+                          className={styles.btnP}
+                          disabled={!envioMsg.trim() || seg.length === 0 || envioSending}
+                          onClick={async () => {
+                            if (!window.confirm(`¿Registrar gestión de ${envioChannel} a ${seg.length} deudores?`)) return;
+                            setEnvioSending(true);
+                            setEnvioProg({ total: seg.length, done: 0, errors: 0 });
+                            let done = 0, errs = 0;
+                            for (const d of seg) {
+                              const { error } = await supabase.from('collection_actions').insert({
+                                company_id: d.company_id,
+                                debtor_id: d.id,
+                                channel: envioChannel,
+                                result: 'contacted',
+                                notes: envioMsg
+                                  .replace(/\{\{nombre\}\}/gi, d.debtor_name)
+                                  .replace(/\{\{saldo\}\}/gi, fmt(d.total_outstanding))
+                                  .replace(/\{\{empresa\}\}/gi, companies[d.company_id]?.name || ''),
+                              });
+                              if (error) errs++; else done++;
+                              setEnvioProg({ total: seg.length, done, errors: errs });
+                            }
+                            setEnvioSending(false);
+                            alert(`Gestión registrada: ${done} ok, ${errs} errores.`);
+                            loadData();
+                          }}
+                        >
+                          {envioSending ? `Enviando... ${envioProg?.done}/${envioProg?.total}` : `✉️ Registrar gestión a ${seg.length} deudores`}
+                        </button>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* ── PLANTILLAS ── */}
+              {currentTab === 'plantillas' && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '.75rem' }}>
+                    <button className={styles.btnP} onClick={() => {
+                      setEditingTplId(null);
+                      setTplForm({ name: '', channel: 'whatsapp', tramo: '', company_id: globalCompany || '', subject: '', body: '', is_active: true });
+                      setIsTplModalOpen(true);
+                    }}>+ Nueva plantilla</button>
+                  </div>
+                  {templates.length === 0 ? (
+                    <div className={styles.empty}><div className={styles.emptyIcon}>📄</div><div className={styles.emptyTxt}>Sin plantillas. Crea la primera.</div></div>
+                  ) : (
+                    <table className={styles.tbl}>
+                      <thead><tr><th>Nombre</th><th>Canal</th><th>Tramo</th><th>Empresa</th><th>Estado</th><th></th></tr></thead>
+                      <tbody>
+                        {templates.map(t => (
+                          <tr key={t.id}>
+                            <td style={{ fontWeight: 500 }}>{t.name}</td>
+                            <td><span style={{ fontSize: '.7rem', color: 'rgba(255,255,255,.5)' }}>{t.channel}</span></td>
+                            <td style={{ fontSize: '.7rem', color: 'rgba(255,255,255,.4)' }}>{t.tramo ? `${t.tramo}+ días` : 'Todos'}</td>
+                            <td style={{ fontSize: '.7rem', color: 'rgba(255,255,255,.4)' }}>{t.is_global ? '🌐 Global' : companies[t.company_id]?.name || '—'}</td>
+                            <td><span style={{ fontSize: '.7rem', color: t.is_active ? '#22a66a' : 'rgba(255,255,255,.25)' }}>{t.is_active ? '● Activa' : '○ Inactiva'}</span></td>
+                            <td>
+                              <div style={{ display: 'flex', gap: '.25rem', justifyContent: 'flex-end' }}>
+                                <button className={styles.actBtn} onClick={() => {
+                                  setEditingTplId(t.id);
+                                  setTplForm({ name: t.name, channel: t.channel, tramo: t.tramo || '', company_id: t.company_id || '', subject: t.subject || '', body: t.body, is_active: t.is_active });
+                                  setIsTplModalOpen(true);
+                                }}>✏️</button>
+                                <button className={`${styles.actBtn} ${styles.actBtnDanger}`} onClick={async () => {
+                                  if (!window.confirm('¿Eliminar plantilla?')) return;
+                                  await supabase.from('collection_templates').delete().eq('id', t.id);
+                                  loadData();
+                                }}>🗑</button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               )}
 
@@ -580,14 +764,105 @@ export default function AdminCollectionsPage() {
               <button className={styles.modalClose} onClick={() => setIsBulkMsgModalOpen(false)}>✕</button>
             </div>
             <div className={styles.modalBody}>
-              <div className={styles.field} style={{ marginBottom: '1rem', color: 'rgba(255,255,255,.5)' }}>
-                Envío de {envioChannel} a {selectedIds.size} deudores.
+              <div style={{ fontSize: '.75rem', color: 'rgba(255,255,255,.4)', marginBottom: '.75rem' }}>
+                Canal: <strong style={{ color: '#e8c97a' }}>{envioChannel}</strong> · {selectedIds.size} deudores seleccionados
               </div>
-              <div className={styles.field}><label>Mensaje *</label><textarea value={envioMsg} onChange={e => setEnvioMsg(e.target.value)} rows="5"></textarea></div>
+              <div className={styles.field} style={{ marginBottom: '.5rem' }}>
+                <label>Usar plantilla</label>
+                <select value={envioTemplateId} onChange={e => {
+                  setEnvioTemplateId(e.target.value);
+                  const tpl = templates.find(t => t.id === e.target.value);
+                  if (tpl) setEnvioMsg(tpl.body);
+                }}>
+                  <option value="">Sin plantilla</option>
+                  {templates.filter(t => t.is_active).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+              </div>
+              <div className={styles.field}><label>Mensaje *</label><textarea value={envioMsg} onChange={e => setEnvioMsg(e.target.value)} rows={5} placeholder="{{nombre}}, {{saldo}}, {{empresa}}"></textarea></div>
             </div>
             <div className={styles.modalFt}>
               <button className={styles.btnS} onClick={() => setIsBulkMsgModalOpen(false)}>Cancelar</button>
-              <button className={styles.btnP} onClick={() => { alert('Enviando masivo simulado...'); setIsBulkMsgModalOpen(false); }}>✉️ Enviar a {selectedIds.size} deudores</button>
+              <button className={styles.btnP} disabled={!envioMsg.trim()} onClick={async () => {
+                const targets = activeDebtors.filter(d => selectedIds.has(d.id));
+                let ok = 0, errs = 0;
+                for (const d of targets) {
+                  const { error } = await supabase.from('collection_actions').insert({
+                    company_id: d.company_id, debtor_id: d.id,
+                    channel: envioChannel, result: 'contacted',
+                    notes: envioMsg.replace(/\{\{nombre\}\}/gi, d.debtor_name).replace(/\{\{saldo\}\}/gi, fmt(d.total_outstanding)).replace(/\{\{empresa\}\}/gi, companies[d.company_id]?.name || ''),
+                  });
+                  if (error) errs++; else ok++;
+                }
+                setIsBulkMsgModalOpen(false);
+                clearSelection();
+                alert(`Gestión registrada: ${ok} ok${errs > 0 ? `, ${errs} errores` : ''}`);
+                loadData();
+              }}>✉️ Registrar gestión a {selectedIds.size} deudores</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isTplModalOpen && (
+        <div className={styles.modalOverlay} onClick={e => { if (e.target.className.includes('modalOverlay')) setIsTplModalOpen(false); }}>
+          <div className={styles.modal}>
+            <div className={styles.modalHd}>
+              <h3>{editingTplId ? 'Editar plantilla' : 'Nueva plantilla'}</h3>
+              <button className={styles.modalClose} onClick={() => setIsTplModalOpen(false)}>✕</button>
+            </div>
+            <div className={styles.modalBody}>
+              <div className={styles.fieldRow}>
+                <div className={styles.field}><label>Nombre *</label><input type="text" value={tplForm.name} onChange={e => setTplForm({ ...tplForm, name: e.target.value })} /></div>
+                <div className={styles.field}><label>Canal *</label>
+                  <select value={tplForm.channel} onChange={e => setTplForm({ ...tplForm, channel: e.target.value })}>
+                    <option value="whatsapp">WhatsApp</option><option value="email">Email</option><option value="sms">SMS</option><option value="phone">Llamada</option><option value="manual">Manual</option>
+                  </select>
+                </div>
+              </div>
+              <div className={styles.fieldRow}>
+                <div className={styles.field}><label>Tramo mínimo (días)</label><input type="number" value={tplForm.tramo} onChange={e => setTplForm({ ...tplForm, tramo: e.target.value })} placeholder="Ej: 31" /></div>
+                <div className={styles.field}><label>Empresa (vacío = global)</label>
+                  <select value={tplForm.company_id} onChange={e => setTplForm({ ...tplForm, company_id: e.target.value })}>
+                    <option value="">🌐 Global</option>
+                    {Object.values(companies).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+              </div>
+              {tplForm.channel === 'email' && (
+                <div className={styles.field}><label>Asunto</label><input type="text" value={tplForm.subject} onChange={e => setTplForm({ ...tplForm, subject: e.target.value })} /></div>
+              )}
+              <div className={styles.field}>
+                <label>Cuerpo del mensaje * <span style={{ color: 'rgba(255,255,255,.3)', fontSize: '.65rem' }}>Variables: {'{{nombre}}'} {'{{saldo}}'} {'{{empresa}}'}</span></label>
+                <textarea value={tplForm.body} onChange={e => setTplForm({ ...tplForm, body: e.target.value })} rows={6} />
+              </div>
+              <div className={styles.field}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '.5rem', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={tplForm.is_active} onChange={e => setTplForm({ ...tplForm, is_active: e.target.checked })} />
+                  Plantilla activa
+                </label>
+              </div>
+            </div>
+            <div className={styles.modalFt}>
+              <button className={styles.btnS} onClick={() => setIsTplModalOpen(false)}>Cancelar</button>
+              <button className={styles.btnP} onClick={async () => {
+                if (!tplForm.name || !tplForm.body) { alert('Nombre y cuerpo son obligatorios.'); return; }
+                const payload = {
+                  name: tplForm.name, channel: tplForm.channel, body: tplForm.body,
+                  subject: tplForm.subject || null, is_active: tplForm.is_active,
+                  tramo: tplForm.tramo ? parseInt(tplForm.tramo) : null,
+                  company_id: tplForm.company_id || null,
+                  is_global: !tplForm.company_id,
+                };
+                if (editingTplId) {
+                  const { error } = await supabase.from('collection_templates').update(payload).eq('id', editingTplId);
+                  if (error) { alert('Error: ' + error.message); return; }
+                } else {
+                  const { error } = await supabase.from('collection_templates').insert(payload);
+                  if (error) { alert('Error: ' + error.message); return; }
+                }
+                setIsTplModalOpen(false);
+                loadData();
+              }}>{editingTplId ? 'Guardar cambios' : 'Crear plantilla'}</button>
             </div>
           </div>
         </div>

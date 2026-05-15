@@ -157,11 +157,20 @@ export default function AdminCollectionsImportPage() {
     const ext = file.name.split('.').pop().toLowerCase();
     const reader = new FileReader();
 
+    const processJson = (json) => {
+      if (!json.length) { alert('El archivo está vacío.'); return; }
+      const raw = parseNewSiigoRows(json);
+      groupAndProcess(raw);
+    };
+
     if (ext === 'csv') {
       reader.onload = (e) => {
-        // Simple fallback for CSV parsing, realistically handled by PapaParse or similar
-        // For brevity relying on Excel conversion first if possible
-        alert('CSV no soportado en esta versión demo. Usa XLSX.');
+        try {
+          const wb = XLSX.read(e.target.result, { type: 'string', raw: false });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const json = XLSX.utils.sheet_to_json(ws, { defval: '' });
+          processJson(json);
+        } catch (err) { alert('Error al leer CSV: ' + err.message); }
       };
       reader.readAsText(file, 'utf-8');
     } else {
@@ -170,9 +179,7 @@ export default function AdminCollectionsImportPage() {
           const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
           const ws = wb.Sheets[wb.SheetNames[0]];
           const json = XLSX.utils.sheet_to_json(ws, { defval: '' });
-          if (!json.length) { alert('El archivo está vacío.'); return; }
-          const raw = parseNewSiigoRows(json);
-          groupAndProcess(raw);
+          processJson(json);
         } catch (err) { alert('Error al leer: ' + err.message); }
       };
       reader.readAsArrayBuffer(file);
@@ -254,15 +261,112 @@ export default function AdminCollectionsImportPage() {
 
   const handleImport = async () => {
     setStep(4);
-    setProgPct(10); setProgMsg('Iniciando importación simulada...');
-    // Simulated import delay to show UI progress
-    setTimeout(() => {
+    setProgPct(5); setProgMsg('Leyendo deudores existentes...');
+    const errors = [];
+    let written = 0;
+    let newDebtors = 0;
+
+    try {
+      // 1. Cargar deudores existentes de esta empresa
+      const { data: existingDeb, error: e1 } = await supabase
+        .from('collection_debtors').select('id,debtor_document').eq('company_id', selectedCompanyId);
+      if (e1) throw e1;
+      const debMap = {}; // document -> id
+      (existingDeb || []).forEach(d => { debMap[d.debtor_document] = d.id; });
+
+      setProgPct(15); setProgMsg('Creando / actualizando deudores...');
+
+      // 2. Insert o update deudores
+      const uniqueDocs = [...new Set(parsedRows.map(r => r.document_id))];
+      for (const doc of uniqueDocs) {
+        const row = parsedRows.find(r => r.document_id === doc);
+        const payload = {
+          company_id: selectedCompanyId,
+          debtor_document: doc,
+          debtor_name: row?.name || doc,
+          status: 'pending',
+          last_import_at: new Date().toISOString(),
+        };
+        if (debMap[doc]) {
+          // update nombre y last_import_at sin pisar status
+          await supabase.from('collection_debtors')
+            .update({ debtor_name: payload.debtor_name, last_import_at: payload.last_import_at })
+            .eq('id', debMap[doc]);
+        } else {
+          const { data: ins, error: ei } = await supabase.from('collection_debtors').insert(payload).select('id').single();
+          if (ei) { errors.push('Deudor ' + doc + ': ' + ei.message); continue; }
+          debMap[doc] = ins.id;
+          newDebtors++;
+        }
+      }
+
+      setProgPct(35); setProgMsg('Leyendo facturas existentes...');
+
+      // 3. Cargar facturas existentes de esta empresa
+      const { data: existingInv, error: e2 } = await supabase
+        .from('collection_debts').select('id,siigo_document,debtor_id').eq('company_id', selectedCompanyId);
+      if (e2) throw e2;
+      const invMap = {}; // siigo_document -> id
+      (existingInv || []).forEach(f => { invMap[f.siigo_document] = f.id; });
+
       setProgPct(50); setProgMsg('Actualizando facturas...');
-      setTimeout(() => {
-        setProgPct(100); setProgMsg('Completado');
-        setImportResult({ written: diffResult.modificados.length + diffResult.nuevos_inv.length, newDebtors: diffResult.nuevos_deb.length, paidCount: diffResult.pagados.length, errors: [] });
-      }, 1000);
-    }, 1000);
+
+      // 4. Insert o update facturas
+      const total = parsedRows.length;
+      for (let i = 0; i < total; i++) {
+        const r = parsedRows[i];
+        const debtorId = debMap[r.document_id];
+        if (!debtorId) continue;
+        const payload = {
+          company_id: selectedCompanyId,
+          debtor_id: debtorId,
+          siigo_document: r.invoice,
+          due_date: parseSiigoDate(r.fecha),
+          currency: r.currency || 'COP',
+          original_amount: parseSiigoMoney(r.total_o),
+          overdue_1_30: r.ov_1_30,
+          overdue_31_60: r.ov_31_60,
+          overdue_61_90: r.ov_61_90,
+          overdue_91_plus: r.ov_91,
+          not_yet_due: r.not_due,
+          credit_balance: 0,
+          total_balance: r.total,
+          outstanding_amount: r.outstanding,
+          status: r.isPaid ? 'paid' : 'pending',
+          last_sync_at: new Date().toISOString(),
+        };
+        if (invMap[r.invoice]) {
+          const { error: eu } = await supabase.from('collection_debts').update(payload).eq('id', invMap[r.invoice]);
+          if (eu) errors.push('Factura ' + r.invoice + ': ' + eu.message);
+          else written++;
+        } else {
+          const { error: ei } = await supabase.from('collection_debts').insert(payload);
+          if (ei) errors.push('Factura ' + r.invoice + ': ' + ei.message);
+          else written++;
+        }
+        if (i % 20 === 0) setProgPct(50 + Math.round((i / total) * 35));
+      }
+
+      setProgPct(90); setProgMsg('Actualizando tramos...');
+
+      // 5. Actualizar prev_max_tramo
+      const tramoMap = {};
+      for (const r of parsedRows) {
+        const id = debMap[r.document_id]; if (!id) continue;
+        const t = r.ov_91 > 0 ? 91 : r.ov_61_90 > 0 ? 61 : r.ov_31_60 > 0 ? 31 : r.ov_1_30 > 0 ? 1 : 0;
+        if (!tramoMap[id] || t > tramoMap[id]) tramoMap[id] = t;
+      }
+      for (const [id, tramo] of Object.entries(tramoMap)) {
+        await supabase.from('collection_debtors').update({ prev_max_tramo: tramo, last_import_at: new Date().toISOString() }).eq('id', id);
+      }
+
+      setProgPct(100); setProgMsg(errors.length ? `Completado con ${errors.length} errores` : 'Completado exitosamente');
+      setImportResult({ written, newDebtors, paidCount: diffResult.pagados.length, errors });
+
+    } catch (err) {
+      setProgMsg('Error: ' + err.message);
+      alert('Error en la importación: ' + err.message);
+    }
   };
 
   const resetImport = () => {
@@ -314,10 +418,10 @@ export default function AdminCollectionsImportPage() {
                       <div className={styles.card}>
                         <div className={styles.cardHd}><div><div className={styles.stag}>Paso 2</div><div className={styles.cardTitle}>Cargar reporte de cartera Siigo</div><div className={styles.cardSub}>Empresa: {companyName}</div></div><button className={styles.btnS} onClick={() => setStep(1)}>← Cambiar empresa</button></div>
                         <div className={styles.dropzone} onClick={() => fileInputRef.current.click()}>
-                          <input type="file" ref={fileInputRef} accept=".xlsx,.xls" onChange={(e) => handleFile(e.target.files[0])} style={{ display: 'none' }} />
+                          <input type="file" ref={fileInputRef} accept=".xlsx,.xls,.csv" onChange={(e) => handleFile(e.target.files[0])} style={{ display: 'none' }} />
                           <span className={styles.dzIcon}>📊</span>
-                          <div className={styles.dzTitle}>Selecciona el archivo Excel</div>
-                          <div className={styles.dzSub}>Haz clic para cargar (.xlsx)</div>
+                          <div className={styles.dzTitle}>Selecciona el archivo de Siigo</div>
+                          <div className={styles.dzSub}>Formatos soportados: .xlsx, .xls, .csv</div>
                           {fileName && <div className={styles.dzChip}>📄 {fileName}</div>}
                         </div>
                       </div>
