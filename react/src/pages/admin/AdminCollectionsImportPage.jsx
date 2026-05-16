@@ -17,10 +17,10 @@ export default function AdminCollectionsImportPage() {
 
   const [loading, setLoading] = useState(true);
   const [companies, setCompanies] = useState([]);
-  
+
   // Tabs
   const [currentTab, setCurrentTab] = useState('siigo'); // siigo, contactos
-  
+
   // Siigo Import State
   const [selectedCompanyId, setSelectedCompanyId] = useState('');
   const [step, setStep] = useState(1);
@@ -29,17 +29,23 @@ export default function AdminCollectionsImportPage() {
   const [diffResult, setDiffResult] = useState(null);
   const [showPreviewTable, setShowPreviewTable] = useState(false);
   const fileInputRef = useRef(null);
-  
+
   // Contacts Import State
   const [ctCompanyId, setCtCompanyId] = useState('');
   const [ctRows, setCtRows] = useState([]);
   const [ctPreviewSub, setCtPreviewSub] = useState('');
-  const [ctMatched, setCtMatched] = useState([]);
+  const [ctMatched, setCtMatched] = useState({});
+  const [ctImporting, setCtImporting] = useState(false);
+  const [ctImportResult, setCtImportResult] = useState(null);
   const ctFileInputRef = useRef(null);
 
   // Progress
   const [progPct, setProgPct] = useState(0);
   const [progMsg, setProgMsg] = useState('');
+  const [envioSending, setEnvioSending] = useState(false);
+  const [envioProg, setEnvioProg] = useState(null);
+  const [envioTramo, setEnvioTramo] = useState('');
+  const [envioTemplateId, setEnvioTemplateId] = useState('');
   const [importResult, setImportResult] = useState(null);
 
   useEffect(() => {
@@ -146,7 +152,7 @@ export default function AdminCollectionsImportPage() {
       alert('No se encontraron filas válidas.');
       return;
     }
-    
+
     setParsedRows(grouped);
     await buildPreview(grouped);
   };
@@ -371,7 +377,121 @@ export default function AdminCollectionsImportPage() {
 
   const resetImport = () => {
     setStep(1); setFileName(''); setParsedRows([]); setDiffResult(null); setImportResult(null); setProgPct(0);
-    if(fileInputRef.current) fileInputRef.current.value = '';
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // ── CONTACTOS ──
+  const handleCtFile = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        // header:1 → raw arrays, evita problemas con celdas fusionadas
+        const rawRows = XLSX.utils.sheet_to_json(ws, { defval: '', header: 1 });
+        parseCtRows(rawRows);
+      } catch (err) { alert('Error al leer el archivo: ' + err.message); }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  /* Formato real del Excel de contactos:
+     Col 0: Empresa (nombre largo)
+     Col 1: Abreviatura
+     Col 2: Asesor (siglas)
+     Col 3: NIT (si 7-10 dígitos, no teléfono) o teléfono celular
+     Col 4: Email Facturación
+     Col 5: Nombre Comercial
+     Col 6: Email Comercial
+     Col 7: Nombre Tesorería
+     Col 8: Email Tesorería
+     Col 9: Contable (teléfono u otro)
+  */
+  const parseCtRows = async (rawRows) => {
+    const cl  = v => String(v ?? '').trim();
+    const num = v => cl(v).replace(/[\s.()\-+]/g, '');
+    const isMobile  = s => /^3\d{9}$/.test(num(s));   // Colombia móvil: 3XXXXXXXXX
+    const isNIT     = s => { const n = num(s); return /^\d{7,10}$/.test(n) && !isMobile(n); };
+    const isEmail   = v => { const s = cl(v); return s.includes('@') && s.includes('.') && !s.includes(' '); };
+
+    // Saltar fila 0 (cabeceras: "General", "Facturación"...)
+    const dataRows = rawRows.slice(1).filter(row =>
+      row.some(c => cl(c) !== '') && cl(row[0]) !== ''
+    );
+
+    const rows = dataRows.map(row => {
+      const name    = cl(row[0]);
+      const colD    = cl(row[3]);
+      const colDnum = num(colD);
+
+      // Determinar si col D es NIT (para matching) o teléfono (para guardar)
+      let doc   = isNIT(colD)    ? colDnum : null;
+      let phone = isMobile(colD) ? colDnum : null;
+
+      // Si col D era NIT, buscar teléfono en el resto de la fila
+      if (!phone) {
+        for (let i = 4; i < row.length; i++) {
+          if (isMobile(row[i])) { phone = num(cl(row[i])); break; }
+        }
+      }
+
+      // Emails por posición preferente, luego escaneo
+      const emailFact  = isEmail(row[4]) ? cl(row[4]) : '';
+      const emailCom   = isEmail(row[6]) ? cl(row[6]) : '';
+      const emailTes   = isEmail(row[8]) ? cl(row[8]) : '';
+      const email = emailFact || emailCom || emailTes;
+
+      const comercialName  = cl(row[5]);
+      const tesoreriaName  = cl(row[7]);
+
+      return { doc, name, phone, email, emailFact, emailCom, emailTes, comercialName, tesoreriaName };
+    }).filter(r => r.name);
+
+    if (!rows.length) { alert('No se encontraron filas válidas.'); return; }
+
+    // Cargar deudores existentes para previsualizar estado BD
+    let existing = {};
+    if (ctCompanyId) {
+      const { data: deb } = await supabase
+        .from('collection_debtors').select('id, debtor_document, debtor_name, phone, whatsapp, email')
+        .eq('company_id', ctCompanyId);
+      (deb || []).forEach(d => { existing[d.debtor_document] = d; });
+    }
+
+    const found    = rows.filter(r => r.doc && existing[r.doc]).length;
+    const noDoc    = rows.filter(r => !r.doc).length;
+    const notFound = rows.length - found - noDoc;
+    setCtRows(rows);
+    setCtMatched(existing);
+    setCtPreviewSub(`${rows.length} filas · ✓ ${found} en cartera · ⚠ ${notFound} NIT no encontrado · ${noDoc} sin NIT`);
+    setCtImportResult(null);
+  };
+
+  const runCtImport = async () => {
+    if (!ctCompanyId) { alert('Selecciona una empresa primero.'); return; }
+    setCtImporting(true);
+    const { data: debtors } = await supabase
+      .from('collection_debtors').select('id, debtor_document').eq('company_id', ctCompanyId);
+    const debtorMap = {};
+    (debtors || []).forEach(d => { debtorMap[d.debtor_document] = d.id; });
+
+    let updated = 0, notFound = 0;
+    const errors = [];
+    for (const r of ctRows) {
+      if (!r.doc) { notFound++; continue; }
+      const debtorId = debtorMap[r.doc];
+      if (!debtorId) { notFound++; continue; }
+      const payload = {};
+      if (r.phone) { payload.phone = r.phone; payload.whatsapp = r.phone; }
+      if (r.email) payload.email = r.email;
+      if (!Object.keys(payload).length) continue;
+      const { error } = await supabase.from('collection_debtors').update(payload).eq('id', debtorId);
+      if (error) { errors.push(`${r.doc}: ${error.message}`); continue; }
+      updated++;
+    }
+    setCtImporting(false);
+    setCtImportResult({ updated, notFound, errors });
   };
 
   const companyName = companies.find(c => c.id === selectedCompanyId)?.name || '';
@@ -381,7 +501,7 @@ export default function AdminCollectionsImportPage() {
       <div className={styles.main}>
         <div className={styles.content}>
           <div className={styles.page}>
-            {loading ? <div style={{color:'rgba(255,255,255,.25)'}}>Cargando...</div> : (
+            {loading ? <div style={{ color: 'rgba(255,255,255,.25)' }}>Cargando...</div> : (
               <>
                 <div style={{ display: 'flex', gap: '.25rem', background: '#131920', border: '1px solid rgba(255,255,255,.07)', borderRadius: '10px', padding: '.25rem', marginBottom: '1.25rem', width: 'fit-content' }}>
                   <button className={styles.tabBtn} style={{ background: currentTab === 'siigo' ? 'rgba(201,168,76,.12)' : 'none', color: currentTab === 'siigo' ? '#e8c97a' : 'rgba(255,255,255,.25)', fontWeight: currentTab === 'siigo' ? 500 : 400 }} onClick={() => setCurrentTab('siigo')}>📊 Importar cartera Siigo</button>
@@ -429,14 +549,152 @@ export default function AdminCollectionsImportPage() {
 
                     {step === 3 && diffResult && (
                       <div className={styles.card}>
-                        <div className={styles.cardHd}><div><div className={styles.stag}>Paso 3</div><div className={styles.cardTitle}>Previsualización</div></div><div><button className={styles.btnS} onClick={() => setStep(2)}>← Cambiar archivo</button><button className={styles.btnP} onClick={handleImport}>Importar a Supabase →</button></div></div>
-                        <div className={styles.sumGrid}>
-                          <div className={styles.sumCard} style={{ borderTop: '2px solid #4a9fd4' }}><div className={styles.sumLbl}>Deudores nuevos</div><div className={styles.sumVal} style={{ color: '#4a9fd4' }}>{diffResult.nuevos_deb.length}</div></div>
-                          <div className={styles.sumCard} style={{ borderTop: '2px solid #22a66a' }}><div className={styles.sumLbl}>Pagaron</div><div className={styles.sumVal} style={{ color: '#22a66a' }}>{diffResult.pagados.length + diffResult.desaparecidos.length}</div></div>
-                          <div className={styles.sumCard} style={{ borderTop: '2px solid #e8a020' }}><div className={styles.sumLbl}>Subieron de tramo</div><div className={styles.sumVal} style={{ color: '#e8a020' }}>{diffResult.sube_tramo.length}</div></div>
-                          <div className={styles.sumCard} style={{ borderTop: '2px solid rgba(255,255,255,.07)' }}><div className={styles.sumLbl}>Facturas</div><div className={styles.sumVal} style={{ color: 'rgba(255,255,255,.5)' }}>{diffResult.modificados.length + diffResult.nuevos_inv.length}</div></div>
+                        <div className={styles.cardHd}>
+                          <div>
+                            <div className={styles.stag}>Paso 3</div>
+                            <div className={styles.cardTitle}>Previsualización</div>
+                            <div className={styles.cardSub}>
+                              {parsedRows.length} facturas · {diffResult.modificados.length} con cambio · {diffResult.nuevos_inv.length} nuevas · {diffResult.sin_cambio} sin cambio
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '.5rem' }}>
+                            <button className={styles.btnS} onClick={() => setStep(2)}>← Cambiar archivo</button>
+                            <button className={styles.btnP} onClick={handleImport}>Importar a Supabase →</button>
+                          </div>
                         </div>
-                        <button className={styles.btnG} onClick={() => setShowPreviewTable(!showPreviewTable)}>📋 Ver detalle</button>
+
+                        {/* Tarjetas resumen */}
+                        <div className={styles.sumGrid}>
+                          <div className={styles.sumCard} style={{ borderTop: '2px solid #4a9fd4' }}>
+                            <div className={styles.sumLbl}>🆕 Deudores nuevos</div>
+                            <div className={styles.sumVal} style={{ color: '#4a9fd4' }}>{diffResult.nuevos_deb.length}</div>
+                            <div style={{ fontSize: '.65rem', color: 'rgba(255,255,255,.3)', marginTop: '.2rem' }}>se crearán en cartera</div>
+                          </div>
+                          <div className={styles.sumCard} style={{ borderTop: '2px solid #22a66a' }}>
+                            <div className={styles.sumLbl}>✅ Pagaron</div>
+                            <div className={styles.sumVal} style={{ color: '#22a66a' }}>{diffResult.pagados.length + diffResult.desaparecidos.length}</div>
+                            <div style={{ fontSize: '.65rem', color: 'rgba(255,255,255,.3)', marginTop: '.2rem' }}>{diffResult.desaparecidos.length} salieron del reporte</div>
+                          </div>
+                          <div className={styles.sumCard} style={{ borderTop: '2px solid #e8a020' }}>
+                            <div className={styles.sumLbl}>🔴 Subieron de tramo</div>
+                            <div className={styles.sumVal} style={{ color: '#e8a020' }}>{diffResult.sube_tramo.length}</div>
+                            <div style={{ fontSize: '.65rem', color: 'rgba(255,255,255,.3)', marginTop: '.2rem' }}>requieren gestión hoy</div>
+                          </div>
+                          <div className={styles.sumCard} style={{ borderTop: '2px solid rgba(255,255,255,.07)' }}>
+                            <div className={styles.sumLbl}>📄 Facturas</div>
+                            <div className={styles.sumVal} style={{ color: 'rgba(255,255,255,.5)' }}>{diffResult.modificados.length + diffResult.nuevos_inv.length}</div>
+                            <div style={{ fontSize: '.65rem', color: 'rgba(255,255,255,.3)', marginTop: '.2rem' }}>
+                              {diffResult.sin_cambio} sin cambio · {diffResult.nuevos_inv.length} nuevas · {diffResult.modificados.length} actualizadas
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Alertas */}
+                        <div style={{ marginBottom: '.75rem' }}>
+                          {diffResult.nuevos_deb.length > 0 && (
+                            <div className={styles.alert} style={{ background: 'rgba(74,159,212,.08)', borderLeft: '3px solid #4a9fd4', marginBottom: '.5rem' }}>
+                              <span style={{ fontSize: '1rem', flexShrink: 0 }}>🆕</span>
+                              <p style={{ color: 'rgba(255,255,255,.6)', fontSize: '.78rem' }}>
+                                <strong style={{ color: '#4a9fd4' }}>{diffResult.nuevos_deb.length} deudor{diffResult.nuevos_deb.length > 1 ? 'es' : ''} nuevo{diffResult.nuevos_deb.length > 1 ? 's' : ''}</strong> — se crearán en cartera.
+                              </p>
+                            </div>
+                          )}
+                          {diffResult.pagados.length > 0 && (
+                            <div className={styles.alert} style={{ background: 'rgba(34,166,106,.08)', borderLeft: '3px solid #22a66a', marginBottom: '.5rem' }}>
+                              <span style={{ fontSize: '1rem', flexShrink: 0 }}>✅</span>
+                              <p style={{ color: 'rgba(255,255,255,.6)', fontSize: '.78rem' }}>
+                                <strong style={{ color: '#22a66a' }}>{diffResult.pagados.length} deudor{diffResult.pagados.length > 1 ? 'es' : ''} pagaron</strong> — se moverán al tab Pagados.
+                              </p>
+                            </div>
+                          )}
+                          {diffResult.desaparecidos.length > 0 && (
+                            <div className={styles.alert} style={{ background: 'rgba(34,166,106,.08)', borderLeft: '3px solid #22a66a', marginBottom: '.5rem' }}>
+                              <span style={{ fontSize: '1rem', flexShrink: 0 }}>✅</span>
+                              <p style={{ color: 'rgba(255,255,255,.6)', fontSize: '.78rem' }}>
+                                <strong style={{ color: '#22a66a' }}>{diffResult.desaparecidos.length} deudor{diffResult.desaparecidos.length > 1 ? 'es no aparecen' : ' no aparece'}</strong> en este archivo — se marcarán como pagados.
+                              </p>
+                            </div>
+                          )}
+                          {diffResult.sube_tramo.length > 0 && (
+                            <div className={styles.alert} style={{ background: 'rgba(232,160,32,.08)', borderLeft: '3px solid #e8a020', marginBottom: '.5rem' }}>
+                              <span style={{ fontSize: '1rem', flexShrink: 0 }}>🔴</span>
+                              <p style={{ color: 'rgba(255,255,255,.6)', fontSize: '.78rem' }}>
+                                <strong style={{ color: '#e8a020' }}>{diffResult.sube_tramo.length} deudor{diffResult.sube_tramo.length > 1 ? 'es subieron' : ' subió'} de tramo</strong> — {
+                                  diffResult.sube_tramo.slice(0, 3).map((d, i) => {
+                                    const tl = t => t >= 91 ? '91+ días' : t >= 61 ? '61–90 días' : t >= 31 ? '31–60 días' : '1–30 días';
+                                    const tc = t => t >= 91 ? '#e05c4b' : t >= 31 ? '#e8a020' : '#c9a84c';
+                                    return <span key={i}>{i > 0 ? ', ' : ''}<strong>{d.name}</strong>: <span style={{ color: tc(d.prev) }}>{tl(d.prev)}</span> → <span style={{ color: tc(d.nuevo) }}>{tl(d.nuevo)}</span></span>;
+                                  })
+                                }{diffResult.sube_tramo.length > 3 ? ` y ${diffResult.sube_tramo.length - 3} más` : ''}
+                              </p>
+                            </div>
+                          )}
+                          {diffResult.modificados.length + diffResult.nuevos_inv.length === 0 && diffResult.nuevos_deb.length === 0 && (
+                            <div className={styles.alert} style={{ background: 'rgba(34,166,106,.08)', borderLeft: '3px solid #22a66a' }}>
+                              <span style={{ fontSize: '1rem', flexShrink: 0 }}>✅</span>
+                              <p style={{ color: 'rgba(255,255,255,.6)', fontSize: '.78rem' }}><strong style={{ color: '#22a66a' }}>Sin cambios</strong> — el archivo es idéntico al estado actual.</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Tabla de detalle colapsable */}
+                        <button className={styles.btnG} onClick={() => setShowPreviewTable(!showPreviewTable)}>
+                          📋 {showPreviewTable ? 'Ocultar detalle' : 'Ver detalle de cambios'}
+                        </button>
+                        {showPreviewTable && (
+                          <div style={{ marginTop: '.75rem', overflowX: 'auto', maxHeight: 380, overflowY: 'auto' }}>
+                            <table className={styles.tbl}>
+                              <thead>
+                                <tr>
+                                  <th></th><th>NIT</th><th>Cliente</th><th>Factura</th>
+                                  <th>Fecha</th><th>1–30</th><th>31–60</th><th>61–90</th><th>91+</th>
+                                  <th>Por vencer</th><th>Total</th><th>Acción</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(() => {
+                                  const rowsToShow = [
+                                    ...diffResult.modificados.map(m => ({ ...m.row, _tipo: 'mod' })),
+                                    ...diffResult.nuevos_inv.map(r => ({ ...r, _tipo: 'new' })),
+                                  ];
+                                  if (!rowsToShow.length) return (
+                                    <tr><td colSpan={12} style={{ textAlign: 'center', color: 'rgba(255,255,255,.25)', padding: '1.5rem' }}>Sin cambios que mostrar</td></tr>
+                                  );
+                                  return rowsToShow.map((r, i) => {
+                                    const isNew = r._tipo === 'new';
+                                    const c1 = r.ov_1_30 > 0 ? '#c9a84c' : 'rgba(255,255,255,.2)';
+                                    const c2 = r.ov_31_60 > 0 ? '#e8a020' : 'rgba(255,255,255,.2)';
+                                    const c3 = r.ov_61_90 > 0 ? '#e05c4b' : 'rgba(255,255,255,.2)';
+                                    const c4 = r.ov_91 > 0 ? '#e05c4b' : 'rgba(255,255,255,.2)';
+                                    return (
+                                      <tr key={i}>
+                                        <td style={{ textAlign: 'center' }}>{r.isPaid ? <span style={{ color: '#22a66a' }}>✓</span> : isNew ? <span style={{ color: '#4a9fd4' }}>+</span> : <span style={{ color: '#e8a020' }}>~</span>}</td>
+                                        <td style={{ fontWeight: 500, color: 'rgba(255,255,255,.88)', fontSize: '.7rem' }}>{r.document_id}</td>
+                                        <td style={{ fontSize: '.73rem' }}>{r.name}</td>
+                                        <td style={{ fontWeight: 500 }}>{r.invoice}</td>
+                                        <td style={{ fontSize: '.68rem', color: 'rgba(255,255,255,.3)' }}>{r.due_date || '—'}</td>
+                                        <td style={{ fontSize: '.7rem', color: c1 }}>{r.ov_1_30 > 0 ? fmt(r.ov_1_30) : '—'}</td>
+                                        <td style={{ fontSize: '.7rem', color: c2 }}>{r.ov_31_60 > 0 ? fmt(r.ov_31_60) : '—'}</td>
+                                        <td style={{ fontSize: '.7rem', color: c3 }}>{r.ov_61_90 > 0 ? fmt(r.ov_61_90) : '—'}</td>
+                                        <td style={{ fontSize: '.7rem', color: c4 }}>{r.ov_91 > 0 ? fmt(r.ov_91) : '—'}</td>
+                                        <td style={{ fontSize: '.7rem', color: '#4a9fd4' }}>{r.not_due > 0 ? fmt(r.not_due) : '—'}</td>
+                                        <td style={{ fontWeight: 500 }}>{fmt(r.total)}</td>
+                                        <td>
+                                          <span style={{ fontSize: '.62rem', fontWeight: 600, padding: '.15rem .45rem', borderRadius: 100,
+                                            color: r.isPaid ? '#22a66a' : isNew ? '#4a9fd4' : '#e8a020',
+                                            background: r.isPaid ? 'rgba(34,166,106,.12)' : isNew ? 'rgba(74,159,212,.12)' : 'rgba(232,160,32,.12)',
+                                          }}>
+                                            {r.isPaid ? '→ Pagado' : isNew ? '→ Insertar' : '→ Actualizar'}
+                                          </span>
+                                        </td>
+                                      </tr>
+                                    );
+                                  });
+                                })()}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -457,11 +715,122 @@ export default function AdminCollectionsImportPage() {
                     )}
                   </div>
                 )}
-                
+
                 {currentTab === 'contactos' && (
-                  <div className={styles.card}>
-                    <div className={styles.cardHd}><div><div className={styles.cardTitle}>Importar datos de contacto</div></div></div>
-                    <div style={{ color: 'rgba(255,255,255,.5)', fontSize: '.8rem' }}>Esta funcionalidad está pendiente en la migración React.</div>
+                  <div>
+                    <div className={styles.card}>
+                      <div className={styles.cardHd}>
+                        <div>
+                          <div className={styles.cardTitle}>Importar datos de contacto</div>
+                          <div className={styles.cardSub}>Actualiza teléfono, WhatsApp y email de deudores existentes en cartera</div>
+                        </div>
+                        <div className={styles.field} style={{ minWidth: 200, marginBottom: 0 }}>
+                          <select value={ctCompanyId} onChange={e => { setCtCompanyId(e.target.value); setCtRows([]); setCtMatched([]); setCtPreviewSub(''); }}>
+                            <option value="">— Seleccionar empresa —</option>
+                            {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Estructura del archivo */}
+                      <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8, padding: '.75rem 1rem', marginBottom: '1rem', fontSize: '.72rem', lineHeight: 1.8 }}>
+                        <div style={{ fontWeight: 600, color: 'rgba(255,255,255,.6)', marginBottom: '.5rem' }}>Estructura esperada del Excel:</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '.2rem .75rem' }}>
+                          {[
+                            ['Col A', 'Empresa (nombre largo)'],
+                            ['Col B', 'Abreviatura'],
+                            ['Col C', 'Asesor (siglas)'],
+                            ['Col D', 'NIT → matching con cartera  |  Celular → se guarda como teléfono'],
+                            ['Col E', 'Email Facturación'],
+                            ['Col F', 'Nombre Contacto Comercial'],
+                            ['Col G', 'Email Comercial'],
+                            ['Col H', 'Nombre Contacto Tesorería'],
+                            ['Col I', 'Email Tesorería'],
+                          ].map(([col, desc]) => (
+                            <>
+                              <span key={col} style={{ fontFamily: 'monospace', fontSize: '.67rem', color: '#c9a84c', background: 'rgba(201,168,76,.08)', borderRadius: 3, padding: '.05rem .35rem', whiteSpace: 'nowrap', alignSelf: 'start' }}>{col}</span>
+                              <span key={desc} style={{ color: 'rgba(255,255,255,.4)', fontSize: '.7rem' }}>{desc}</span>
+                            </>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Drop zone */}
+                      {!ctRows.length && (
+                        <div className={styles.dropzone} onClick={() => ctFileInputRef.current?.click()}
+                          onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); handleCtFile(e.dataTransfer.files[0]); }}>
+                          <input type="file" ref={ctFileInputRef} accept=".xlsx,.xls,.csv" style={{ display: 'none' }}
+                            onChange={e => handleCtFile(e.target.files[0])} />
+                          <span className={styles.dzIcon}>📂</span>
+                          <div className={styles.dzTitle}>Arrastra el Excel de contactos aquí</div>
+                          <div className={styles.dzSub}>Formato: General (empresa · abr. · asesor · NIT/tel) · Facturación · Comercial · Tesorería · Contable</div>
+                        </div>
+                      )}
+
+                      {/* Preview */}
+                      {ctRows.length > 0 && (
+                        <>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.75rem', flexWrap: 'wrap', gap: '.5rem' }}>
+                            <div style={{ fontSize: '.76rem', color: 'rgba(255,255,255,.5)' }}>{ctPreviewSub}</div>
+                            <div style={{ display: 'flex', gap: '.5rem' }}>
+                              <button className={styles.btnS} onClick={() => { setCtRows([]); setCtMatched([]); setCtPreviewSub(''); if (ctFileInputRef.current) ctFileInputRef.current.value = ''; }}>← Cambiar archivo</button>
+                              <button className={styles.btnP} disabled={!ctCompanyId || ctImporting} onClick={runCtImport}>
+                                {ctImporting ? 'Importando...' : 'Importar contactos →'}
+                              </button>
+                            </div>
+                          </div>
+                          <div style={{ overflowX: 'auto', maxHeight: 380, overflowY: 'auto' }}>
+                            <table className={styles.tbl}>
+                              <thead><tr>
+                                <th>NIT</th><th>Empresa</th><th>Teléfono</th>
+                                <th>Email Fact.</th><th>Email Comercial</th><th>Email Tesorería</th><th>Estado BD</th>
+                              </tr></thead>
+                              <tbody>
+                                {ctRows.map((r, i) => {
+                                  const match = ctMatched[r.doc];
+                                  const inBD  = r.doc && !!match;
+                                  const noDoc = !r.doc;
+                                  return (
+                                    <tr key={i}>
+                                      <td style={{ fontWeight: 500, color: r.doc ? 'rgba(255,255,255,.88)' : 'rgba(255,255,255,.25)', fontSize: '.7rem' }}>{r.doc || '—'}</td>
+                                      <td style={{ fontSize: '.73rem' }}>{r.name}</td>
+                                      <td style={{ color: r.phone ? '#22a66a' : 'rgba(255,255,255,.25)', fontSize: '.7rem' }}>{r.phone || '—'}</td>
+                                      <td style={{ color: r.emailFact ? '#22a66a' : 'rgba(255,255,255,.2)', fontSize: '.68rem', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.emailFact || '—'}</td>
+                                      <td style={{ color: r.emailCom ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.15)', fontSize: '.68rem', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.emailCom || '—'}</td>
+                                      <td style={{ color: r.emailTes ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.15)', fontSize: '.68rem', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.emailTes || '—'}</td>
+                                      <td>
+                                        <span style={{ fontSize: '.65rem', fontWeight: 600, whiteSpace: 'nowrap',
+                                          color:      noDoc ? '#e05c4b' : inBD ? '#22a66a' : '#e8a020',
+                                          background: noDoc ? 'rgba(224,92,75,.12)' : inBD ? 'rgba(34,166,106,.12)' : 'rgba(232,160,32,.12)',
+                                          border: `1px solid ${noDoc ? 'rgba(224,92,75,.3)' : inBD ? 'rgba(34,166,106,.3)' : 'rgba(232,160,32,.3)'}`,
+                                          borderRadius: 100, padding: '.1rem .45rem' }}>
+                                          {noDoc ? '⛔ Sin NIT' : inBD ? '✓ En cartera' : '⚠ No encontrado'}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Resultado */}
+                      {ctImportResult && (
+                        <div className={styles.alert} style={{ background: ctImportResult.errors.length ? 'rgba(224,92,75,.1)' : 'rgba(34,166,106,.1)', borderLeft: `3px solid ${ctImportResult.errors.length ? '#e05c4b' : '#22a66a'}`, marginTop: '1rem' }}>
+                          <div>
+                            <strong style={{ color: ctImportResult.errors.length ? '#e05c4b' : '#22a66a' }}>
+                              {ctImportResult.errors.length ? `Completado con ${ctImportResult.errors.length} errores` : '✅ Importación completada'}
+                            </strong>
+                            <div style={{ fontSize: '.72rem', color: 'rgba(255,255,255,.5)', marginTop: '.3rem', display: 'flex', gap: '1rem' }}>
+                              <span><strong style={{ color: '#22a66a' }}>{ctImportResult.updated}</strong> actualizados</span>
+                              <span><strong style={{ color: 'rgba(255,255,255,.4)' }}>{ctImportResult.notFound}</strong> no encontrados</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 

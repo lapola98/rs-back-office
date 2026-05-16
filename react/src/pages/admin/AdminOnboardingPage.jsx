@@ -28,7 +28,7 @@ export default function AdminOnboardingPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [sortOrder, setSortOrder] = useState('created_at_desc');
-  
+
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [drawerData, setDrawerData] = useState({ contracts: [], kyc: null, policies: [] });
@@ -75,14 +75,14 @@ export default function AdminOnboardingPage() {
       if (editStatus === 'approved') upd.approved_at = new Date().toISOString();
       const { error } = await supabase.from('client_onboardings').update(upd).eq('id', selectedItem.id);
       if (error) throw error;
-      
-      // Si se está aprobando, mostrar alerta simple (el Trigger de la BD se encarga de crear el usuario)
+
+      // El Trigger de Postgres crea la empresa automáticamente al aprobar
       if (editStatus === 'approved' && selectedItem.status !== 'approved') {
-        alert('Empresa aprobada. El usuario ha sido creado automáticamente por la base de datos con contraseña temporal (Temporal123!).');
+        alert('✅ Empresa aprobada y creada en el sistema.\n\n📧 Correo del representante:\n' + selectedItem.rep_email + '\n\nCrea el usuario en:\nSupabase → Authentication → Users → Invite user');
       } else {
         alert('Estado actualizado correctamente.');
       }
-      
+
       setDrawerOpen(false);
       loadData();
     } catch (e) {
@@ -98,7 +98,7 @@ export default function AdminOnboardingPage() {
       }).eq('id', selectedItem.id);
       if (error) throw error;
 
-      alert('Empresa aprobada. El usuario ha sido creado automáticamente por la base de datos con contraseña temporal (Temporal123!).');
+      alert('✅ Empresa aprobada y creada en el sistema.\n\n📧 Correo del representante:\n' + selectedItem.rep_email + '\n\nCrea el usuario en:\nSupabase → Authentication → Users → Invite user');
       setDrawerOpen(false);
       loadData();
     } catch (e) {
@@ -141,10 +141,10 @@ export default function AdminOnboardingPage() {
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       if (!((r.company_name || '').toLowerCase().includes(q) ||
-            (r.company_nit || '').toLowerCase().includes(q) ||
-            (r.rep_email || '').toLowerCase().includes(q) ||
-            (r.rep_name || '').toLowerCase().includes(q) ||
-            (r.company_city || '').toLowerCase().includes(q))) return false;
+        (r.company_nit || '').toLowerCase().includes(q) ||
+        (r.rep_email || '').toLowerCase().includes(q) ||
+        (r.rep_name || '').toLowerCase().includes(q) ||
+        (r.company_city || '').toLowerCase().includes(q))) return false;
     }
     return true;
   }).sort((a, b) => {
@@ -286,7 +286,7 @@ export default function AdminOnboardingPage() {
               </div>
               <button className={styles.drClose} onClick={() => setDrawerOpen(false)}>✕</button>
             </div>
-            
+
             <div className={styles.drBody}>
               <div className={styles.drSection}>
                 <div className={styles.drSectTitle}>Progreso del proceso</div>
@@ -372,7 +372,7 @@ export default function AdminOnboardingPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
                         <span>{icons[type]} {names[type]}</span>
                         {doc && doc.storage_path && (
-                          <button 
+                          <button
                             onClick={() => handleViewDocument(doc.storage_path)}
                             style={{ background: 'transparent', border: '1px solid rgba(74,159,212,.3)', borderRadius: '4px', color: '#4a9fd4', padding: '.1rem .3rem', fontSize: '.65rem', cursor: 'pointer' }}>
                             Ver doc
@@ -418,7 +418,7 @@ export default function AdminOnboardingPage() {
                 )}
               </div>
             </div>
-            
+
             <div className={styles.drFoot}>
               <button className={styles.btnP} onClick={handleSaveStatus}>Guardar cambios</button>
               <button className={styles.btnS} onClick={() => setDrawerOpen(false)}>Cancelar</button>
