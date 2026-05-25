@@ -630,11 +630,14 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
       <div class="field">
         <label>Variables — clic para insertar</label>
         <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.5rem">
-          ${['{{nombre}}','{{saldo}}','{{dias_mora}}','{{facturas}}','{{empresa}}','{{asesor}}','{{fecha_limite}}'].map(v=>
-            `<span onclick="insertVar2('${v}')"
-              style="font-family:monospace;font-size:.7rem;background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:.18rem .5rem;cursor:pointer;color:var(--gold-l)">${v}</span>`
-          ).join('')}
-        </div>
+  <span onclick="insertVar2('{{nombre}}')" style="font-family:monospace;font-size:.7rem;background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:.18rem .5rem;cursor:pointer;color:var(--gold-l)">{{nombre}}</span>
+  <span onclick="insertVar2('{{saldo}}')" style="font-family:monospace;font-size:.7rem;background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:.18rem .5rem;cursor:pointer;color:var(--gold-l)">{{saldo}}</span>
+  <span onclick="insertVar2('{{dias_mora}}')" style="font-family:monospace;font-size:.7rem;background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:.18rem .5rem;cursor:pointer;color:var(--gold-l)">{{dias_mora}}</span>
+  <span onclick="insertVar2('{{facturas}}')" style="font-family:monospace;font-size:.7rem;background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:.18rem .5rem;cursor:pointer;color:var(--gold-l)">{{facturas}}</span>
+  <span onclick="insertVar2('{{empresa}}')" style="font-family:monospace;font-size:.7rem;background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:.18rem .5rem;cursor:pointer;color:var(--gold-l)">{{empresa}}</span>
+  <span onclick="insertVar2('{{asesor}}')" style="font-family:monospace;font-size:.7rem;background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:.18rem .5rem;cursor:pointer;color:var(--gold-l)">{{asesor}}</span>
+  <span onclick="insertVar2('{{fecha_limite}}')" style="font-family:monospace;font-size:.7rem;background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:.18rem .5rem;cursor:pointer;color:var(--gold-l)">{{fecha_limite}}</span>
+</div>
       </div>
       <div class="field">
         <label>Mensaje *</label>
@@ -1672,9 +1675,9 @@ async function deleteTpl2(id) {
 }
 
 function tpl2ToggleSubject() {
-  document.getElementById('tpl2SubjectRow').style.display =
-    document.getElementById('tpl2-channel').value === 'email' ? '' : 'none'
-    document.getElementById('tpl2ContentSidRow').style.display = ch === 'whatsapp' ? '' : 'none'
+  const ch = document.getElementById('tpl2-channel').value
+  document.getElementById('tpl2SubjectRow').style.display    = ch === 'email'    ? '' : 'none'
+  document.getElementById('tpl2ContentSidRow').style.display = ch === 'whatsapp' ? '' : 'none'
 }
 
 function insertVar2(v) {
@@ -1922,7 +1925,7 @@ async function loadEnvioLogs() {
 
   // Cargar últimas 100 acciones masivas (notes contiene [Campaña masiva] o [Envío masivo])
   let query = db.from('collection_actions')
-    .select('id, debtor_id, channel, result, notes, created_at, company_id, profiles(full_name), collection_debtors(debtor_name)')
+    .select('id, debtor_id, channel, result, notes, created_at, company_id, user_id, collection_debtors(debtor_name)')
     .or('notes.ilike.%Campaña masiva%,notes.ilike.%Envío masivo%,notes.ilike.%Envio masivo%')
     .order('created_at', { ascending: false })
     .limit(100)
@@ -1948,7 +1951,7 @@ async function loadEnvioLogs() {
   logs.forEach(l => {
     const dateKey = l.created_at?.slice(0,16).replace('T',' ') || '—'
     const key = `${dateKey}|${l.channel}|${l.company_id}`
-    if (!grouped[key]) grouped[key] = { date: dateKey, channel: l.channel, company_id: l.company_id, count: 0, sent: 0, skipped: 0, gestor: l.profiles?.full_name || '—' }
+    if (!grouped[key]) grouped[key] = { date: dateKey, channel: l.channel, company_id: l.company_id, count: 0, sent: 0, skipped: 0, gestor: S.users.find(u => u.id === l.user_id)?.full_name || '—' }
     grouped[key].count++
     if (l.result === 'contacted') grouped[key].sent++
     else grouped[key].skipped++
