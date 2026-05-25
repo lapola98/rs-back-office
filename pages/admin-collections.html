@@ -620,6 +620,13 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
         <label>Asunto del email</label>
         <input type="text" id="tpl2-subject" placeholder="Aviso de obligación vencida — {{nombre}}">
       </div>
+      <div class="field" id="tpl2ContentSidRow" style="display:none">
+  <label>Twilio Content SID <span style="font-weight:400;color:var(--txt3)">(template aprobado WhatsApp)</span></label>
+  <input type="text" id="tpl2-content-sid" placeholder="HXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+  <div style="font-size:.67rem;color:var(--txt3);margin-top:.3rem">
+    Twilio Console → Content Templates → copia el SID que empieza con HX
+  </div>
+</div>
       <div class="field">
         <label>Variables — clic para insertar</label>
         <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.5rem">
@@ -1598,6 +1605,7 @@ function openTplModal2() {
   document.getElementById('tpl2ModalTitle').textContent = 'Nueva plantilla'
   document.getElementById('tpl2SubjectRow').style.display = 'none'
   openModal('tplModal2')
+  document.getElementById('tpl2-content-sid').value = ''
 }
 
 function editTpl2(id) {
@@ -1615,6 +1623,8 @@ function editTpl2(id) {
   document.getElementById('tpl2ModalTitle').textContent = 'Editar plantilla'
   document.getElementById('tpl2SubjectRow').style.display = t.channel === 'email' ? '' : 'none'
   openModal('tplModal2')
+  document.getElementById('tpl2-content-sid').value      = t.twilio_content_sid || ''
+document.getElementById('tpl2ContentSidRow').style.display = t.channel === 'whatsapp' ? '' : 'none'
 }
 
 async function saveTpl2() {
@@ -1634,6 +1644,7 @@ async function saveTpl2() {
       is_active : document.getElementById('tpl2-active').checked,
       is_global : !coId,
       company_id: coId,
+      twilio_content_sid: document.getElementById('tpl2-content-sid').value.trim() || null,
     }
     let err
     if (TPL_EDITING_ID) {
@@ -1663,6 +1674,7 @@ async function deleteTpl2(id) {
 function tpl2ToggleSubject() {
   document.getElementById('tpl2SubjectRow').style.display =
     document.getElementById('tpl2-channel').value === 'email' ? '' : 'none'
+    document.getElementById('tpl2ContentSidRow').style.display = ch === 'whatsapp' ? '' : 'none'
 }
 
 function insertVar2(v) {
@@ -2087,7 +2099,8 @@ async function executeEnvio() {
     let twilioNote = ''
 
     if (hasContact) {
-      const twilioResult = await callTwilio(ENVIO_CHANNEL, d, personalMsg)
+      const selectedTpl = ENVIO_TEMPLATES.find(t => t.id === document.getElementById('envioTemplate').value)
+      const twilioResult = await callTwilio(ENVIO_CHANNEL, d, personalMsg, selectedTpl)
       twilioOk   = twilioResult.success
       twilioNote = twilioOk
         ? `[Envío masivo · ${ENVIO_CHANNEL}]\n${personalMsg}`
@@ -2197,18 +2210,32 @@ function buildFacturasText(debtor) {
 /* ══ TWILIO — callTwilio() ══ */
 const FUNCTIONS_URL = SUPABASE_URL + '/functions/v1'
 
-async function callTwilio(channel, debtor, message) {
+async function callTwilio(channel, debtor, message, template = null) {
   // Determinar destino según canal
   let to = null
-  if (channel === 'whatsapp') to = debtor.whatsapp || debtor.phone
-  else if (channel === 'sms')      to = debtor.whatsapp || debtor.phone  // celular = whatsapp field
-  else if (channel === 'email')    to = debtor.email
+  if (channel === 'whatsapp')   to = debtor.whatsapp || debtor.phone
+  else if (channel === 'sms')   to = debtor.whatsapp || debtor.phone
+  else if (channel === 'email') to = debtor.email
 
   if (!to) return { success: false, error: 'Sin contacto registrado para este canal' }
 
   try {
     const { data: { session } } = await db.auth.getSession()
     const token = session?.access_token
+
+    // Payload base
+    const payload = {
+      channel,
+      to,
+      message,
+      subject: channel === 'email' ? 'Aviso de cobranza — RAD/ estrategias legales' : null,
+    }
+
+    // Si es WhatsApp y el template tiene ContentSid aprobado, usar template
+    if (channel === 'whatsapp' && template?.twilio_content_sid) {
+      payload.contentSid       = template.twilio_content_sid
+      payload.contentVariables = buildContentVariables(template, debtor)
+    }
 
     const response = await fetch(`${FUNCTIONS_URL}/send-message`, {
       method : 'POST',
@@ -2217,12 +2244,7 @@ async function callTwilio(channel, debtor, message) {
         'Authorization': token ? `Bearer ${token}` : '',
         'apikey'       : SUPABASE_KEY,
       },
-      body: JSON.stringify({
-        channel,
-        to,
-        message,
-        subject: channel === 'email' ? 'Aviso de cobranza — RAD/ estrategias legales' : null,
-      }),
+      body: JSON.stringify(payload),
     })
 
     const data = await response.json()
@@ -2232,6 +2254,27 @@ async function callTwilio(channel, debtor, message) {
     console.error('[callTwilio] Error:', err)
     return { success: false, error: 'Error de conexión con servidor de envío' }
   }
+}
+
+// Mapea {{nombre}}, {{saldo}}, etc. → {"1": ..., "2": ...} en orden de aparición
+function buildContentVariables(template, debtor) {
+  const co = S.companies[debtor.company_id]?.name || '—'
+  const varMap = {
+    '{{nombre}}'    : debtor.debtor_name?.split(' ')[0] || debtor.debtor_name || '',
+    '{{saldo}}'     : fmt(debtor.total_outstanding),
+    '{{dias_mora}}' : debtor.max_days >= 91 ? '91+' : String(debtor.max_days || 0),
+    '{{empresa}}'   : co,
+    '{{asesor}}'    : S.users.find(u => u.id === debtor.assigned_user_id)?.full_name || 'Asesor RS',
+    '{{facturas}}'  : buildFacturasText(debtor),
+  }
+  // Extraer variables del body en orden de aparición → {"1": val, "2": val, ...}
+  const matches = [...(template.body || '').matchAll(/\{\{(\w+)\}\}/g)]
+  const result  = {}
+  matches.forEach((m, idx) => {
+    const key = `{{${m[1]}}}`
+    if (varMap[key] !== undefined) result[String(idx + 1)] = varMap[key]
+  })
+  return result
 }
 
 init()
