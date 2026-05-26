@@ -76,9 +76,9 @@ export default function AdminOnboardingPage() {
       const { error } = await supabase.from('client_onboardings').update(upd).eq('id', selectedItem.id);
       if (error) throw error;
 
-      // El Trigger de Postgres crea la empresa automáticamente al aprobar
+      // El Trigger de Postgres crea la empresa y el webhook asíncrono invoca la Edge Function de fondo
       if (editStatus === 'approved' && selectedItem.status !== 'approved') {
-        alert('✅ Empresa aprobada y creada en el sistema.\n\n📧 Correo del representante:\n' + selectedItem.rep_email + '\n\nCrea el usuario en:\nSupabase → Authentication → Users → Invite user');
+        alert('✅ Empresa aprobada.\n\nEl sistema creará la empresa y registrará al representante legal automáticamente de fondo.');
       } else {
         alert('Estado actualizado correctamente.');
       }
@@ -98,7 +98,8 @@ export default function AdminOnboardingPage() {
       }).eq('id', selectedItem.id);
       if (error) throw error;
 
-      alert('✅ Empresa aprobada y creada en el sistema.\n\n📧 Correo del representante:\n' + selectedItem.rep_email + '\n\nCrea el usuario en:\nSupabase → Authentication → Users → Invite user');
+      // El Trigger de Postgres crea la empresa y el webhook asíncrono invoca la Edge Function de fondo
+      alert('✅ Empresa aprobada.\n\nEl sistema creará la empresa y registrará al representante legal automáticamente de fondo.');
       setDrawerOpen(false);
       loadData();
     } catch (e) {
