@@ -87,7 +87,7 @@ serve(async (req) => {
           role: 'client_owner',
           company_id: ob.company_id,
         },
-        redirectTo: siteUrl + '/pages/set-password.html',
+        redirectTo: siteUrl + '/set-password',
       }
     )
 

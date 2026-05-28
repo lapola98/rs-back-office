@@ -43,7 +43,7 @@ export default function SetPasswordPage() {
       const { error } = await supabase.auth.updateUser({ password: pass1 });
       if (error) throw error;
       setSuccess(true);
-      setTimeout(() => navigate('/client'), 2500); // Redirects to client dashboard
+      setTimeout(() => navigate('/dashboard'), 2500); // Redirects to client dashboard
     } catch (e) {
       setError('Error al actualizar: ' + e.message);
     } finally {
