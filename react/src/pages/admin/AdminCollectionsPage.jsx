@@ -55,7 +55,6 @@ export default function AdminCollectionsPage() {
   
   // Envio masivo
   const [envioChannel, setEnvioChannel] = useState('whatsapp');
-  const [envioSegment, setEnvioSegment] = useState([]);
   const [envioSelAll, setEnvioSelAll] = useState(true);
   const [envioSelIds, setEnvioSelIds] = useState(new Set());
   const [envioTramo, setEnvioTramo] = useState('');
@@ -90,7 +89,7 @@ export default function AdminCollectionsPage() {
     not_yet_due,credit_balance,total_balance,outstanding_amount,status,
     currency,original_amount)
         `).order('debtor_name'),
-        supabase.from('companies').select('id,name').order('name'),
+        supabase.from('companies').select('id,name,nit,city,phone,email,contact').order('name'),
         supabase.from('profiles').select('id,full_name,role').in('role', ['rs_staff', 'rs_admin', 'admin']),
         supabase.from('collection_agreements').select('id,debtor_id,status,first_due_date'),
         supabase.from('collection_tasks').select('id,debtor_id,status,due_date,priority'),
@@ -220,6 +219,272 @@ export default function AdminCollectionsPage() {
     return { sinGestion, conGestion, subieron };
   };
 
+  const envioSegment = debtors.filter(d => {
+    if (d.status === 'paid') return false;
+    if (globalCompany && d.company_id !== globalCompany) return false;
+    if (envioTramo && d.max_days !== parseInt(envioTramo)) return false;
+    if (envioStatusFilter && d.status !== envioStatusFilter) return false;
+    return d.max_days > 0;
+  });
+
+  useEffect(() => {
+    setEnvioSelIds(new Set(envioSegment.map(d => d.id)));
+    setEnvioSelAll(true);
+    setEnvioTemplateId('');
+    setEnvioMsg('');
+  }, [envioChannel, envioTramo, envioStatusFilter, globalCompany, debtors]);
+
+  useEffect(() => {
+    if (currentTab === 'envio') {
+      loadEnvioLogs();
+    }
+  }, [currentTab, globalCompany]);
+
+  const loadEnvioLogs = async () => {
+    try {
+      let query = supabase
+        .from('collection_actions')
+        .select(`
+          id, debtor_id, channel, result, notes, created_at, company_id,
+          profiles(full_name),
+          collection_debtors(debtor_name)
+        `)
+        .or('notes.ilike.%Campaña masiva%,notes.ilike.%Envío masivo%,notes.ilike.%Envio masivo%')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (globalCompany) {
+        query = query.eq('company_id', globalCompany);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      setEnvioLogs(data || []);
+    } catch (err) {
+      console.error('Error loading envio logs:', err);
+    }
+  };
+
+  const handleToggleEnvioAll = (checked) => {
+    if (checked) {
+      setEnvioSelIds(new Set(envioSegment.map(d => d.id)));
+      setEnvioSelAll(true);
+    } else {
+      setEnvioSelIds(new Set());
+      setEnvioSelAll(false);
+    }
+  };
+
+  const handleToggleEnvioOne = (id) => {
+    const next = new Set(envioSelIds);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    setEnvioSelIds(next);
+    setEnvioSelAll(next.size === envioSegment.length);
+  };
+
+  const buildFacturasText = (debtor) => {
+    const tramoLabel = t =>
+      t >= 91 ? '91+ días' :
+      t >= 61 ? '61-90 días' :
+      t >= 31 ? '31-60 días' :
+      t === 1 ? '1-30 días' :
+      'Por vencer';
+
+    const debts = debtor?.debts || debtor?.collection_debts || [];
+
+    const compensaciones = debts
+      .filter(f => f.status === 'paid' && (+f.total_balance || 0) < 0)
+      .map(f => Math.abs(Math.round(+f.total_balance || 0)));
+
+    const usedComp = [...compensaciones];
+
+    const active = debts.filter(f => {
+      if (f.status !== 'pending' || (+f.total_balance || 0) < 1000) return false;
+
+      const monto = Math.round(+f.total_balance || 0);
+      const idx = usedComp.findIndex(c => Math.abs(c - monto) <= 2);
+
+      if (idx >= 0) {
+        usedComp.splice(idx, 1);
+        return false;
+      }
+
+      return true;
+    });
+
+    if (!active.length) return 'Sin facturas pendientes';
+
+    return active.map(f => {
+      const ov1 = +f.overdue_1_30 || 0;
+      const ov31 = +f.overdue_31_60 || 0;
+      const ov61 = +f.overdue_61_90 || 0;
+      const ov91 = +f.overdue_91_plus || 0;
+      const notDue = +f.not_yet_due || 0;
+
+      const vencido = ov1 + ov31 + ov61 + ov91;
+
+      const tramo = ov91 > 0 ? 91 :
+                    ov61 > 0 ? 61 :
+                    ov31 > 0 ? 31 :
+                    ov1 > 0 ? 1 :
+                    0;
+
+      const amount = vencido > 0 ? vencido : notDue;
+
+      const usdAmount = Number(f.original_amount || f.usd_amount || 0);
+
+      const usdText =
+        f.currency &&
+        f.currency !== 'COP' &&
+        usdAmount > 0
+          ? ` [${f.currency} $${usdAmount.toLocaleString('en-US', {
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 0
+            })}]`
+          : '';
+
+      return `- RAD-${f.siigo_document}: ${fmt(amount)}${usdText} (${tramoLabel(tramo)})`;
+    }).join('\n');
+  };
+
+  const getEnvioPreview = () => {
+    if (!envioMsg) return '—';
+    const selectedDebtors = envioSegment.filter(d => envioSelIds.has(d.id));
+    if (selectedDebtors.length === 0) return envioMsg;
+    const d = selectedDebtors[0];
+    const co = companies[d.company_id]?.name || '—';
+    return envioMsg
+      .replace(/\{\{nombre\}\}/g, d.debtor_name || '')
+      .replace(/\{\{saldo\}\}/g, fmt(d.total_outstanding))
+      .replace(/\{\{dias_mora\}\}/g, d.max_days >= 91 ? '91+' : String(d.max_days || 0))
+      .replace(/\{\{empresa\}\}/g, co)
+      .replace(/\{\{asesor\}\}/g, 'Asesor RS')
+      .replace(/\{\{facturas\}\}/g, buildFacturasText(d));
+  };
+
+  const callTwilio = async (channel, debtor, message) => {
+    let to = null;
+    if (channel === 'whatsapp') to = debtor.whatsapp || debtor.phone;
+    else if (channel === 'sms') to = debtor.whatsapp || debtor.phone;
+    else if (channel === 'email') to = debtor.email;
+
+    if (!to) return { success: false, error: 'Sin contacto registrado para este canal' };
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const functionsUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      const response = await fetch(`${functionsUrl}/send-message`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
+          'apikey': supabaseKey,
+        },
+        body: JSON.stringify({
+          channel,
+          to,
+          message,
+          subject: channel === 'email' ? 'Aviso de cobranza — RAD/ estrategias legales' : null,
+        }),
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      console.error('[callTwilio] Error:', err);
+      return { success: false, error: 'Error de conexión con servidor de envío' };
+    }
+  };
+
+  const executeEnvio = async () => {
+    const msg = envioMsg.trim();
+    if (!msg) return;
+    const selectedDebtors = envioSegment.filter(d => envioSelIds.has(d.id));
+    if (selectedDebtors.length === 0) return;
+
+    if (!window.confirm(`¿Aprobar y enviar mensaje de ${envioChannel} a ${selectedDebtors.length} deudores?`)) return;
+
+    setEnvioSending(true);
+    setEnvioProg({ total: selectedDebtors.length, done: 0, errors: 0, currentName: '' });
+
+    const { data: { user } } = await supabase.auth.getUser();
+    let sent = 0;
+    let skipped = 0;
+    const errorsList = [];
+
+    for (let i = 0; i < selectedDebtors.length; i++) {
+      const d = selectedDebtors[i];
+      const co = companies[d.company_id]?.name || '—';
+      const hasContact =
+        envioChannel === 'whatsapp' ? !!(d.whatsapp || d.phone) :
+        envioChannel === 'sms'      ? !!(d.whatsapp || d.phone) :
+        envioChannel === 'email'    ? !!d.email : false;
+
+      const personalMsg = msg
+        .replace(/\{\{nombre\}\}/g, d.debtor_name || '')
+        .replace(/\{\{saldo\}\}/g, fmt(d.total_outstanding))
+        .replace(/\{\{dias_mora\}\}/g, d.max_days >= 91 ? '91+' : String(d.max_days || 0))
+        .replace(/\{\{empresa\}\}/g, co)
+        .replace(/\{\{asesor\}\}/g, 'Asesor RS')
+        .replace(/\{\{facturas\}\}/g, buildFacturasText(d));
+
+      let twilioOk = false;
+      let twilioNote = '';
+
+      if (hasContact) {
+        setEnvioProg(prev => ({ ...prev, currentName: d.debtor_name }));
+        const twilioResult = await callTwilio(envioChannel, d, personalMsg);
+        twilioOk = twilioResult.success;
+        twilioNote = twilioOk
+          ? `[Envío masivo · ${envioChannel}]\n${personalMsg}`
+          : `[Envío masivo · ERROR]\n${personalMsg}\nError: ${twilioResult.error}`;
+        if (!twilioOk) {
+          errorsList.push(`${d.debtor_name}: ${twilioResult.error}`);
+        }
+      } else {
+        twilioNote = `[Envío masivo] Sin contacto para canal ${envioChannel}\n${personalMsg}`;
+      }
+
+      const { error } = await supabase.from('collection_actions').insert({
+        company_id: d.company_id,
+        debtor_id: d.id,
+        user_id: user?.id || null,
+        channel: envioChannel,
+        result: !hasContact ? 'uncontactable' : twilioOk ? 'contacted' : 'error',
+        notes: twilioNote,
+      });
+
+      if (error) {
+        errorsList.push(`${d.debtor_name}: ${error.message}`);
+      }
+
+      if (hasContact && twilioOk && d.status === 'pending') {
+        await supabase.from('collection_debtors').update({ status: 'in_collection' }).eq('id', d.id);
+      }
+
+      if (hasContact && twilioOk) {
+        sent++;
+      } else {
+        skipped++;
+      }
+
+      setEnvioProg(prev => ({ ...prev, done: i + 1, errors: errorsList.length }));
+    }
+
+    setEnvioSending(false);
+    alert(`Envío completado: ${sent} enviados, ${skipped} omitidos/sin contacto, ${errorsList.length} errores.`);
+    loadData();
+    loadEnvioLogs();
+  };
+
   const activeDebtors = getVisibleDebtors();
   const paidDebtors = getPaidDebtors();
   const { sinGestion, conGestion, subieron } = getGestionDebtors();
@@ -294,6 +559,26 @@ export default function AdminCollectionsPage() {
       setIsDebtorModalOpen(false);
       await loadData();
     } catch (e) { alert('Error al guardar: ' + e.message); }
+  };
+
+  const envioTemplates = templates.filter(t => {
+    if (t.channel !== envioChannel) return false;
+    if (envioTramo && t.tramo && t.tramo !== parseInt(envioTramo)) return false;
+    if (t.is_global || !t.company_id) return true;
+    if (globalCompany && t.company_id === globalCompany) return true;
+    if (!globalCompany) return true;
+    return false;
+  });
+
+  const handleEnvioTemplateChange = (e) => {
+    const id = e.target.value;
+    setEnvioTemplateId(id);
+    const tpl = templates.find(t => t.id === id);
+    if (tpl) {
+      setEnvioMsg(tpl.body);
+    } else {
+      setEnvioMsg('');
+    }
   };
 
   return (
@@ -574,17 +859,8 @@ export default function AdminCollectionsPage() {
                 <div>
                   <div className={styles.toolbar} style={{ flexWrap: 'wrap', gap: '.5rem', marginBottom: '1rem' }}>
                     <div className={styles.field} style={{ minWidth: 160 }}>
-                      <label style={{ fontSize: '.65rem' }}>Canal</label>
-                      <select value={envioChannel} onChange={e => setEnvioChannel(e.target.value)}>
-                        <option value="whatsapp">💬 WhatsApp</option>
-                        <option value="email">📧 Email</option>
-                        <option value="sms">📱 SMS</option>
-                        <option value="phone">📞 Llamada</option>
-                      </select>
-                    </div>
-                    <div className={styles.field} style={{ minWidth: 160 }}>
                       <label style={{ fontSize: '.65rem' }}>Filtrar por tramo</label>
-                      <select value={envioTramo} onChange={e => setEnvioTramo(e.target.value)}>
+                      <select value={envioTramo} onChange={e => setEnvioTramo(e.target.value)} className={styles.filterSel}>
                         <option value="">Todos los tramos</option>
                         <option value="1">1–30 días</option>
                         <option value="31">31–60 días</option>
@@ -593,70 +869,242 @@ export default function AdminCollectionsPage() {
                       </select>
                     </div>
                     <div className={styles.field} style={{ minWidth: 160 }}>
+                      <label style={{ fontSize: '.65rem' }}>Filtrar por estado</label>
+                      <select value={envioStatusFilter} onChange={e => setEnvioStatusFilter(e.target.value)} className={styles.filterSel}>
+                        <option value="">Todos los estados</option>
+                        <option value="pending">Pendiente</option>
+                        <option value="in_collection">En gestión</option>
+                        <option value="promised">Con promesa</option>
+                        <option value="agreement">Con acuerdo</option>
+                        <option value="defaulted">Incumplido</option>
+                        <option value="uncontactable">Incontactable</option>
+                      </select>
+                    </div>
+                    <div className={styles.field} style={{ minWidth: 160 }}>
                       <label style={{ fontSize: '.65rem' }}>Plantilla</label>
-                      <select value={envioTemplateId} onChange={e => {
-                        setEnvioTemplateId(e.target.value);
-                        const tpl = templates.find(t => t.id === e.target.value);
-                        if (tpl) setEnvioMsg(tpl.body);
-                      }}>
+                      <select value={envioTemplateId} onChange={handleEnvioTemplateChange} className={styles.filterSel}>
                         <option value="">Sin plantilla</option>
-                        {templates.filter(t => t.is_active && (!t.company_id || t.company_id === globalCompany)).map(t => (
-                          <option key={t.id} value={t.id}>{t.name} ({t.channel})</option>
+                        {envioTemplates.map(t => (
+                          <option key={t.id} value={t.id}>{t.is_global ? t.name : `★ ${t.name}`}</option>
                         ))}
                       </select>
                     </div>
                   </div>
 
-                  {(() => {
-                    const base = debtors.filter(d => d.status !== 'paid' && (!globalCompany || d.company_id === globalCompany));
-                    const seg = base.filter(d => {
-                      if (envioTramo && d.max_days < parseInt(envioTramo)) return false;
-                      if (envioTramo === '1' && d.max_days > 30) return false;
-                      if (envioTramo === '31' && (d.max_days < 31 || d.max_days > 60)) return false;
-                      if (envioTramo === '61' && (d.max_days < 61 || d.max_days > 90)) return false;
-                      return true;
-                    });
-                    return (
-                      <>
-                        <div style={{ fontSize: '.72rem', color: 'rgba(255,255,255,.4)', marginBottom: '.75rem' }}>
-                          {seg.length} destinatarios seleccionados
+                  {/* Canal de envío como botones */}
+                  <div className={styles.field} style={{ marginBottom: '1.25rem' }}>
+                    <label>Canal de envío</label>
+                    <div style={{ display: 'flex', gap: '.4rem' }}>
+                      <button className={`${styles.envioCh} ${envioChannel === 'whatsapp' ? styles.envioChActive : ''}`} onClick={() => setEnvioChannel('whatsapp')}>💬 WhatsApp</button>
+                      <button className={`${styles.envioCh} ${envioChannel === 'sms' ? styles.envioChActive : ''}`} onClick={() => setEnvioChannel('sms')}>📱 SMS</button>
+                      <button className={`${styles.envioCh} ${envioChannel === 'email' ? styles.envioChActive : ''}`} onClick={() => setEnvioChannel('email')}>📧 Email</button>
+                    </div>
+                  </div>
+
+                  {/* Listado de deudores del segmento con selección */}
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', marginBottom: '.6rem' }}>
+                      <input type="checkbox" checked={envioSelAll} onChange={e => handleToggleEnvioAll(e.target.checked)} style={{ accentColor: '#c9a84c', width: '15px', height: '15px', cursor: 'pointer' }} />
+                      <span id="envioSelCount" style={{ fontSize: '.72rem', color: '#c9a84c', fontWeight: 500 }}>
+                        {envioSegment.filter(d => envioSelIds.has(d.id)).length} seleccionado(s)
+                      </span>
+                    </div>
+
+                    <div style={{ maxHeight: '260px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '.3rem', paddingRight: '.25rem' }}>
+                      {envioSegment.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '1.5rem', color: 'rgba(255,255,255,.25)', fontSize: '.78rem' }}>Sin deudores en este segmento</div>
+                      ) : (
+                        envioSegment.map(d => {
+                          const co = companies[d.company_id]?.name || '—';
+                          const isChecked = envioSelIds.has(d.id);
+                          const tc = t => t >= 91 ? '#e05c4b' : t >= 61 ? '#e05c4b' : t >= 31 ? '#e8a020' : '#c9a84c';
+                          const tl = t => t >= 91 ? '91+' : t >= 61 ? '61-90' : t >= 31 ? '31-60' : '1-30';
+                          return (
+                            <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: '.6rem', padding: '.45rem .6rem', background: '#1a2230', border: '1px solid rgba(255,255,255,.04)', borderRadius: '7px' }}>
+                              <input type="checkbox" checked={isChecked} onChange={() => handleToggleEnvioOne(d.id)} style={{ accentColor: '#c9a84c', width: '15px', height: '15px', flexShrink: 0, cursor: 'pointer' }} />
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: '.77rem', fontWeight: 500, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.debtor_name}</div>
+                                <div style={{ fontSize: '.66rem', color: 'rgba(255,255,255,.25)' }}>{d.debtor_document || '—'} · {co}</div>
+                                <div style={{ fontSize: '.65rem', marginTop: '.15rem', display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                                  {(d.phone || d.whatsapp) && <span style={{ color: 'rgba(255,255,255,.5)' }}>📞 {d.whatsapp || d.phone}</span>}
+                                  {d.email && <span style={{ color: 'rgba(255,255,255,.5)' }}>📧 {d.email}</span>}
+                                  {!d.has_contact && <span style={{ color: '#e8a020' }}>⚠ Sin contacto</span>}
+                                  <Link to={`/admin/collections/detail/${d.id}`} style={{ color: '#c9a84c', textDecoration: 'none', opacity: 0.7 }}>✏️ Editar →</Link>
+                                </div>
+                              </div>
+                              <span style={{ fontSize: '.65rem', fontWeight: 600, color: tc(d.max_days), flexShrink: 0 }}>{tl(d.max_days)} días</span>
+                              <div style={{ fontFamily: 'Cormorant Garamond', fontSize: '.88rem', fontWeight: 600, color: '#e8c97a', flexShrink: 0 }}>{fmt(d.total_outstanding)}</div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Redacción de Mensaje */}
+                  <div className={styles.field} style={{ marginBottom: '.75rem' }}>
+                    <label>Mensaje *</label>
+                    <textarea value={envioMsg} onChange={e => setEnvioMsg(e.target.value)} rows={4} placeholder="Escribe el mensaje... Usa {{nombre}}, {{saldo}}, {{dias_mora}}, {{empresa}}, {{asesor}}, {{facturas}} como variables" />
+                  </div>
+
+                  {/* Vista Previa */}
+                  <div className={styles.field} style={{ marginBottom: '1.25rem' }}>
+                    <label>Vista previa (primer deudor seleccionado)</label>
+                    <div className={styles.tplPreviewBox}>
+                      {getEnvioPreview()}
+                    </div>
+                  </div>
+
+                  {/* Resumen & Botón de Enviar */}
+                  <div style={{ background: '#131920', border: '1px solid rgba(255,255,255,0.07)', padding: '1rem', borderRadius: '10px', marginBottom: '1.5rem' }}>
+                    {(() => {
+                      const selectedList = envioSegment.filter(d => envioSelIds.has(d.id));
+                      const noContact = selectedList.filter(d => {
+                        if (envioChannel === 'whatsapp') return !d.phone && !d.whatsapp;
+                        if (envioChannel === 'sms') return !d.phone && !d.whatsapp;
+                        if (envioChannel === 'email') return !d.email;
+                        return false;
+                      }).length;
+
+                      const chLabel = { whatsapp: 'Celular', sms: 'SMS', email: 'Email' };
+                      const canSend = selectedList.length > 0 && envioMsg.trim();
+
+                      return (
+                        <div>
+                          <div id="envioSummary" style={{ fontSize: '.78rem', color: 'rgba(255,255,255,.25)', marginBottom: '.75rem' }}>
+                            {!canSend ? (
+                              <span>Completa los pasos anteriores (selecciona deudores y escribe un mensaje).</span>
+                            ) : (
+                              <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+                                <div>
+                                  <div style={{ fontFamily: 'Cormorant Garamond', fontSize: '1.4rem', fontWeight: 600, color: '#e8c97a' }}>{selectedList.length}</div>
+                                  <div style={{ fontSize: '.65rem', color: 'rgba(255,255,255,.25)' }}>destinatarios</div>
+                                </div>
+                                <div>
+                                  <div style={{ fontFamily: 'Cormorant Garamond', fontSize: '1.4rem', fontWeight: 600, color: noContact > 0 ? '#e8a020' : '#22a66a' }}>{selectedList.length - noContact}</div>
+                                  <div style={{ fontSize: '.65rem', color: 'rgba(255,255,255,.25)' }}>con contacto {chLabel[envioChannel]}</div>
+                                </div>
+                                {noContact > 0 && (
+                                  <div>
+                                    <div style={{ fontFamily: 'Cormorant Garamond', fontSize: '1.4rem', fontWeight: 600, color: 'rgba(255,255,255,.25)' }}>{noContact}</div>
+                                    <div style={{ fontSize: '.65rem', color: 'rgba(255,255,255,.25)' }}>sin contacto (se omitirán)</div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          <button
+                            className={styles.btnP}
+                            disabled={!canSend || envioSending}
+                            onClick={executeEnvio}
+                          >
+                            {envioSending ? 'Enviando...' : `✉️ Aprobar y enviar a ${selectedList.length} deudores`}
+                          </button>
                         </div>
-                        <div className={styles.field} style={{ marginBottom: '.75rem' }}>
-                          <label>Mensaje *</label>
-                          <textarea value={envioMsg} onChange={e => setEnvioMsg(e.target.value)} rows={5} placeholder="Escribe el mensaje... Usa {{nombre}}, {{saldo}}, {{empresa}} como variables" />
+                      );
+                    })()}
+                  </div>
+
+                  {/* Barra de progreso de envío */}
+                  {envioProg && (
+                    <div style={{ marginTop: '1rem', background: '#1c2a3a', border: '1px solid rgba(255,255,255,0.07)', padding: '.75rem 1rem', borderRadius: '10px', marginBottom: '1.5rem' }}>
+                      <div id="envioProgTitle" style={{ fontSize: '.78rem', fontWeight: 600, marginBottom: '.4rem', color: envioSending ? '#e8c97a' : '#22a66a' }}>
+                        {envioSending ? '⏳ Enviando campaña masiva...' : '✅ Envío completado'}
+                      </div>
+                      <div style={{ background: '#131920', height: '6px', borderRadius: '100px', overflow: 'hidden', marginBottom: '.4rem' }}>
+                        <div style={{ background: 'linear-gradient(90deg, #c9a84c, #e8c97a)', height: '100%', width: `${Math.round((envioProg.done / envioProg.total) * 100)}%`, transition: 'width .2s' }}></div>
+                      </div>
+                      <div id="envioProgDetail" style={{ fontSize: '.7rem', color: 'rgba(255,255,255,.4)' }}>
+                        {envioProg.done} de {envioProg.total} {envioProg.currentName && `— ${envioProg.currentName}`}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Historial de envíos masivos */}
+                  <div style={{ marginTop: '2.5rem', borderTop: '1px solid rgba(255,255,255,.07)', paddingTop: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem' }}>
+                      <h4 style={{ fontFamily: 'Cormorant Garamond', fontSize: '1.1rem', fontWeight: 600, color: '#fff' }}>Historial de envíos masivos</h4>
+                      <span style={{ fontSize: '.65rem', color: 'rgba(255,255,255,.25)' }}>{envioLogs.length} envíos masivos registrados</span>
+                    </div>
+
+                    {(() => {
+                      const getGroupedLogs = () => {
+                        const grouped = {};
+                        envioLogs.forEach(l => {
+                          const dateKey = l.created_at?.slice(0, 16).replace('T', ' ') || '—';
+                          const key = `${dateKey}|${l.channel}|${l.company_id}`;
+                          if (!grouped[key]) {
+                            grouped[key] = {
+                              date: dateKey,
+                              channel: l.channel,
+                              company_id: l.company_id,
+                              count: 0,
+                              sent: 0,
+                              skipped: 0,
+                              gestor: l.profiles?.full_name || '—',
+                            };
+                          }
+                          grouped[key].count++;
+                          if (l.result === 'contacted') {
+                            grouped[key].sent++;
+                          } else {
+                            grouped[key].skipped++;
+                          }
+                        });
+                        return Object.values(grouped).slice(0, 30);
+                      };
+
+                      const groupedLogs = getGroupedLogs();
+
+                      if (groupedLogs.length === 0) {
+                        return <div style={{ textAlign: 'center', padding: '1.5rem', color: 'rgba(255,255,255,.25)', fontSize: '.76rem' }}>Sin envíos masivos registrados aún.</div>;
+                      }
+
+                      const chIcon = { whatsapp: '💬', email: '📧', sms: '📱', phone: '📞', manual: '📝' };
+
+                      return (
+                        <div style={{ overflowX: 'auto', maxHeight: '280px', overflowY: 'auto' }}>
+                          <table className={styles.pendingTbl}>
+                            <thead>
+                              <tr>
+                                <th>Fecha</th>
+                                <th>Canal</th>
+                                <th>Empresa</th>
+                                <th style={{ textAlign: 'center' }}>Destinatarios</th>
+                                <th style={{ textAlign: 'center' }}>Resultado</th>
+                                <th>Gestor</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {groupedLogs.map((g, i) => {
+                                const co = companies[g.company_id]?.name || '—';
+                                return (
+                                  <tr key={i}>
+                                    <td style={{ fontSize: '.7rem', color: 'rgba(255,255,255,.25)', whiteSpace: 'nowrap' }}>{g.date}</td>
+                                    <td>{chIcon[g.channel] || '📝'} <span style={{ fontSize: '.74rem', color: 'rgba(255,255,255,.5)' }}>{g.channel}</span></td>
+                                    <td style={{ fontSize: '.74rem', color: 'rgba(255,255,255,.5)' }}>{co}</td>
+                                    <td style={{ textAlign: 'center' }}>
+                                      <span style={{ fontFamily: 'Cormorant Garamond', fontSize: '.95rem', fontWeight: 600, color: '#e8c97a' }}>{g.count}</span>
+                                      <span style={{ fontSize: '.65rem', color: 'rgba(255,255,255,.25)' }}> total</span>
+                                    </td>
+                                    <td style={{ textAlign: 'center' }}>
+                                      <span style={{ fontSize: '.74rem', color: '#22a66a', fontWeight: 500 }}>{g.sent}</span>
+                                      <span style={{ fontSize: '.65rem', color: 'rgba(255,255,255,.25)' }}> env · </span>
+                                      <span style={{ fontSize: '.74rem', color: 'rgba(255,255,255,.25)' }}>{g.skipped}</span>
+                                      <span style={{ fontSize: '.65rem', color: 'rgba(255,255,255,.25)' }}> omit</span>
+                                    </td>
+                                    <td style={{ fontSize: '.7rem', color: 'rgba(255,255,255,.25)' }}>{g.gestor}</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
                         </div>
-                        <button
-                          className={styles.btnP}
-                          disabled={!envioMsg.trim() || seg.length === 0 || envioSending}
-                          onClick={async () => {
-                            if (!window.confirm(`¿Registrar gestión de ${envioChannel} a ${seg.length} deudores?`)) return;
-                            setEnvioSending(true);
-                            setEnvioProg({ total: seg.length, done: 0, errors: 0 });
-                            let done = 0, errs = 0;
-                            for (const d of seg) {
-                              const { error } = await supabase.from('collection_actions').insert({
-                                company_id: d.company_id,
-                                debtor_id: d.id,
-                                channel: envioChannel,
-                                result: 'contacted',
-                                notes: envioMsg
-                                  .replace(/\{\{nombre\}\}/gi, d.debtor_name)
-                                  .replace(/\{\{saldo\}\}/gi, fmt(d.total_outstanding))
-                                  .replace(/\{\{empresa\}\}/gi, companies[d.company_id]?.name || ''),
-                              });
-                              if (error) errs++; else done++;
-                              setEnvioProg({ total: seg.length, done, errors: errs });
-                            }
-                            setEnvioSending(false);
-                            alert(`Gestión registrada: ${done} ok, ${errs} errores.`);
-                            loadData();
-                          }}
-                        >
-                          {envioSending ? `Enviando... ${envioProg?.done}/${envioProg?.total}` : `✉️ Registrar gestión a ${seg.length} deudores`}
-                        </button>
-                      </>
-                    );
-                  })()}
+                      );
+                    })()}
+                  </div>
+
                 </div>
               )}
 
@@ -721,7 +1169,28 @@ export default function AdminCollectionsPage() {
             <div className={styles.modalBody}>
               <div className={styles.fieldRow}>
                 <div className={styles.field}><label>Empresa cliente *</label>
-                  <select value={debtorForm.company_id} onChange={e => setDebtorForm({ ...debtorForm, company_id: e.target.value })}>
+                  <select
+                    value={debtorForm.company_id}
+                    onChange={e => {
+                      const coId = e.target.value;
+                      const co = companies[coId];
+                      if (co && !editingDebtorId) {
+                        setDebtorForm({
+                          ...debtorForm,
+                          company_id: coId,
+                          debtor_document: co.nit || '',
+                          debtor_name: co.name || '',
+                          city: co.city || '',
+                          phone: co.phone || '',
+                          whatsapp: co.phone || '',
+                          email: co.email || '',
+                          preferred_channel: co.phone ? 'whatsapp' : (co.email ? 'email' : ''),
+                        });
+                      } else {
+                        setDebtorForm({ ...debtorForm, company_id: coId });
+                      }
+                    }}
+                  >
                     <option value="">Seleccionar empresa...</option>
                     {Object.values(companies).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
@@ -769,35 +1238,93 @@ export default function AdminCollectionsPage() {
               </div>
               <div className={styles.field} style={{ marginBottom: '.5rem' }}>
                 <label>Usar plantilla</label>
-                <select value={envioTemplateId} onChange={e => {
-                  setEnvioTemplateId(e.target.value);
-                  const tpl = templates.find(t => t.id === e.target.value);
-                  if (tpl) setEnvioMsg(tpl.body);
-                }}>
+                <select value={envioTemplateId} onChange={handleEnvioTemplateChange} className={styles.filterSel} style={{ width: '100%' }}>
                   <option value="">Sin plantilla</option>
-                  {templates.filter(t => t.is_active).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  {envioTemplates.map(t => (
+                    <option key={t.id} value={t.id}>{t.is_global ? t.name : `★ ${t.name}`}</option>
+                  ))}
                 </select>
               </div>
-              <div className={styles.field}><label>Mensaje *</label><textarea value={envioMsg} onChange={e => setEnvioMsg(e.target.value)} rows={5} placeholder="{{nombre}}, {{saldo}}, {{empresa}}"></textarea></div>
+              <div className={styles.field}>
+                <label>Mensaje * <span style={{ color: 'rgba(255,255,255,.3)', fontSize: '.65rem' }}>Variables: {'{{nombre}}'} {'{{saldo}}'} {'{{dias_mora}}'} {'{{empresa}}'} {'{{asesor}}'} {'{{facturas}}'}</span></label>
+                <textarea value={envioMsg} onChange={e => setEnvioMsg(e.target.value)} rows={5} placeholder="Escribe el mensaje..." />
+              </div>
             </div>
             <div className={styles.modalFt}>
               <button className={styles.btnS} onClick={() => setIsBulkMsgModalOpen(false)}>Cancelar</button>
-              <button className={styles.btnP} disabled={!envioMsg.trim()} onClick={async () => {
+              <button className={styles.btnP} disabled={!envioMsg.trim() || envioSending} onClick={async () => {
                 const targets = activeDebtors.filter(d => selectedIds.has(d.id));
-                let ok = 0, errs = 0;
+                if (targets.length === 0) return;
+                
+                if (!window.confirm(`¿Aprobar y enviar mensaje de ${envioChannel} a ${targets.length} deudores?`)) return;
+
+                setEnvioSending(true);
+                const { data: { user } } = await supabase.auth.getUser();
+                let sent = 0;
+                let skipped = 0;
+                const errorsList = [];
+
                 for (const d of targets) {
+                  const hasContact =
+                    envioChannel === 'whatsapp' ? !!(d.whatsapp || d.phone) :
+                    envioChannel === 'sms'      ? !!(d.whatsapp || d.phone) :
+                    envioChannel === 'email'    ? !!d.email : false;
+
+                  const personalMsg = envioMsg
+                    .replace(/\{\{nombre\}\}/g, d.debtor_name || '')
+                    .replace(/\{\{saldo\}\}/g, fmt(d.total_outstanding))
+                    .replace(/\{\{dias_mora\}\}/g, d.max_days >= 91 ? '91+' : String(d.max_days || 0))
+                    .replace(/\{\{empresa\}\}/g, companies[d.company_id]?.name || '')
+                    .replace(/\{\{asesor\}\}/g, 'Asesor RS')
+                    .replace(/\{\{facturas\}\}/g, buildFacturasText(d));
+
+                  let twilioOk = false;
+                  let twilioNote = '';
+
+                  if (hasContact) {
+                    const twilioResult = await callTwilio(envioChannel, d, personalMsg);
+                    twilioOk = twilioResult.success;
+                    twilioNote = twilioOk
+                      ? `[Envío masivo · ${envioChannel}]\n${personalMsg}`
+                      : `[Envío masivo · ERROR]\n${personalMsg}\nError: ${twilioResult.error}`;
+                    if (!twilioOk) {
+                      errorsList.push(`${d.debtor_name}: ${twilioResult.error}`);
+                    }
+                  } else {
+                    twilioNote = `[Envío masivo] Sin contacto para canal ${envioChannel}\n${personalMsg}`;
+                  }
+
                   const { error } = await supabase.from('collection_actions').insert({
-                    company_id: d.company_id, debtor_id: d.id,
-                    channel: envioChannel, result: 'contacted',
-                    notes: envioMsg.replace(/\{\{nombre\}\}/gi, d.debtor_name).replace(/\{\{saldo\}\}/gi, fmt(d.total_outstanding)).replace(/\{\{empresa\}\}/gi, companies[d.company_id]?.name || ''),
+                    company_id: d.company_id,
+                    debtor_id: d.id,
+                    user_id: user?.id || null,
+                    channel: envioChannel,
+                    result: !hasContact ? 'uncontactable' : twilioOk ? 'contacted' : 'error',
+                    notes: twilioNote,
                   });
-                  if (error) errs++; else ok++;
+
+                  if (error) {
+                    errorsList.push(`${d.debtor_name}: ${error.message}`);
+                  }
+
+                  if (hasContact && twilioOk && d.status === 'pending') {
+                    await supabase.from('collection_debtors').update({ status: 'in_collection' }).eq('id', d.id);
+                  }
+
+                  if (hasContact && twilioOk) {
+                    sent++;
+                  } else {
+                    skipped++;
+                  }
                 }
+
+                setEnvioSending(false);
                 setIsBulkMsgModalOpen(false);
                 clearSelection();
-                alert(`Gestión registrada: ${ok} ok${errs > 0 ? `, ${errs} errores` : ''}`);
+                alert(`Envío completado: ${sent} enviados, ${skipped} omitidos/sin contacto, ${errorsList.length} errores.`);
                 loadData();
-              }}>✉️ Registrar gestión a {selectedIds.size} deudores</button>
+                loadEnvioLogs();
+              }}>{envioSending ? 'Enviando...' : `✉️ Aprobar y enviar a ${selectedIds.size} deudores`}</button>
             </div>
           </div>
         </div>

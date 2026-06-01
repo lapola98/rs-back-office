@@ -80,3 +80,18 @@
 
 /* ─── RESPONSIVE ─── */
 @media (max-width: 768px) { .sb { display: none; } }
+
+/* Dividores de sección */
+.sbDiv { height: 1px; background: rgba(255,255,255,.04); margin: .45rem 1rem; }
+
+/* Contadores e insignias */
+.sbCount {
+  margin-left: auto; font-size: .62rem; color: rgba(255,255,255,.25);
+  background: #212c3d; padding: .1rem .38rem; border-radius: 100px;
+  min-width: 20px; text-align: center;
+}
+.sbBadgeN {
+  margin-left: auto; background: #e05c4b; color: #fff;
+  font-size: .54rem; font-weight: 700; padding: .1rem .38rem;
+  border-radius: 100px; min-width: 16px; text-align: center;
+}
