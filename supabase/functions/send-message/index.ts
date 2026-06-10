@@ -26,7 +26,7 @@ serve(async (req) => {
   }
 
   try {
-    const { channel, to, message, subject } = await req.json()
+    const { channel, to, message, subject, contentSid, contentVariables } = await req.json()
 
     // Validar parámetros
     if (!channel || !to || !message) {
@@ -39,7 +39,7 @@ serve(async (req) => {
     let result
 
     if (channel === 'whatsapp') {
-      result = await sendWhatsApp(to, message)
+      result = await sendWhatsApp(to, message, contentSid, contentVariables)
     } else if (channel === 'sms') {
       result = await sendSMS(to, message)
     } else if (channel === 'email') {
@@ -66,23 +66,31 @@ serve(async (req) => {
 })
 
 /* ══ WHATSAPP ══ */
-async function sendWhatsApp(to: string, message: string) {
+async function sendWhatsApp(to: string, message: string, contentSid?: string, contentVariables?: Record<string, string>) {
   const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID')
   const authToken  = Deno.env.get('TWILIO_AUTH_TOKEN')
-  const from       = Deno.env.get('TWILIO_WHATSAPP_FROM') // whatsapp:+14155238886
+  const from       = Deno.env.get('TWILIO_WHATSAPP_FROM')
 
   if (!accountSid || !authToken || !from) {
     return { success: false, error: 'Credenciales Twilio WhatsApp no configuradas' }
   }
 
-  // Normalizar número — agregar whatsapp: prefix si no lo tiene
+  const fromFormatted = from.startsWith('whatsapp:') ? from : `whatsapp:${from}`
   const toFormatted = to.startsWith('whatsapp:') ? to : `whatsapp:${normalizePhone(to)}`
 
-  const body = new URLSearchParams({
-    From: from,
-    To:   toFormatted,
-    Body: message,
-  })
+  const body = new URLSearchParams({ From: fromFormatted, To: toFormatted })
+  console.log('[WhatsApp] Request parameters:', { From: fromFormatted, To: toFormatted })
+
+  if (contentSid) {
+    // ── Template aprobado (fuera de sesión de 24h) ──
+    body.append('ContentSid', contentSid)
+    if (contentVariables && Object.keys(contentVariables).length > 0) {
+      body.append('ContentVariables', JSON.stringify(contentVariables))
+    }
+  } else {
+    // ── Texto libre (dentro de sesión activa) ──
+    body.append('Body', message)
+  }
 
   const response = await fetch(
     `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
@@ -97,22 +105,12 @@ async function sendWhatsApp(to: string, message: string) {
   )
 
   const data = await response.json()
-
   if (!response.ok) {
     console.error('[WhatsApp] Error Twilio:', data)
-    return {
-      success : false,
-      error   : data.message || `Error Twilio: ${response.status}`,
-      code    : data.code,
-    }
+    return { success: false, error: data.message || `Error Twilio: ${response.status}`, code: data.code }
   }
 
-  return {
-    success   : true,
-    message_id: data.sid,
-    status    : data.status,
-    channel   : 'whatsapp',
-  }
+  return { success: true, message_id: data.sid, status: data.status, channel: 'whatsapp' }
 }
 
 /* ══ SMS ══ */

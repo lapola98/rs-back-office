@@ -1,0 +1,125 @@
+/* ─── LAYOUT ─── */
+.app { display: flex; height: 100vh; overflow: hidden; background: #0d1117; color: rgba(255, 255, 255, 0.88); }
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; height: 100vh; overflow: hidden; }
+.content { flex: 1; overflow: hidden; }
+.page { height: 100%; overflow-y: auto; padding: 1.5rem 1.6rem; background: #0d1117; scrollbar-width: thin; scrollbar-color: #212c3d transparent; }
+.page::-webkit-scrollbar { width: 4px; }
+.page::-webkit-scrollbar-thumb { background: #212c3d; border-radius: 4px; }
+
+.detailGrid { display: grid; grid-template-columns: 320px 1fr; gap: 1rem; align-items: start; }
+@media(max-width: 1000px) { .detailGrid { grid-template-columns: 1fr; } }
+
+/* SKELETON */
+.sk { background: linear-gradient(90deg, #1a2230 25%, #212c3d 50%, #1a2230 75%); background-size: 200% 100%; animation: shim 1.5s infinite; border-radius: 6px; }
+@keyframes shim { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* ─── CARD ─── */
+.card { background: #16202e; border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 14px; padding: 1.25rem; margin-bottom: 1rem; position: relative; overflow: hidden; transition: border-color 0.2s; }
+.card:hover { border-color: rgba(201, 168, 76, 0.12); }
+.cardHd { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1rem; gap: 0.5rem; flex-wrap: wrap; }
+.cardTitle { font-family: 'Cormorant Garamond', serif; font-size: 1.05rem; font-weight: 600; color: #fff; line-height: 1.25; }
+.cardSub { font-size: 0.68rem; color: rgba(255, 255, 255, 0.25); margin-top: 0.1rem; }
+.stag { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; color: #c9a84c; margin-bottom: 0.35rem; }
+.stag::before { content: ''; width: 16px; height: 1px; background: #c9a84c; }
+
+/* ─── PROFILE CARD ─── */
+.pfAvatar { width: 48px; height: 48px; background: linear-gradient(135deg, #c9a84c, #e8c97a); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; font-weight: 600; color: #0d1117; flex-shrink: 0; }
+.pfName { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; font-weight: 600; color: #fff; line-height: 1.2; margin-bottom: 0.15rem; }
+.pfDoc { font-size: 0.72rem; color: rgba(255, 255, 255, 0.25); margin-bottom: 0.85rem; }
+.pfRow { display: flex; align-items: flex-start; gap: 0.55rem; padding: 0.4rem 0; border-bottom: 1px solid rgba(255, 255, 255, 0.04); font-size: 0.78rem; }
+.pfRow:last-child { border-bottom: none; }
+.pfLbl { color: rgba(255, 255, 255, 0.25); width: 100px; flex-shrink: 0; font-size: 0.7rem; padding-top: 0.1rem; }
+.pfVal { color: rgba(255, 255, 255, 0.88); word-break: break-word; }
+.pfValAmount { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-weight: 600; color: #e8c97a; }
+
+/* MORA TRAMOS */
+.moraGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; margin-top: 0.5rem; }
+.moraBox { background: #1a2230; border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 7px; padding: 0.5rem 0.6rem; text-align: center; }
+.moraBoxLbl { font-size: 0.58rem; color: rgba(255, 255, 255, 0.25); margin-bottom: 0.2rem; letter-spacing: 0.04em; }
+.moraBoxVal { font-family: 'Cormorant Garamond', serif; font-size: 0.95rem; font-weight: 600; line-height: 1; }
+
+/* ─── BADGES ─── */
+.badge { display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.18rem 0.52rem; border-radius: 100px; font-size: 0.62rem; font-weight: 600; white-space: nowrap; }
+.badge::before { content: '●'; font-size: 0.44rem; }
+.bOk { background: rgba(34, 166, 106, 0.12); color: #22a66a; }
+.bWarn { background: rgba(232, 160, 32, 0.12); color: #e8a020; }
+.bErr { background: rgba(224, 92, 75, 0.12); color: #e05c4b; }
+.bInfo { background: rgba(74, 159, 212, 0.12); color: #4a9fd4; }
+.bGold { background: rgba(201, 168, 76, 0.12); color: #c9a84c; }
+.bN { background: rgba(255, 255, 255, 0.06); color: rgba(255, 255, 255, 0.5); }
+
+/* ─── TABLE ─── */
+.tbl { width: 100%; border-collapse: collapse; }
+.tbl th { font-size: 0.6rem; font-weight: 600; color: rgba(255, 255, 255, 0.25); letter-spacing: 0.09em; text-transform: uppercase; padding: 0 0.68rem 0.6rem; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.07); white-space: nowrap; }
+.tbl td { padding: 0.55rem 0.68rem; font-size: 0.76rem; border-bottom: 1px solid rgba(255, 255, 255, 0.04); color: rgba(255, 255, 255, 0.5); vertical-align: middle; }
+.tbl tr:last-child td { border-bottom: none; }
+.tbl tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+/* ─── BTNS ─── */
+.btnP { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.4rem 0.9rem; border-radius: 6px; border: 1px solid rgba(201, 168, 76, 0.4); background: rgba(201, 168, 76, 0.12); font-family: 'DM Sans', sans-serif; font-size: 0.72rem; font-weight: 500; color: #e8c97a; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+.btnP:hover { background: #c9a84c; color: #0d1117; }
+.btnS { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.4rem 0.9rem; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.07); background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.72rem; color: rgba(255, 255, 255, 0.5); cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+.btnS:hover { background: #1a2230; }
+.btnG { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.38rem 0.8rem; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.07); background: #1a2230; font-family: 'DM Sans', sans-serif; font-size: 0.72rem; color: rgba(255, 255, 255, 0.5); cursor: pointer; white-space: nowrap; transition: all 0.2s; text-decoration: none; }
+.btnG:hover { background: rgba(201, 168, 76, 0.12); color: #c9a84c; border-color: rgba(201, 168, 76, 0.3); }
+.actBtn { background: none; border: none; cursor: pointer; color: rgba(255, 255, 255, 0.25); font-size: 0.84rem; padding: 0.2rem 0.28rem; border-radius: 4px; transition: all 0.18s; }
+.actBtn:hover { color: rgba(255, 255, 255, 0.88); background: #212c3d; }
+.actBtnDanger:hover { color: #e05c4b; background: rgba(224, 92, 75, 0.12); }
+.btnCe { background: rgba(201, 168, 76, 0.12); border: 1px solid rgba(201, 168, 76, 0.3); color: #e8c97a; border-radius: 5px; padding: 0.28rem 0.6rem; font-family: 'DM Sans', sans-serif; font-size: 0.68rem; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+.btnCe:hover { background: #c9a84c; color: #0d1117; }
+
+/* ─── MODAL ─── */
+.modalOverlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 1.5rem; animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal { background: #1c2a3a; border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 16px; width: 100%; max-width: 520px; animation: slideUp 0.25s ease; max-height: 90vh; overflow-y: auto; scrollbar-width: thin; }
+@keyframes slideUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+.modalHd { padding: 1.2rem 1.35rem 0.95rem; border-bottom: 1px solid rgba(255, 255, 255, 0.07); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: #1c2a3a; z-index: 1; }
+.modalHd h3 { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; font-weight: 600; color: #fff; margin: 0; }
+.modalClose { background: none; border: none; cursor: pointer; color: rgba(255, 255, 255, 0.25); font-size: 1.1rem; padding: 0.2rem; transition: color 0.18s; }
+.modalClose:hover { color: rgba(255, 255, 255, 0.88); }
+.modalBody { padding: 1.1rem 1.35rem; }
+.modalFt { padding: 0.85rem 1.35rem 1.15rem; border-top: 1px solid rgba(255, 255, 255, 0.07); display: flex; justify-content: flex-end; gap: 0.6rem; position: sticky; bottom: 0; background: #1c2a3a; }
+
+/* ─── FORM ─── */
+.field { margin-bottom: 0.88rem; }
+.field label { display: block; font-size: 0.7rem; font-weight: 600; color: rgba(255, 255, 255, 0.25); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.3rem; }
+.field input, .field select, .field textarea { width: 100%; background: #1a2230; border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 10px; padding: 0.62rem 0.88rem; font-family: 'DM Sans', sans-serif; font-size: 0.8rem; color: rgba(255, 255, 255, 0.88); outline: none; transition: all 0.18s; -webkit-appearance: none; }
+.field input::placeholder, .field textarea::placeholder { color: rgba(255, 255, 255, 0.25); }
+.field input:focus, .field select:focus, .field textarea:focus { border-color: rgba(201, 168, 76, 0.4); box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.07); background: #212c3d; }
+.field select { cursor: pointer; color: rgba(255, 255, 255, 0.5); }
+.field select option { background: #1a2230; }
+.field textarea { resize: vertical; min-height: 80px; line-height: 1.55; }
+.fieldRow { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+
+/* ─── TIMELINE ─── */
+.timeline { display: flex; flex-direction: column; gap: 0.55rem; }
+.tlItem { display: flex; gap: 0.7rem; position: relative; }
+.tlItem::before { content: ''; position: absolute; left: 13px; top: 26px; bottom: -10px; width: 1px; background: rgba(255, 255, 255, 0.07); z-index: 0; }
+.tlItem:last-child::before { display: none; }
+.tlDot { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; flex-shrink: 0; z-index: 1; border: 1.5px solid rgba(255, 255, 255, 0.07); }
+.tlBody { flex: 1; min-width: 0; padding-bottom: 0.45rem; }
+.tlHeader { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.18rem; flex-wrap: wrap; }
+.tlResult { font-size: 0.74rem; font-weight: 600; }
+.tlDate { font-size: 0.63rem; color: rgba(255, 255, 255, 0.25); margin-left: auto; white-space: nowrap; }
+.tlNotes { font-size: 0.76rem; color: rgba(255, 255, 255, 0.5); line-height: 1.5; }
+.tlChannel { font-size: 0.6rem; color: rgba(255, 255, 255, 0.25); padding: 0.08rem 0.35rem; background: #1a2230; border-radius: 100px; border: 1px solid rgba(255, 255, 255, 0.07); }
+.tlGestor { font-size: 0.63rem; color: #c9a84c; font-weight: 500; }
+.tlNext { font-size: 0.65rem; color: #e8a020; margin-top: 0.15rem; }
+
+/* ─── TASK ITEMS ─── */
+.taskItem { display: flex; align-items: flex-start; gap: 0.65rem; padding: 0.6rem 0; border-bottom: 1px solid rgba(255, 255, 255, 0.04); }
+.taskItem:last-child { border-bottom: none; }
+.tChk { width: 17px; height: 17px; border-radius: 4px; border: 1.5px solid rgba(255, 255, 255, 0.07); flex-shrink: 0; margin-top: 0.12rem; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; background: transparent; transition: all 0.18s; }
+.tChkDone { background: #22a66a; border-color: #22a66a; color: #fff; }
+.tBody { flex: 1; min-width: 0; }
+.tTitle { font-size: 0.78rem; color: rgba(255, 255, 255, 0.88); line-height: 1.4; margin-bottom: 0.15rem; }
+.tTitleDone { text-decoration: line-through; color: rgba(255, 255, 255, 0.25); }
+.tMeta { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; font-size: 0.65rem; color: rgba(255, 255, 255, 0.25); }
+.pHi { font-size: 0.58rem; font-weight: 600; padding: 0.08rem 0.35rem; border-radius: 100px; background: rgba(224, 92, 75, 0.12); color: #e05c4b; }
+.pMed { font-size: 0.58rem; font-weight: 600; padding: 0.08rem 0.35rem; border-radius: 100px; background: rgba(232, 160, 32, 0.12); color: #e8a020; }
+.pLo { font-size: 0.58rem; font-weight: 600; padding: 0.08rem 0.35rem; border-radius: 100px; background: rgba(74, 159, 212, 0.12); color: #4a9fd4; }
+
+/* ─── EMPTY ─── */
+.empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2.5rem 1rem; color: rgba(255, 255, 255, 0.25); gap: 0.55rem; text-align: center; }
+.emptyIcon { font-size: 1.8rem; opacity: 0.4; }
+.emptyTxt { font-size: 0.78rem; line-height: 1.5; }

@@ -227,9 +227,13 @@ otp_expiry = 3600
 # sender_name = "Admin"
 
 # Uncomment to customize email template
-# [auth.email.template.invite]
-# subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+[auth.email.template.invite]
+subject = "Has sido invitado a RS Back Office"
+content_path = "./supabase/templates/invite.html"
+
+[auth.email.template.recovery]
+subject = "Restablecer tu contraseña — RS Back Office"
+content_path = "./supabase/templates/reset_password.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
@@ -397,7 +401,7 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 
 [functions.invite-owner]
 enabled = true
-verify_jwt = true
+verify_jwt = false
 import_map = "./functions/invite-owner/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
