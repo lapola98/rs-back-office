@@ -258,7 +258,7 @@ export default function ClientDashboardPage() {
     setSendingInvite(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch('https://doauzsmkoeyvllbmbdda.supabase.co/functions/v1/invite-user', {
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invite-user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
         body: JSON.stringify({ email: inviteEmail.trim().toLowerCase(), company_id: data.company.id }),
