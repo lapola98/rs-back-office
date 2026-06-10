@@ -36,7 +36,7 @@ serve(async (req) => {
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-    const serviceKey = Deno.env.get('SERVICE_ROLE_KEY') ?? ''
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SERVICE_ROLE_KEY') ?? ''
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     const siteUrl = Deno.env.get('SITE_URL') ?? ''
 
@@ -46,10 +46,17 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     })
 
+    // Obtener los datos del usuario autenticado
+    const { data: { user }, error: userErr } = await userClient.auth.getUser()
+    if (userErr || !user) {
+      return json({ error: 'Token inválido o usuario no autenticado' }, 401)
+    }
+
     // Verificar que el invitador es parte del personal administrativo
     const { data: inviter, error: inviterErr } = await userClient
       .from('profiles')
       .select('role')
+      .eq('id', user.id)
       .single()
 
     if (inviterErr || !inviter) {
