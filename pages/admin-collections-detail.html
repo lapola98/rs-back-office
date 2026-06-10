@@ -345,6 +345,21 @@ html,body{height:100%;overflow:hidden;font-family:var(--fu);font-size:13px;backg
               <div class="sk" style="height:60px;border-radius:10px;width:70%"></div>
             </div>
           </div>
+          <!-- MENSAJES ENTRANTES -->
+          <div class="card">
+            <div class="card-hd">
+              <div>
+                <div class="stag">collection_inbound_messages</div>
+                <div class="card-title">Respuestas recibidas</div>
+                <div class="card-sub" id="inboundSub">Cargando…</div>
+              </div>
+              <button class="btn-g" onclick="loadInbound()">🔄</button>
+            </div>
+            <div id="inboundList">
+              <div class="sk" style="height:50px;border-radius:10px;margin-bottom:.5rem"></div>
+              <div class="sk" style="height:50px;border-radius:10px;width:80%"></div>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -629,6 +644,7 @@ async function loadAll() {
     renderAgreements()
     renderTasks()
     populateGestorSelects()
+    await loadInbound()
 
   } catch(e) {
     console.error('[DETAIL] loadAll:', e)
@@ -1169,7 +1185,67 @@ function ltxt(t)     { document.getElementById('lTxt').textContent = t }
 function hideLoader(){ setTimeout(()=>document.getElementById('loader').classList.add('gone'), 300) }
 function setDate()   { document.getElementById('tbDate').textContent = new Date().toLocaleDateString('es-CO',{weekday:'short',year:'numeric',month:'short',day:'numeric'}) }
 async function signOut() { await db.auth.signOut(); window.location.href = 'login.html' }
+/* ══ MENSAJES ENTRANTES ══ */
+let INBOUND = []
 
+async function loadInbound() {
+  const { data, error } = await db
+    .from('collection_inbound_messages')
+    .select('*')
+    .eq('debtor_id', DEBTOR_ID)
+    .order('created_at', { ascending: false })
+    .limit(50)
+
+  if (error) {
+    document.getElementById('inboundSub').textContent = 'Error al cargar'
+    return
+  }
+
+  INBOUND = data || []
+  renderInbound()
+}
+
+function renderInbound() {
+  const wrap   = document.getElementById('inboundList')
+  const sub    = document.getElementById('inboundSub')
+  const unread = INBOUND.filter(m => m.status === 'unread').length
+
+  sub.textContent = `${INBOUND.length} mensaje${INBOUND.length!==1?'s':''} recibido${INBOUND.length!==1?'s':''}${unread>0?' · '+unread+' sin leer':''}`
+
+  if (!INBOUND.length) {
+    wrap.innerHTML = `<div class="empty"><div class="empty-icon">💬</div><div class="empty-txt">Sin respuestas recibidas aún.</div></div>`
+    return
+  }
+
+  const chIcon = { whatsapp:'💬', sms:'📱' }
+
+  wrap.innerHTML = `<div style="display:flex;flex-direction:column;gap:.45rem">
+    ${INBOUND.map(m => {
+      const isUnread = m.status === 'unread'
+      return `<div style="display:flex;gap:.65rem;padding:.65rem .75rem;background:${isUnread?'rgba(201,168,76,.06)':'var(--bg3)'};border:1px solid ${isUnread?'rgba(201,168,76,.2)':'var(--border2)'};border-radius:var(--r)"
+        onclick="markRead('${m.id}',this)">
+        <div style="font-size:1rem;flex-shrink:0">${chIcon[m.channel]||'💬'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.2rem">
+            <span style="font-size:.7rem;color:var(--txt3)">${esc(m.from_number)}</span>
+            ${isUnread?'<span style="font-size:.55rem;font-weight:700;color:var(--gold);background:var(--gold-pale);padding:.05rem .35rem;border-radius:100px">NUEVO</span>':''}
+            <span style="font-size:.65rem;color:var(--txt3);margin-left:auto">${fmtDT(m.created_at)}</span>
+          </div>
+          <div style="font-size:.78rem;color:var(--txt);line-height:1.5;white-space:pre-wrap;word-break:break-word">${esc(m.body||'')}</div>
+          ${m.media_url?`<a href="${esc(m.media_url)}" target="_blank" style="font-size:.68rem;color:var(--gold);text-decoration:none;margin-top:.2rem;display:inline-block">📎 Ver adjunto</a>`:''}
+        </div>
+      </div>`
+    }).join('')}
+  </div>`
+}
+
+async function markRead(id) {
+  const msg = INBOUND.find(m => m.id === id)
+  if (!msg || msg.status !== 'unread') return
+  await db.from('collection_inbound_messages').update({ status: 'read' }).eq('id', id)
+  msg.status = 'read'
+  renderInbound()
+}
 init()
 </script>
 </body>
