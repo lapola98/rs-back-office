@@ -130,7 +130,7 @@ export default function AdminLayout() {
 
           <div className={styles.sbDiv}></div>
           <div className={styles.sbLbl}>Sistema</div>
-          {renderLink('#', '👤', 'Usuarios')}
+          {renderLink('/admin/users', '👤', 'Usuarios')}
           {renderLink('#', '⚙️', 'Configuración')}
           {renderLink('/', '🌐', 'Ver sitio web')}
         </nav>

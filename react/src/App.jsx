@@ -18,6 +18,7 @@ import AdminCollectionsPage from './pages/admin/AdminCollectionsPage'
 import AdminCollectionsImportPage from './pages/admin/AdminCollectionsImportPage'
 import AdminCollectionsDetailPage from './pages/admin/AdminCollectionsDetailPage'
 import AdminOnboardingPage from './pages/admin/AdminOnboardingPage'
+import AdminUsersPage from './pages/admin/AdminUsersPage'
 
 import './App.css'
 
@@ -47,6 +48,7 @@ function App() {
         <Route path="collections/import"      element={<AdminCollectionsImportPage />} />
         <Route path="collections/detail/:id"  element={<AdminCollectionsDetailPage />} />
         <Route path="onboarding"              element={<AdminOnboardingPage />} />
+        <Route path="users"                   element={<AdminUsersPage />} />
       </Route>
     </Routes>
   )

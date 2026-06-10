@@ -40,12 +40,31 @@ export default function SetPasswordPage() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({ password: pass1 });
-      if (error) throw error;
+      const { data, error: updateError } = await supabase.auth.updateUser({ password: pass1 });
+      if (updateError) throw updateError;
+      
+      const user = data.user;
+      
+      // Obtener rol
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      const role = profile?.role || user.user_metadata?.role || 'client_user';
+      const ADMIN_ROLES = ['admin', 'rs_staff', 'rs_admin'];
+
       setSuccess(true);
-      setTimeout(() => navigate('/dashboard'), 2500); // Redirects to client dashboard
+      setTimeout(() => {
+        if (ADMIN_ROLES.includes(role)) {
+          navigate('/admin/dashboard');
+        } else {
+          navigate('/dashboard');
+        }
+      }, 2500);
     } catch (e) {
-      setError('Error al actualizar: ' + e.message);
+      setError('Error al activar: ' + e.message);
     } finally {
       setLoading(false);
     }
