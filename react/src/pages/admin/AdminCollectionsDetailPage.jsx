@@ -83,10 +83,10 @@ export default function AdminCollectionsDetailPage() {
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      let currentUserId = null;
       if (session) {
         setCurrentUser(session.user);
-        setActionForm(f => ({ ...f, user_id: session.user.id }));
-        setTaskForm(f => ({ ...f, user_id: session.user.id }));
+        currentUserId = session.user.id;
       }
 
       const [r1, r2, r3, r4, r5, r6] = await Promise.all([
@@ -99,13 +99,26 @@ export default function AdminCollectionsDetailPage() {
       ]);
 
       if (r1.error) throw r1.error;
+      if (r2.error) console.error('Error fetching debts:', r2.error);
+      if (r3.error) console.error('Error fetching actions:', r3.error);
+      if (r4.error) console.error('Error fetching agreements:', r4.error);
+      if (r5.error) console.error('Error fetching tasks:', r5.error);
+      if (r6.error) console.error('Error fetching staff:', r6.error);
+
+      const staffList = r6.data || [];
 
       setDebtor(r1.data);
       setDebts(r2.data || []);
       setActions(r3.data || []);
       setAgreements(r4.data || []);
       setTasks(r5.data || []);
-      setStaff(r6.data || []);
+      setStaff(staffList);
+
+      if (currentUserId) {
+        const isStaff = staffList.some(g => g.id === currentUserId);
+        setActionForm(f => ({ ...f, user_id: isStaff ? currentUserId : '' }));
+        setTaskForm(f => ({ ...f, user_id: isStaff ? currentUserId : '' }));
+      }
 
       setContactForm({
         phone: r1.data.phone || '',
@@ -156,7 +169,7 @@ export default function AdminCollectionsDetailPage() {
   };
 
   const handleSaveAction = async () => {
-    if (!actionForm.notes) { alert('Notes are required'); return; }
+    if (!actionForm.notes) { alert('Las notas son obligatorias.'); return; }
     try {
       const { error } = await supabase.from('collection_actions').insert({
         company_id: debtor.company_id, debtor_id: id,
@@ -167,21 +180,26 @@ export default function AdminCollectionsDetailPage() {
 
       const newStatus = { paid: 'paid', payment_promise: 'promised', payment_agreement: 'agreement', partial_payment: 'partially_paid', uncontactable: 'uncontactable', contacted: 'in_collection', requested_extension: 'in_collection' }[actionForm.result];
       if (newStatus) {
-        await supabase.from('collection_debtors').update({ status: newStatus, assigned_user_id: actionForm.user_id || debtor.assigned_user_id }).eq('id', id);
+        const { error: updateErr } = await supabase.from('collection_debtors').update({ status: newStatus, assigned_user_id: actionForm.user_id || debtor.assigned_user_id || null }).eq('id', id);
+        if (updateErr) throw updateErr;
       }
 
       if (actionForm.follow_up) {
-        await supabase.from('collection_tasks').insert({
+        const { error: taskErr } = await supabase.from('collection_tasks').insert({
           company_id: debtor.company_id, debtor_id: id, assigned_user_id: actionForm.user_id || null,
           title: `Seguimiento — ${RESULT_LABELS[actionForm.result] || actionForm.result}`,
           due_date: actionForm.follow_up, priority: 'medium', status: 'pending',
         });
+        if (taskErr) throw taskErr;
       }
 
       setShowActionModal(false);
       setActionForm(f => ({ ...f, notes: '', follow_up: '' }));
       loadAll();
-    } catch (e) { alert(e.message); }
+    } catch (e) {
+      console.error('Error saving action:', e);
+      alert('Error al guardar gestión: ' + e.message);
+    }
   };
 
   const handleSaveAgreement = async () => {
@@ -195,7 +213,8 @@ export default function AdminCollectionsDetailPage() {
         first_due_date: agrForm.due_date, status: 'active', notes: agrForm.notes || null, created_by: currentUser?.id || null
       });
       if (error) throw error;
-      await supabase.from('collection_debtors').update({ status: agrForm.type === 'installment' ? 'agreement' : 'promised' }).eq('id', id);
+      const { error: updateErr } = await supabase.from('collection_debtors').update({ status: agrForm.type === 'installment' ? 'agreement' : 'promised' }).eq('id', id);
+      if (updateErr) throw updateErr;
       setShowAgrModal(false);
       setAgrForm({ type: 'promise', amount: '', total: '', due_date: '', installments: 1, notes: '' });
       loadAll();
