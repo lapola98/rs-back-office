@@ -12,14 +12,6 @@ const PALETTE = [
   { color: '#e05c4b', bg: 'rgba(224,92,75,.12)' },
 ];
 
-const MOD_NAMES = ['Facturación y Cartera', 'Contabilidad', 'Tesorería', 'Gestión de Personal'];
-const MOD_ICONS = ['🧾', '📋', '🏦', '👥'];
-const MOD_DESCS = [
-  'Emisión FE, gestión de cobro, aging',
-  'Libros, estados financieros, tributos',
-  'Flujo de caja, pagos, conciliación',
-  'Nómina, PILA, contratos, novedades',
-];
 
 const fmtDate = (iso) => {
   if (!iso) return '—';
@@ -50,8 +42,17 @@ export default function AdminCompaniesPage() {
     billing_module: true, accounting_module: false, treasury_module: false, hr_module: false, notes: ''
   });
   
+  const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const loadServices = async () => {
+    const { data, error } = await supabase
+      .from('services')
+      .select('id, name, icon, description')
+      .order('id', { ascending: true });
+    if (!error && data) setServices(data);
+  };
 
   const loadCompanies = async () => {
     setLoading(true);
@@ -112,6 +113,7 @@ export default function AdminCompaniesPage() {
   };
 
   useEffect(() => {
+    loadServices();
     loadCompanies();
   }, []);
 
@@ -395,10 +397,10 @@ export default function AdminCompaniesPage() {
                       <div className={styles.card}>
                         <div className={styles.cardHd}><div><div className={styles.stag}>Servicios contratados</div><div className={styles.cardTitle}>Módulos habilitados</div><div className={styles.cardSub}>Activa o desactiva los módulos disponibles para este cliente</div></div></div>
                         <div className={styles.modGrid}>
-                          {MOD_NAMES.map((name, i) => (
-                            <div key={i} className={`${styles.modToggle} ${selectedCo.mods[i] ? styles.modToggleOn : ''}`} onClick={() => handleToggleModule(i)}>
-                              <span className={styles.modIcon}>{MOD_ICONS[i]}</span>
-                              <div style={{ flex: 1 }}><div className={styles.modName}>{name}</div><div className={styles.modDesc}>{MOD_DESCS[i]}</div></div>
+                          {services.map((svc, i) => (
+                            <div key={svc.id} className={`${styles.modToggle} ${selectedCo.mods[i] ? styles.modToggleOn : ''}`} onClick={() => handleToggleModule(i)}>
+                              <span className={styles.modIcon}>{svc.icon}</span>
+                              <div style={{ flex: 1 }}><div className={styles.modName}>{svc.name}</div><div className={styles.modDesc}>{svc.description}</div></div>
                               <div className={styles.modSwitch}></div>
                             </div>
                           ))}
@@ -582,18 +584,19 @@ export default function AdminCompaniesPage() {
               <div style={{ marginBottom: '.7rem' }}>
                 <div className={styles.formSectionTitle} style={{ marginBottom: '.55rem' }}>Módulos a contratar</div>
                 <div className={styles.formMods}>
-                  <div className={`${styles.formMod} ${formData.billing_module ? styles.formModOn : ''}`} onClick={() => setFormData({ ...formData, billing_module: !formData.billing_module })}>
-                    <div className={styles.formModCheck}>{formData.billing_module ? '✓' : ''}</div><span className={styles.formModName}>🧾 Facturación y Cartera</span>
-                  </div>
-                  <div className={`${styles.formMod} ${formData.accounting_module ? styles.formModOn : ''}`} onClick={() => setFormData({ ...formData, accounting_module: !formData.accounting_module })}>
-                    <div className={styles.formModCheck}>{formData.accounting_module ? '✓' : ''}</div><span className={styles.formModName}>📋 Contabilidad</span>
-                  </div>
-                  <div className={`${styles.formMod} ${formData.treasury_module ? styles.formModOn : ''}`} onClick={() => setFormData({ ...formData, treasury_module: !formData.treasury_module })}>
-                    <div className={styles.formModCheck}>{formData.treasury_module ? '✓' : ''}</div><span className={styles.formModName}>🏦 Tesorería</span>
-                  </div>
-                  <div className={`${styles.formMod} ${formData.hr_module ? styles.formModOn : ''}`} onClick={() => setFormData({ ...formData, hr_module: !formData.hr_module })}>
-                    <div className={styles.formModCheck}>{formData.hr_module ? '✓' : ''}</div><span className={styles.formModName}>👥 Gestión de Personal</span>
-                  </div>
+                  {(() => {
+                    const modKeys = ['billing_module', 'accounting_module', 'treasury_module', 'hr_module'];
+                    return services.map((svc, i) => {
+                      const key = modKeys[i];
+                      if (!key) return null;
+                      return (
+                        <div key={svc.id} className={`${styles.formMod} ${formData[key] ? styles.formModOn : ''}`} onClick={() => setFormData({ ...formData, [key]: !formData[key] })}>
+                          <div className={styles.formModCheck}>{formData[key] ? '✓' : ''}</div>
+                          <span className={styles.formModName}>{svc.icon} {svc.name}</span>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               </div>
 
